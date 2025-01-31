@@ -12,6 +12,20 @@ export interface SubscriptionPlan {
 
 export const subscriptionPlans: SubscriptionPlan[] = [
   {
+    id: "alacarte",
+    name: "À La Carte Services",
+    price: 29.99,
+    description: "Customize your automated lawn care experience. Starting at $29.99.",
+    features: [
+      "Choose individual services",
+      "Pay per service",
+      "Flexible scheduling",
+      "No long-term commitment",
+      "Access to all service options"
+    ],
+    serviceFrequency: "As needed",
+  },
+  {
     id: "starter",
     name: "Starter Automation",
     price: 49.99,
@@ -24,19 +38,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     ],
     serviceFrequency: "Monthly",
     maxBookingsPerMonth: 1
-  },
-  {
-    id: "alacarte",
-    name: "À La Carte Services",
-    description: "Customize your automated lawn care experience",
-    features: [
-      "Choose individual services",
-      "Pay per service",
-      "Flexible scheduling",
-      "No long-term commitment",
-      "Access to all service options"
-    ],
-    serviceFrequency: "As needed",
   },
   {
     id: "basic",
