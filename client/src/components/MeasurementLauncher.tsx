@@ -49,9 +49,9 @@ const MeasurementLauncher = () => {
       const voices = window.speechSynthesis.getVoices();
       console.log("Available voices:", voices.map(v => v.name));
 
-      const preferredVoice = voices.find(voice => 
-        voice.name.includes('Google') || 
-        voice.name.includes('Natural') || 
+      const preferredVoice = voices.find(voice =>
+        voice.name.includes('Google') ||
+        voice.name.includes('Natural') ||
         voice.name.includes('Premium')
       );
 
@@ -145,8 +145,7 @@ const MeasurementLauncher = () => {
     speak("No problem! We can try again whenever you're ready. Just click start when you want to begin.");
   };
 
-  const handleNextStep = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleNextStep = () => {
     console.log("Handling next step, current step:", currentStep);
 
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
@@ -203,8 +202,8 @@ const MeasurementLauncher = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleMeasurement}
                 >
                   <Camera className="mr-2 h-4 w-4" />
@@ -264,7 +263,7 @@ const MeasurementLauncher = () => {
 
                     {/* Enhanced instruction overlay */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <motion.p 
+                      <motion.p
                         className="text-white text-center text-xl font-medium mb-6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -291,16 +290,16 @@ const MeasurementLauncher = () => {
                       </div>
 
                       <div className="flex gap-4 max-w-md mx-auto">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20"
-                          onClick={stopMeasurement}
+                          onClick={() => stopMeasurement()}
                         >
                           Cancel
                         </Button>
-                        <Button 
+                        <Button
                           className="flex-1 bg-primary/90 hover:bg-primary"
-                          onClick={handleNextStep}
+                          onClick={() => handleNextStep()}
                         >
                           {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
                         </Button>
@@ -310,7 +309,7 @@ const MeasurementLauncher = () => {
 
                   {/* Measurement results */}
                   {measurements.area > 0 && (
-                    <motion.div 
+                    <motion.div
                       className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white"
                       initial={{ opacity: 0, y: -20 }}
                       animate={{ opacity: 1, y: 0 }}
