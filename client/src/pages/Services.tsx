@@ -6,16 +6,12 @@ import {
   Bot,
   Sprout,
   Scissors,
-  TreePine,
   Activity,
   Droplets,
-  Sun,
-  Workflow,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card"; // Assuming these are needed
-
+import { Card, CardContent } from "@/components/ui/card";
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +76,7 @@ const Services = () => {
               Experience premium automated landscaping services
             </p>
             <Button asChild size="lg">
-              <Link href="/quote">Book Now</Link>
+              <Link href="/services">Learn More</Link>
             </Button>
           </div>
         </div>
@@ -132,7 +128,7 @@ const Services = () => {
                   in their lawn care routine. Contact us for custom pricing based on your specific requirements.
                 </p>
                 <Button asChild>
-                  <Link href="/quote">Get Custom Quote</Link>
+                  <Link href="/services">Learn More</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -148,14 +144,14 @@ const Services = () => {
       >
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
-          <p className="mb-8">Contact us today to learn more about our automated solutions.</p>
+          <p className="mb-8">Sign up today to learn more about our automated solutions.</p>
           <Button
             asChild
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/quote">Get Started</Link>
+            <Link href="/services">Get Started</Link>
           </Button>
         </div>
       </motion.section>
