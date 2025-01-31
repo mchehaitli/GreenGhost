@@ -38,18 +38,17 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
   }, [entries]);
 
   return (
-    <div className="relative w-full h-full bg-muted/5 rounded-lg border">
+    <div className="relative w-full h-full bg-background rounded-lg border">
       <svg
         viewBox="0 0 400 300"
         className="w-full h-full"
         style={{ maxHeight: '400px' }}
       >
-        {/* Improved US Map Outline */}
+        {/* US Map Outline with fill */}
         <path
           d="M60,140 
-             L80,120 
-             L120,110 
-             L180,100 
+             L100,110 
+             L160,100 
              L220,90 
              L280,100 
              L340,120 
@@ -63,37 +62,50 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
              L160,240 
              L120,220 
              L80,180 
-             L60,140"
+             L60,140z"
+          fill="currentColor"
+          className="text-muted/5"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-muted-foreground"
+        />
+
+        {/* Major Region Dividers */}
+        <path
+          d="M200,90 L200,260 M140,120 L280,240"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1"
+          strokeDasharray="4,4"
           className="text-muted-foreground/30"
         />
 
         {/* Plot points for each ZIP code */}
         {points.map((point, index) => (
           <g key={`${point.id}-${index}`}>
-            {/* Larger glow effect */}
+            {/* Large outer glow */}
             <circle
               cx={point.coordinates[0]}
               cy={point.coordinates[1]}
-              r="10"
-              className="fill-primary/10"
-              style={{ filter: 'blur(6px)' }}
+              r="15"
+              className="fill-primary/5"
+              style={{ filter: 'blur(8px)' }}
             />
-            {/* Smaller glow for better contrast */}
+            {/* Medium glow */}
             <circle
               cx={point.coordinates[0]}
               cy={point.coordinates[1]}
-              r="6"
+              r="8"
               className="fill-primary/20"
-              style={{ filter: 'blur(3px)' }}
+              style={{ filter: 'blur(4px)' }}
             />
-            {/* Main dot */}
+            {/* Core dot */}
             <circle
               cx={point.coordinates[0]}
               cy={point.coordinates[1]}
-              r="3"
+              r="4"
               className="fill-primary"
             />
           </g>
