@@ -62,8 +62,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
       "Weekly automated lawn mowing",
       "Smart irrigation monitoring",
       "Priority scheduling",
-      "Up to 5,000 sq ft coverage",
-      "24/7 system monitoring"
+      "Up to 5,000 sq ft coverage"
     ],
     serviceFrequency: "Weekly",
     maxBookingsPerMonth: 4
