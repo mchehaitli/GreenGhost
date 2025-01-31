@@ -9,6 +9,10 @@ import {
   Scissors,
   Activity,
   Droplets,
+  Sun,
+  Leaf,
+  TreePine,
+  Flower2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -34,6 +38,36 @@ const Services = () => {
       title: "Scheduled Maintenance",
       description: "Regular automated maintenance to keep your lawn looking its best.",
       tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
+    },
+    {
+      icon: <Sun className="w-6 h-6" />,
+      title: "Solar-Powered Solutions",
+      description: "Eco-friendly robotic maintenance powered by solar energy.",
+      tooltip: "Our solar-powered maintenance systems reduce carbon footprint while providing reliable service around the clock."
+    },
+    {
+      icon: <Leaf className="w-6 h-6" />,
+      title: "Automated Leaf Collection",
+      description: "Smart systems that detect and remove fallen leaves.",
+      tooltip: "Advanced sensors identify and collect fallen leaves, maintaining a clean and healthy lawn year-round."
+    },
+    {
+      icon: <TreePine className="w-6 h-6" />,
+      title: "Tree Health Monitoring",
+      description: "AI-powered monitoring of tree health and growth.",
+      tooltip: "Sophisticated sensors monitor tree health indicators and alert you to potential issues before they become serious."
+    },
+    {
+      icon: <Flower2 className="w-6 h-6" />,
+      title: "Garden Care Automation",
+      description: "Smart solutions for flower beds and gardens.",
+      tooltip: "Automated care systems for your garden, including precise watering, fertilization, and maintenance schedules."
+    },
+    {
+      icon: <Activity className="w-6 h-6" />,
+      title: "Lawn Health Analytics",
+      description: "Real-time monitoring and analysis of lawn conditions.",
+      tooltip: "Advanced analytics provide insights into your lawn's health, growth patterns, and maintenance needs."
     }
   ];
 
@@ -86,14 +120,14 @@ const Services = () => {
       <section className="py-20 bg-muted/10">
         <div className="container">
           <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
             {isLoading ? (
               <>
-                {[...Array(3)].map((_, index) => (
+                {[...Array(8)].map((_, index) => (
                   <motion.div key={index} variants={itemVariants}>
                     <ServiceCardSkeleton />
                   </motion.div>
@@ -117,7 +151,6 @@ const Services = () => {
         </div>
       </section>
 
-      {/* Pricing Calculator Section */}
       <section className="py-20 bg-background">
         <div className="container">
           <div className="text-center mb-12">
