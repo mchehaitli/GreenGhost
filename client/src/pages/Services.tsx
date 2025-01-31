@@ -14,9 +14,9 @@ import {
 
 const Services = () => {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <section className="bg-slate-50 py-20">
+      <section className="bg-slate-50 py-20 flex items-center justify-center">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">Our Services</h1>
@@ -32,9 +32,9 @@ const Services = () => {
       </section>
 
       {/* Services Grid */}
-      <section className="py-20">
-        <div className="container">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <section className="py-20 flex-grow">
+        <div className="container max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
             <ServiceCard
               icon={<Bot className="w-6 h-6" />}
               title="Automated Mowing"
@@ -81,11 +81,11 @@ const Services = () => {
 
       {/* CTA Section */}
       <section className="bg-primary text-primary-foreground py-20">
-        <div className="container text-center">
+        <div className="container max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to Automate Your Landscape?
           </h2>
-          <p className="mb-8 max-w-2xl mx-auto">
+          <p className="mb-8 mx-auto">
             Contact us today to learn how our automated solutions can transform
             your property maintenance.
           </p>
