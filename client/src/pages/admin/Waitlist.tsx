@@ -27,9 +27,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Download, Users, TrendingUp, Map } from "lucide-react";
+import { Download, Users, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import WaitlistMapView from "@/components/WaitlistMapView";
 
 interface WaitlistEntry {
   id: number;
@@ -111,7 +110,7 @@ const AdminWaitlist = () => {
       </div>
 
       {/* Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -126,6 +125,7 @@ const AdminWaitlist = () => {
             </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -137,20 +137,6 @@ const AdminWaitlist = () => {
             <div className="text-2xl font-bold">{last7DaysSignups}</div>
             <p className="text-xs text-muted-foreground">
               New signups in the past week
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Regions Covered
-            </CardTitle>
-            <Map className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(regionData).length}</div>
-            <p className="text-xs text-muted-foreground">
-              Unique ZIP code regions
             </p>
           </CardContent>
         </Card>
@@ -213,21 +199,6 @@ const AdminWaitlist = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Map View */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Geographic Visualization</CardTitle>
-          <CardDescription>
-            Interactive map showing waitlist distribution
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] w-full">
-            <WaitlistMapView entries={entries} />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Data Table */}
       <Card>
