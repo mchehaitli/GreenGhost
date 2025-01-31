@@ -13,7 +13,7 @@ const Footer = () => {
               </a>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
-              Revolutionizing landscape care with AI and robotics.
+              Automated landscaping solutions for your home, city, or business
             </p>
           </div>
           <div>
