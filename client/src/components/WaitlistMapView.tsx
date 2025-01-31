@@ -1,6 +1,4 @@
 import { useMemo } from 'react';
-import Map, { Marker } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface WaitlistEntry {
   id: number;
@@ -8,24 +6,23 @@ interface WaitlistEntry {
   zip_code: string;
 }
 
-// Simple function to get approximate coordinates from ZIP code first digit
-// This is a simplified version - in production you'd want to use a proper geocoding service
+// Simple function to get approximate coordinates for US ZIP codes
 const getApproximateCoordinates = (zipCode: string) => {
-  // This is a very rough approximation for US ZIP codes
-  const regions: Record<string, [number, number]> = {
-    '0': [-73.935242, 41.850033], // Northeast
-    '1': [-71.058880, 42.360082], // Northeast
-    '2': [-77.036871, 38.907192], // East Coast
-    '3': [-84.387982, 33.748995], // Southeast
-    '4': [-84.512020, 39.103118], // Midwest
-    '5': [-93.265011, 44.977753], // Midwest
-    '6': [-97.743061, 30.267153], // South Central
-    '7': [-93.297850, 37.208957], // Central
-    '8': [-104.990251, 39.739236], // Mountain
-    '9': [-122.419416, 37.774929], // West Coast
+  // Map first digit of ZIP to relative coordinates on SVG
+  const coordinates: Record<string, [number, number]> = {
+    '0': [400, 150], // Northeast
+    '1': [380, 180], // Northeast
+    '2': [350, 250], // East Coast
+    '3': [300, 300], // Southeast
+    '4': [250, 200], // Midwest
+    '5': [200, 180], // Midwest
+    '6': [200, 300], // South Central
+    '7': [150, 200], // Central
+    '8': [100, 150], // Mountain
+    '9': [50, 200],  // West Coast
   };
-  
-  return regions[zipCode[0]] || [-98.5795, 39.8283]; // US center as fallback
+
+  return coordinates[zipCode[0]] || [250, 200]; // Center as fallback
 };
 
 interface WaitlistMapViewProps {
@@ -41,26 +38,43 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
   }, [entries]);
 
   return (
-    <Map
-      mapboxAccessToken="pk.eyJ1IjoiZ3JlZW5naG9zdHRlY2giLCJhIjoiY2xybjBqemx5MDJraDJrcGR4Z2g1Z3ZoYiJ9.mCLHB8FzkX_qXR5pKG_TFg"
-      initialViewState={{
-        longitude: -98.5795,
-        latitude: 39.8283,
-        zoom: 3
-      }}
-      style={{ width: '100%', height: '100%' }}
-      mapStyle="mapbox://styles/mapbox/dark-v11"
-    >
-      {points.map((point, index) => (
-        <Marker
-          key={`${point.id}-${index}`}
-          longitude={point.coordinates[0]}
-          latitude={point.coordinates[1]}
-        >
-          <div className="w-4 h-4 bg-primary rounded-full opacity-75 hover:opacity-100 transition-opacity" />
-        </Marker>
-      ))}
-    </Map>
+    <div className="relative w-full h-full bg-muted/10 rounded-lg">
+      <svg
+        viewBox="0 0 450 350"
+        className="w-full h-full"
+        style={{ maxHeight: '400px' }}
+      >
+        {/* Simplified US Map Outline */}
+        <path
+          d="M50,150 L100,100 L200,80 L300,90 L400,150 L380,200 L350,250 L300,300 L200,320 L100,250 L50,150"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-muted-foreground/20"
+        />
+
+        {/* Plot points for each ZIP code */}
+        {points.map((point, index) => (
+          <g key={`${point.id}-${index}`}>
+            {/* Glowing effect */}
+            <circle
+              cx={point.coordinates[0]}
+              cy={point.coordinates[1]}
+              r="8"
+              className="fill-primary/20"
+              style={{ filter: 'blur(4px)' }}
+            />
+            {/* Main dot */}
+            <circle
+              cx={point.coordinates[0]}
+              cy={point.coordinates[1]}
+              r="4"
+              className="fill-primary"
+            />
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 };
 
