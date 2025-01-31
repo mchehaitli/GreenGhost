@@ -26,7 +26,7 @@ const Navigation = () => {
       <div className="container flex h-16 items-center justify-between px-8">
         <Link href="/">
           <a className="flex items-center space-x-2">
-            <GhostMascot size="sm" />
+            <GhostMascot size="sm" animated={false} />
             <span className="text-xl font-bold text-primary">GreenGhost</span>
             <span className="text-xl font-bold text-foreground">Tech</span>
           </a>

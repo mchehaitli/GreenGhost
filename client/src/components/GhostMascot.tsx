@@ -6,9 +6,14 @@ import { cn } from "@/lib/utils";
 interface GhostMascotProps {
   className?: string;
   size?: "sm" | "md" | "lg";
+  animated?: boolean;
 }
 
-export const GhostMascot = ({ className, size = "md" }: GhostMascotProps) => {
+export const GhostMascot = ({ 
+  className, 
+  size = "md", 
+  animated = true 
+}: GhostMascotProps) => {
   const [isWaving, setIsWaving] = useState(false);
 
   const sizes = {
@@ -17,40 +22,42 @@ export const GhostMascot = ({ className, size = "md" }: GhostMascotProps) => {
     lg: "w-16 h-16"
   };
 
-  const floatingAnimation = {
+  const floatingAnimation = animated ? {
     y: [0, -10, 0],
     transition: {
       duration: 2,
       repeat: Infinity,
       ease: "easeInOut"
     }
-  };
+  } : {};
 
-  const waveAnimation = {
+  const waveAnimation = animated && isWaving ? {
     rotate: [0, -20, 20, -20, 20, 0],
     transition: {
       duration: 1,
       ease: "easeInOut"
     }
-  };
+  } : {};
 
   const handleClick = () => {
-    if (!isWaving) {
+    if (animated && !isWaving) {
       setIsWaving(true);
       setTimeout(() => setIsWaving(false), 1000);
     }
   };
 
+  const Component = animated ? motion.div : "div";
+
   return (
-    <motion.div
+    <Component
       className={cn("cursor-pointer text-primary", sizes[size], className)}
-      animate={isWaving ? waveAnimation : floatingAnimation}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
+      animate={waveAnimation || floatingAnimation}
+      whileHover={animated ? { scale: 1.1 } : {}}
+      whileTap={animated ? { scale: 0.9 } : {}}
       onClick={handleClick}
     >
       <Ghost className="w-full h-full" />
-    </motion.div>
+    </Component>
   );
 };
 
