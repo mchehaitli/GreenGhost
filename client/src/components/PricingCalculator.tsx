@@ -137,7 +137,7 @@ const PricingCalculator = () => {
 
           {/* Additional Services */}
           <div className="space-y-2">
-            <Label>Additional Services</Label>
+            <Label className="text-lg font-semibold">Additional Services</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {additionalServices.map((service) => (
                 <div key={service.id} className="flex items-center space-x-2">
