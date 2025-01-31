@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { Download, Users, TrendingUp, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import WaitlistMapView from "@/components/WaitlistMapView";
 
 interface WaitlistEntry {
   id: number;
@@ -44,7 +45,7 @@ const AdminWaitlist = () => {
 
   // Analytics calculations
   const totalSignups = entries.length;
-  const last7DaysSignups = entries.filter(entry => 
+  const last7DaysSignups = entries.filter(entry =>
     isWithinInterval(new Date(entry.created_at), {
       start: subDays(new Date(), 7),
       end: new Date()
@@ -170,10 +171,10 @@ const AdminWaitlist = () => {
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="signups" 
-                    stroke="#22c55e" 
+                  <Line
+                    type="monotone"
+                    dataKey="signups"
+                    stroke="#22c55e"
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -212,6 +213,21 @@ const AdminWaitlist = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Map View */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Geographic Visualization</CardTitle>
+          <CardDescription>
+            Interactive map showing waitlist distribution
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px] w-full">
+            <WaitlistMapView entries={entries} />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Data Table */}
       <Card>
