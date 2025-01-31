@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trophy, Calendar, Robot } from "lucide-react";
+import { Loader2, Trophy, Calendar, Bot } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -44,12 +44,12 @@ const Waitlist = () => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsSubmitting(false);
-    
+
     toast({
       title: "Successfully joined waitlist!",
       description: "You're now entered for a chance to win free maintenance for a year.",
     });
-    
+
     form.reset();
   };
 
@@ -172,7 +172,7 @@ const Waitlist = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Robot className="h-5 w-5 text-primary" />
+                  <Bot className="h-5 w-5 text-primary" />
                   Beat the Rush
                 </CardTitle>
               </CardHeader>
