@@ -44,7 +44,7 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
         className="w-full h-full"
         style={{ maxHeight: '400px' }}
       >
-        {/* US Map Outline with fill */}
+        {/* US Map Fill */}
         <path
           d="M60,140 
              L100,110 
@@ -63,23 +63,42 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
              L120,220 
              L80,180 
              L60,140z"
-          fill="currentColor"
-          className="text-muted/5"
-          stroke="currentColor"
+          className="fill-muted/5"
+        />
+
+        {/* US Map Outline - separate from fill for better visibility */}
+        <path
+          d="M60,140 
+             L100,110 
+             L160,100 
+             L220,90 
+             L280,100 
+             L340,120 
+             L380,140 
+             L360,180 
+             L340,200 
+             L320,220 
+             L280,240 
+             L240,250 
+             L200,260 
+             L160,240 
+             L120,220 
+             L80,180 
+             L60,140z"
+          fill="none"
+          className="stroke-muted-foreground"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-muted-foreground"
         />
 
         {/* Major Region Dividers */}
         <path
           d="M200,90 L200,260 M140,120 L280,240"
           fill="none"
-          stroke="currentColor"
+          className="stroke-muted-foreground/30"
           strokeWidth="1"
           strokeDasharray="4,4"
-          className="text-muted-foreground/30"
         />
 
         {/* Plot points for each ZIP code */}
