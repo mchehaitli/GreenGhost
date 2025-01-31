@@ -31,6 +31,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 49.99,
     description: "Perfect starter package for small yards",
     features: [
+      "Includes all À La Carte features",
       "Monthly automated lawn mowing",
       "Basic system monitoring",
       "Email support",
@@ -45,9 +46,9 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 89.99,
     description: "Essential automated lawn care for smaller properties",
     features: [
+      "Includes all Starter features",
       "Automated lawn mowing twice a month",
       "Basic health monitoring",
-      "Email support",
       "Up to 2,000 sq ft coverage"
     ],
     serviceFrequency: "Bi-weekly",
@@ -59,6 +60,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 149.99,
     description: "Comprehensive care with smart features for medium-sized properties",
     features: [
+      "Includes all Basic features",
       "Weekly automated lawn mowing",
       "Smart irrigation monitoring",
       "Priority scheduling",
@@ -73,6 +75,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 199.99,
     description: "Full-service automated maintenance for larger properties",
     features: [
+      "Includes all Smart Maintenance features",
       "Unlimited automated mowing",
       "Advanced health monitoring",
       "Premium support with dedicated rep",
