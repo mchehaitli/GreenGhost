@@ -10,6 +10,7 @@ import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
+import AdminWaitlist from "@/pages/admin/Waitlist";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
+      <Route path="/admin/waitlist" component={AdminWaitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route component={NotFound} />
     </Switch>
