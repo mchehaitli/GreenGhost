@@ -5,7 +5,7 @@ const About = () => {
   return (
     <div>
       {/* Header */}
-      <section className="bg-slate-50 py-20">
+      <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">About GreenGhost Tech</h1>
@@ -17,7 +17,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-20">
+      <section className="py-20 bg-background/50">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -34,11 +34,11 @@ const About = () => {
                   spaces.
                 </p>
               </div>
-              <div className="aspect-video bg-slate-100 rounded-lg">
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1527716916084-e8ee6cd469e2"
                   alt="Modern Landscaping"
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -47,7 +47,7 @@ const About = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="bg-slate-50 py-20">
+      <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
@@ -61,7 +61,7 @@ const About = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 bg-background/50">
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">
             Experience the Future of Landscaping
