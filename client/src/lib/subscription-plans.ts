@@ -33,7 +33,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     features: [
       "Monthly automated lawn mowing",
       "Trimming and edging",
-      "Email support",
       "Up to 1,000 sq ft coverage"
     ],
     serviceFrequency: "Monthly",
