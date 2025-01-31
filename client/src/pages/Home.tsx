@@ -12,9 +12,12 @@ import {
 import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import CircularSubscriptionPlans from "@/components/CircularSubscriptionPlans";
 
 const Home = () => {
+  // Filter out À La Carte plan for center placement
+  const centerPlan = subscriptionPlans.find(plan => plan.id === "alacarte");
+  const tierPlans = subscriptionPlans.filter(plan => plan.id !== "alacarte").sort((a, b) => (a.price || 0) - (b.price || 0));
+
   return (
     <div>
       <Hero />
@@ -98,9 +101,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Updated Pricing Section with Circular Layout */}
+      {/* Updated Pricing Section */}
       <section className="py-20 bg-background border-t border-border/40">
-        <div className="container">
+        <div className="container max-w-7xl">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold mb-4">Simple, Affordable Plans</h2>
             <p className="text-muted-foreground">
@@ -109,7 +112,87 @@ const Home = () => {
             </p>
           </div>
 
-          <CircularSubscriptionPlans />
+          <div className="grid gap-8">
+            {/* Center À La Carte Plan */}
+            {centerPlan && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mx-auto max-w-md"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Card className="bg-primary/5 border-primary/20">
+                    <CardHeader>
+                      <CardTitle className="text-center">
+                        <span className="text-2xl font-bold text-primary">{centerPlan.name}</span>
+                      </CardTitle>
+                      <CardDescription className="text-center">{centerPlan.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2 mb-6">
+                        {centerPlan.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-sm">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button asChild className="w-full">
+                        <Link href="/quote">Get Started</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* Subscription Tiers */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
+              {tierPlans.map((plan, index) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Card className="h-full">
+                      <CardHeader>
+                        <CardTitle className="flex justify-between items-start">
+                          <span>{plan.name}</span>
+                          <span className="text-xl font-bold text-primary">
+                            ${plan.price}
+                            <span className="text-sm text-muted-foreground">/mo</span>
+                          </span>
+                        </CardTitle>
+                        <CardDescription>{plan.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2 mb-6">
+                          {plan.features.slice(0, 3).map((feature, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                              <span className="text-sm">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <Button asChild className="w-full">
+                          <Link href="/quote">Select Plan</Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-12 text-center">
             <p className="text-muted-foreground mb-4">
