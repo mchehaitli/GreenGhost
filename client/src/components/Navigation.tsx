@@ -17,7 +17,6 @@ const Navigation = () => {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
-    { href: "/quote", label: "Get Quote" },
     { href: "/about", label: "About" },
   ];
 
@@ -50,7 +49,7 @@ const Navigation = () => {
             </Link>
           ))}
           <Button asChild>
-            <Link href="/quote">Get Started</Link>
+            <Link href="/services">Learn More</Link>
           </Button>
         </nav>
 

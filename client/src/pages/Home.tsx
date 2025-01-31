@@ -142,7 +142,7 @@ const Home = () => {
                         ))}
                       </ul>
                       <Button asChild className="w-full">
-                        <Link href="/quote">Get Started</Link>
+                        <Link href="/services">Get Started</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -184,7 +184,7 @@ const Home = () => {
                           ))}
                         </ul>
                         <Button asChild className="w-full">
-                          <Link href="/quote">Select Plan</Link>
+                          <Link href="/services">Select Plan</Link>
                         </Button>
                       </CardContent>
                     </Card>
@@ -199,8 +199,8 @@ const Home = () => {
               All plans include our automated service system with one dedicated representative
               and robotic maintenance equipment.
             </p>
-            <Button variant="outline" size="lg">
-              Schedule a Demo
+            <Button asChild variant="outline" size="lg">
+              <Link href="/services">View All Services</Link>
             </Button>
           </div>
         </div>
@@ -227,7 +227,7 @@ const Home = () => {
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/quote">Get Your Free Quote</Link>
+            <Link href="/services">View Our Services</Link>
           </Button>
         </div>
       </motion.section>

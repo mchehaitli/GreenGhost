@@ -18,10 +18,10 @@ const Hero = () => {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">
-              <Link href="/quote">Get Started</Link>
+              <Link href="/services">View Services</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/services">Learn More</Link>
+              <Link href="/about">About Us</Link>
             </Button>
           </div>
         </div>

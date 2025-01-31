@@ -53,9 +53,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/quote">
+                <Link href="/services">
                   <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
-                    Get Quote
+                    Our Solutions
                   </a>
                 </Link>
               </li>
