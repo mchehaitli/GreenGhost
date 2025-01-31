@@ -73,17 +73,17 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     id: "premium",
     name: "Complete Automation",
     price: 199.99,
-    description: "Full-service automated maintenance for larger properties",
+    description: "Full-service automated maintenance with comprehensive features",
     features: [
       "Includes all Smart Maintenance features",
-      "Unlimited automated mowing",
+      "Bi-weekly automated mowing",
       "Advanced health monitoring",
       "Premium support with dedicated rep",
       "Up to 10,000 sq ft coverage",
       "Custom scheduling",
       "Seasonal treatment planning"
     ],
-    serviceFrequency: "Unlimited",
+    serviceFrequency: "Bi-weekly",
     maxBookingsPerMonth: 8
   }
 ];
