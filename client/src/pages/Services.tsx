@@ -13,89 +13,69 @@ import {
 } from "lucide-react";
 
 const Services = () => {
+  const services = [
+    {
+      icon: <Bot className="w-6 h-6" />,
+      title: "Automated Lawn Mowing",
+      description: "Precision cutting with robotic mowers for a perfect lawn every time."
+    },
+    {
+      icon: <Droplets className="w-6 h-6" />,
+      title: "Smart Irrigation",
+      description: "Water-efficient systems that adapt to weather conditions."
+    },
+    {
+      icon: <Scissors className="w-6 h-6" />,
+      title: "Scheduled Maintenance",
+      description: "Regular automated maintenance to keep your lawn looking its best."
+    }
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen">
       {/* Header */}
-      <section className="bg-background/50 py-20 flex items-center justify-center">
+      <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">Our Services</h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Discover our comprehensive range of automated landscaping services
-              designed to keep your property beautiful year-round.
+              Experience premium automated landscaping services
             </p>
             <Button asChild size="lg">
-              <Link href="/quote">Get Free Quote</Link>
+              <Link href="/quote">Book Now</Link>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Services Grid */}
-      <section className="py-20 flex-grow bg-background">
-        <div className="container max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
-            <ServiceCard
-              icon={<Bot className="w-6 h-6" />}
-              title="Automated Mowing"
-              description="Precision robotic mowing systems that maintain your lawn at the perfect height."
-            />
-            <ServiceCard
-              icon={<Droplets className="w-6 h-6" />}
-              title="Smart Irrigation"
-              description="Weather-adaptive irrigation systems that optimize water usage."
-            />
-            <ServiceCard
-              icon={<Scissors className="w-6 h-6" />}
-              title="Trimming & Edging"
-              description="Automated edge maintenance and precision trimming for a polished look."
-            />
-            <ServiceCard
-              icon={<TreePine className="w-6 h-6" />}
-              title="Tree Care"
-              description="Monitored tree health and automated pruning schedules."
-            />
-            <ServiceCard
-              icon={<Activity className="w-6 h-6" />}
-              title="Lawn Health Monitoring"
-              description="Real-time monitoring of soil conditions and lawn health metrics."
-            />
-            <ServiceCard
-              icon={<Sun className="w-6 h-6" />}
-              title="Climate Control"
-              description="Smart systems that adjust care based on weather conditions."
-            />
-            <ServiceCard
-              icon={<Sprout className="w-6 h-6" />}
-              title="Garden Maintenance"
-              description="Automated care for flower beds and vegetable gardens."
-            />
-            <ServiceCard
-              icon={<Workflow className="w-6 h-6" />}
-              title="System Integration"
-              description="Seamless integration of all automated landscaping systems."
-            />
+      <section className="py-20 bg-muted/10">
+        <div className="container">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service, index) => (
+              <ServiceCard
+                key={index}
+                icon={service.icon}
+                title={service.title}
+                description={service.description}
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA */}
       <section className="bg-primary text-primary-foreground py-20">
-        <div className="container max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Automate Your Landscape?
-          </h2>
-          <p className="mb-8 mx-auto">
-            Contact us today to learn how our automated solutions can transform
-            your property maintenance.
-          </p>
+        <div className="container text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
+          <p className="mb-8">Contact us today to learn more about our automated solutions.</p>
           <Button
             asChild
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/quote">Request a Quote</Link>
+            <Link href="/quote">Get Started</Link>
           </Button>
         </div>
       </section>
