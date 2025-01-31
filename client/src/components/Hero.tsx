@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { GhostMascot } from "./GhostMascot";
 
 const Hero = () => {
   return (
     <div className="relative flex items-center justify-center min-h-[80vh] bg-background">
       <div className="container mx-auto px-8">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
+          <GhostMascot size="lg" className="mb-8" />
           <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
             The Future of Lawn Care is{" "}
             <span className="text-primary">Automated</span>
