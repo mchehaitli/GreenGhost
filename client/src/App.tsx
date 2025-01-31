@@ -29,37 +29,16 @@ function Router() {
 }
 
 function App() {
-  // Initialize state for dialog visibility
-  const [showDialog, setShowDialog] = useState<boolean>(false);
+  const [showWaitlistPopup, setShowWaitlistPopup] = useState(false);
 
   useEffect(() => {
-    // Check if we're in the browser environment
-    if (typeof window === 'undefined') return;
-
-    // Create a timeout to show the dialog after 3 seconds
-    const timeoutId = setTimeout(() => {
-      // Check if the user has seen the dialog before
-      const hasSeenDialog = window.localStorage.getItem('hasSeenWaitlistDialog');
-
-      if (!hasSeenDialog) {
-        setShowDialog(true);
-      }
+    // Simple timer to show popup after 3 seconds
+    const timer = setTimeout(() => {
+      setShowWaitlistPopup(true);
     }, 3000);
 
-    // Cleanup function to clear the timeout
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, []); // Empty dependency array means this runs once on mount
-
-  // Handler for dialog state changes
-  const handleDialogChange = (open: boolean) => {
-    setShowDialog(open);
-    if (!open) {
-      // When dialog is closed, mark it as seen
-      window.localStorage.setItem('hasSeenWaitlistDialog', 'true');
-    }
-  };
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -70,8 +49,10 @@ function App() {
         </main>
         <Footer />
         <WaitlistDialog 
-          open={showDialog} 
-          onOpenChange={handleDialogChange}
+          open={showWaitlistPopup}
+          onOpenChange={(open) => {
+            setShowWaitlistPopup(open);
+          }}
         />
       </div>
       <Toaster />
