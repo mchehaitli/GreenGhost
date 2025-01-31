@@ -63,10 +63,10 @@ const WaitlistDialog = ({ open = false, onOpenChange }: WaitlistDialogProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[531px]">
         <DialogHeader>
-          <DialogTitle>Join the Future of Landscaping</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl">Join the Future of Landscaping</DialogTitle>
+          <DialogDescription className="text-base">
             Be among the first to experience automated landscape maintenance.
             Join our waitlist for early access and a chance to win a year of free service!
           </DialogDescription>
