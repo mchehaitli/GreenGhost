@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import {
   Bot,
   Activity,
-  Clock,
+  Waves,
   CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -63,10 +63,10 @@ const Home = () => {
               <Card className="h-full transition-all duration-300 hover:shadow-lg">
                 <CardContent className="pt-6">
                   <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
-                    <Clock className="w-6 h-6 text-primary" />
+                    <Waves className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">24/7 Service</h3>
-                  <p className="text-muted-foreground">Automated systems work around the clock to maintain your property.</p>
+                  <h3 className="font-semibold mb-2">Pool Servicing</h3>
+                  <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
                 </CardContent>
               </Card>
             </motion.div>
