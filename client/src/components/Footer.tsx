@@ -53,6 +53,13 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/waitlist">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
+                    Join Waitlist
+                  </a>
+                </Link>
+              </li>
+              <li>
                 <Link href="/services">
                   <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Our Solutions
@@ -69,6 +76,9 @@ const Footer = () => {
               </li>
               <li className="text-sm text-muted-foreground">
                 (555) 123-4567
+              </li>
+              <li className="text-sm text-muted-foreground">
+                Beta Launch: Summer 2025
               </li>
             </ul>
           </div>
