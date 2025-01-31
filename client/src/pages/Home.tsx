@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const Home = () => {
+export const Home = () => {
   const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
 
   return (
@@ -23,73 +23,51 @@ const Home = () => {
       {/* Technology Preview Section */}
       <section className="py-20 bg-gradient-to-b from-background to-primary/5 border-t border-border/40">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl font-bold mb-6">
-                Meet Your New Groundskeeper
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                Our autonomous lawn care robots use advanced AI and precision sensors to deliver 
-                perfect cuts every time. Rain or shine, day or night, they work tirelessly to 
-                keep your lawn in pristine condition.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold">24/7 Silent Operation</h3>
-                    <p className="text-muted-foreground">
-                      Whisper-quiet technology means your lawn gets maintained without disturbing the peace
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold">Smart Navigation</h3>
-                    <p className="text-muted-foreground">
-                      Advanced sensors ensure precise coverage and obstacle avoidance
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold">Weather-Adaptive</h3>
-                    <p className="text-muted-foreground">
-                      Automatically adjusts mowing patterns based on weather conditions and grass growth
-                    </p>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto"
+          >
+            <h2 className="text-4xl font-bold mb-6">
+              Meet Your New Groundskeeper
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8">
+              Our autonomous lawn care robots use advanced AI and precision sensors to deliver 
+              perfect cuts every time. Rain or shine, day or night, they work tirelessly to 
+              keep your lawn in pristine condition.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">24/7 Silent Operation</h3>
+                  <p className="text-muted-foreground">
+                    Whisper-quiet technology means your lawn gets maintained without disturbing the peace
+                  </p>
                 </div>
               </div>
-            </motion.div>
-            <motion.div
-              className="relative rounded-2xl overflow-hidden shadow-2xl"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-            >
-              <div className="aspect-video relative">
-                <img
-                  src="/attached_assets/01IN30PXL652BXAyqX0nJgD-2.fit_lim.size_1050x.jpg"
-                  alt="GreenGhost Autonomous Lawn Mower"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">Smart Navigation</h3>
+                  <p className="text-muted-foreground">
+                    Advanced sensors ensure precise coverage and obstacle avoidance
+                  </p>
+                </div>
               </div>
-              <div className="absolute bottom-4 left-4">
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  Coming Summer 2025
-                </Badge>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">Weather-Adaptive</h3>
+                  <p className="text-muted-foreground">
+                    Automatically adjusts mowing patterns based on weather conditions and grass growth
+                  </p>
+                </div>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
