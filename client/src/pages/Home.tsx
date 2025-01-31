@@ -130,11 +130,9 @@ const Home = () => {
                       <CardTitle className="text-center">
                         <span className="text-2xl font-bold text-primary">{centerPlan.name}</span>
                       </CardTitle>
-                      <div className="text-center mt-2">
-                        <span className="text-3xl font-bold">${centerPlan.price}</span>
-                        <span className="text-sm text-muted-foreground ml-1">/month</span>
-                      </div>
-                      <CardDescription className="text-center mt-2">{centerPlan.description}</CardDescription>
+                      <CardDescription className="text-center mt-2">
+                        Customize your automated lawn care experience. Starting at $29.99.
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2 mb-6">
