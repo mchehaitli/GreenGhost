@@ -130,7 +130,11 @@ const Home = () => {
                       <CardTitle className="text-center">
                         <span className="text-2xl font-bold text-primary">{centerPlan.name}</span>
                       </CardTitle>
-                      <CardDescription className="text-center">{centerPlan.description}</CardDescription>
+                      <div className="text-center mt-2">
+                        <span className="text-3xl font-bold">${centerPlan.price}</span>
+                        <span className="text-sm text-muted-foreground ml-1">/month</span>
+                      </div>
+                      <CardDescription className="text-center mt-2">{centerPlan.description}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2 mb-6">
@@ -142,7 +146,7 @@ const Home = () => {
                         ))}
                       </ul>
                       <Button asChild className="w-full">
-                        <Link href="/services">Get Started</Link>
+                        <Link href="/services">Learn More</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -165,14 +169,14 @@ const Home = () => {
                   >
                     <Card className="h-full">
                       <CardHeader>
-                        <CardTitle className="flex justify-between items-start">
-                          <span>{plan.name}</span>
-                          <span className="text-xl font-bold text-primary">
-                            ${plan.price}
-                            <span className="text-sm text-muted-foreground">/mo</span>
-                          </span>
+                        <CardTitle className="text-center">
+                          {plan.name}
                         </CardTitle>
-                        <CardDescription>{plan.description}</CardDescription>
+                        <div className="text-center mt-2">
+                          <span className="text-3xl font-bold text-primary">${plan.price}</span>
+                          <span className="text-sm text-muted-foreground ml-1">/month</span>
+                        </div>
+                        <CardDescription className="text-center mt-2">{plan.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ul className="space-y-2 mb-6">
