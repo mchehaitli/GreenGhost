@@ -38,7 +38,6 @@ const MeasurementLauncher = () => {
   // Enhanced speech synthesis with more natural voice
   const speak = (text: string) => {
     if ('speechSynthesis' in window) {
-      const synth = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(text);
 
       // Customize voice to sound more natural
@@ -46,11 +45,13 @@ const MeasurementLauncher = () => {
       utterance.pitch = 1.1; // Slightly higher pitch
       utterance.volume = 1.0;
 
-      // Try to use a more natural-sounding voice if available
-      const voices = synth.getVoices();
+      // Try to use a more natural-sounding voice
+      const voices = window.speechSynthesis.getVoices();
+      console.log("Available voices:", voices.map(v => v.name));
+
       const preferredVoice = voices.find(voice => 
-        voice.name.includes('Google') || // Prefer Google voices
-        voice.name.includes('Natural') || // Or voices labeled as natural
+        voice.name.includes('Google') || 
+        voice.name.includes('Natural') || 
         voice.name.includes('Premium')
       );
 
@@ -58,20 +59,42 @@ const MeasurementLauncher = () => {
         utterance.voice = preferredVoice;
       }
 
-      synth.cancel(); // Cancel any ongoing speech
-      synth.speak(utterance);
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      window.speechSynthesis.speak(utterance);
+
+      console.log("Speaking:", text);
+    } else {
+      console.log("Speech synthesis not available");
     }
   };
 
+  // Initialize speech synthesis
   useEffect(() => {
-    if (isMeasuring && MEASUREMENT_STEPS[currentStep]) {
-      speak(MEASUREMENT_STEPS[currentStep].voicePrompt);
-    }
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+    // Ensure voices are loaded
+    const initVoices = () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
       }
     };
+
+    initVoices();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.addEventListener('voiceschanged', initVoices);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.removeEventListener('voiceschanged', initVoices);
+      }
+    };
+  }, []);
+
+  // Handle step changes and voice prompts
+  useEffect(() => {
+    if (isMeasuring && MEASUREMENT_STEPS[currentStep]) {
+      console.log("Current step:", currentStep);
+      speak(MEASUREMENT_STEPS[currentStep].voicePrompt);
+    }
   }, [currentStep, isMeasuring]);
 
   const handleMeasurement = async () => {
@@ -123,6 +146,8 @@ const MeasurementLauncher = () => {
   };
 
   const handleNextStep = () => {
+    console.log("Handling next step, current step:", currentStep);
+
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
       // Simulate measurement for the current step
       const simulatedMeasurement = Math.random() * 20 + 10; // 10-30 feet
@@ -140,7 +165,10 @@ const MeasurementLauncher = () => {
       }
 
       // Advance to next step
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => {
+        console.log("Advancing to step:", prev + 1);
+        return prev + 1;
+      });
     } else {
       // Final measurement and completion
       const finalArea = Math.round(measurements.area);
@@ -271,7 +299,10 @@ const MeasurementLauncher = () => {
                         </Button>
                         <Button 
                           className="flex-1 bg-primary/90 hover:bg-primary"
-                          onClick={handleNextStep}
+                          onClick={() => {
+                            console.log("Next button clicked");
+                            handleNextStep();
+                          }}
                         >
                           {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
                         </Button>
