@@ -1,12 +1,8 @@
 import Hero from "@/components/Hero";
-import ServiceCard from "@/components/ServiceCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
   Bot,
-  Sprout,
-  Scissors,
-  TreePine,
   Activity,
   Clock,
   CheckCircle2,
@@ -27,21 +23,53 @@ const Home = () => {
             Why Choose GreenGhost Tech?
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <ServiceCard
-              icon={<Bot className="w-6 h-6" />}
-              title="Automated Precision"
-              description="Advanced robotics and AI systems for precise lawn care and maintenance."
-            />
-            <ServiceCard
-              icon={<Activity className="w-6 h-6" />}
-              title="Smart Monitoring"
-              description="Real-time monitoring of your landscape's health and maintenance needs."
-            />
-            <ServiceCard
-              icon={<Clock className="w-6 h-6" />}
-              title="24/7 Service"
-              description="Automated systems work around the clock to maintain your property."
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
+                    <Bot className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Automated Precision</h3>
+                  <p className="text-muted-foreground">Advanced robotics and AI systems for precise lawn care and maintenance.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
+                    <Activity className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Smart Monitoring</h3>
+                  <p className="text-muted-foreground">Real-time monitoring of your landscape's health and maintenance needs.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">24/7 Service</h3>
+                  <p className="text-muted-foreground">Automated systems work around the clock to maintain your property.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -59,17 +87,19 @@ const Home = () => {
           <motion.div 
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, staggerChildren: 0.1 }}
+            viewport={{ once: true }}
           >
             {subscriptionPlans.map((plan, index) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                viewport={{ once: true }}
               >
                 <Card className="h-full">
                   <CardHeader>
@@ -102,42 +132,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Services Preview */}
-      <section className="py-20">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Services</h2>
-            <p className="text-muted-foreground">
-              Comprehensive landscaping solutions powered by cutting-edge technology
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <ServiceCard
-              icon={<Scissors className="w-6 h-6" />}
-              title="Lawn Maintenance"
-              description="Automated mowing, edging, and trimming services for a perfectly maintained lawn."
-            />
-            <ServiceCard
-              icon={<Sprout className="w-6 h-6" />}
-              title="Garden Care"
-              description="Smart irrigation and plant health monitoring systems for thriving gardens."
-            />
-            <ServiceCard
-              icon={<TreePine className="w-6 h-6" />}
-              title="Landscape Design"
-              description="Custom landscape design with sustainable and low-maintenance solutions."
-            />
-          </div>
-          <div className="text-center mt-12">
-            <Button asChild size="lg">
-              <Link href="/services">View All Services</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
+      <motion.section 
+        className="py-20 bg-primary text-primary-foreground"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+      >
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to Transform Your Landscape?
@@ -155,7 +157,7 @@ const Home = () => {
             <Link href="/quote">Get Your Free Quote</Link>
           </Button>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };
