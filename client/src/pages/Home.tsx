@@ -65,15 +65,10 @@ const Home = () => {
               <Card className="h-full transition-all duration-300 hover:shadow-lg">
                 <CardContent className="pt-6">
                   <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
-                    <Waves className="w-6 h-6 text-primary" />
+                    <Sprout className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">Pool Servicing</h3>
-                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                      Launching Summer 2025
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
+                  <h3 className="font-semibold mb-2">Year-Round Green</h3>
+                  <p className="text-muted-foreground">Exclusive fertilizer blend keeping your lawn lush and green through all seasons.</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -86,10 +81,15 @@ const Home = () => {
               <Card className="h-full transition-all duration-300 hover:shadow-lg">
                 <CardContent className="pt-6">
                   <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
-                    <Sprout className="w-6 h-6 text-primary" />
+                    <Waves className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">Year-Round Green</h3>
-                  <p className="text-muted-foreground">Exclusive fertilizer blend keeping your lawn lush and green through all seasons.</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold">Pool Servicing</h3>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      Launching Summer 2025
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
                 </CardContent>
               </Card>
             </motion.div>
