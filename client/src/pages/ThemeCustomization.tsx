@@ -5,10 +5,22 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { ThemePreview } from "@/components/ThemePreview";
 
 export default function ThemeCustomization() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    try {
+      return {
+        primary: "hsl(142, 76%, 36%)",
+        variant: "professional",
+        appearance: "dark"
+      };
+    } catch {
+      return null;
+    }
+  });
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -32,9 +44,19 @@ export default function ThemeCustomization() {
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+
+      // Preview the theme
+      try {
+        const text = await file.text();
+        const theme = JSON.parse(text);
+        setCurrentTheme(theme);
+      } catch (error) {
+        console.error('Error parsing theme file:', error);
+      }
     }
   };
 
@@ -47,7 +69,9 @@ export default function ThemeCustomization() {
 
   return (
     <div className="min-h-screen py-20 bg-background">
-      <div className="container max-w-2xl">
+      <div className="container max-w-2xl space-y-8">
+        {currentTheme && <ThemePreview currentTheme={currentTheme} />}
+
         <Card>
           <CardHeader>
             <CardTitle>Theme Customization</CardTitle>
