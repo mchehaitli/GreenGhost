@@ -28,7 +28,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   {
     id: "starter",
     name: "Starter Automation",
-    price: 49.99,
+    price: 39.99,
     description: "Perfect starter package for small yards",
     features: [
       "Includes all À La Carte features",
@@ -43,7 +43,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   {
     id: "basic",
     name: "Basic Automation",
-    price: 89.99,
+    price: 69.99,
     description: "Essential automated lawn care for smaller properties",
     features: [
       "Includes all Starter features",
@@ -57,7 +57,7 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   {
     id: "standard",
     name: "Smart Maintenance",
-    price: 149.99,
+    price: 129.99,
     description: "Comprehensive care with smart features for medium-sized properties",
     features: [
       "Includes all Basic features",
