@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ARCalibrationTool from "./ARCalibrationTool";
 
 const MEASUREMENT_STEPS = [
   {
@@ -34,8 +35,9 @@ const MeasurementLauncher = () => {
     width: 0,
     area: 0
   });
+  const [showCalibration, setShowCalibration] = useState(false);
+  const [isCalibrated, setIsCalibrated] = useState(false);
 
-  // Enhanced speech synthesis with more natural voice
   const speak = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -84,7 +86,27 @@ const MeasurementLauncher = () => {
     }
   }, [currentStep, isMeasuring]);
 
+  useEffect(() => {
+    const savedCalibration = localStorage.getItem('arCalibration');
+    if (savedCalibration) {
+      const calibrationData = JSON.parse(savedCalibration);
+      const calibrationAge = new Date().getTime() - new Date(calibrationData.lastCalibrated).getTime();
+      const calibrationValid = calibrationAge < 24 * 60 * 60 * 1000; // 24 hours
+      setIsCalibrated(calibrationValid);
+    }
+  }, []);
+
   const handleMeasurement = async () => {
+    const savedCalibration = localStorage.getItem('arCalibration');
+    if (!savedCalibration) {
+      toast({
+        title: "Calibration Required",
+        description: "Please calibrate your device first for accurate measurements.",
+      });
+      setShowCalibration(true);
+      return;
+    }
+
     try {
       const constraints = {
         video: {
@@ -161,201 +183,216 @@ const MeasurementLauncher = () => {
 
   return (
     <div className={`${isMeasuring ? 'fixed inset-0 z-50 bg-background' : ''}`}>
-      <Card className={`${isMeasuring ? 'h-full border-0 rounded-none' : 'w-full max-w-md mx-auto'}`}>
-        <CardHeader className={isMeasuring ? 'absolute top-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm' : ''}>
-          <CardTitle>Measure Your Lawn</CardTitle>
-        </CardHeader>
-        <CardContent className={`space-y-4 ${isMeasuring ? 'h-full p-0' : ''}`}>
-          {!isMeasuring ? (
-            <p className="text-muted-foreground">
-              Get accurate measurements of your lawn using your device's camera. Our AI-powered
-              system will guide you through the process with voice instructions.
-            </p>
-          ) : null}
-
-          <AnimatePresence>
-            {!isMeasuring ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Button
-                  className="w-full"
-                  onClick={handleMeasurement}
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  Start Camera Measurement
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                className="h-full relative"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="relative h-[calc(100vh-8rem)]">
-                  {/* Camera feed container */}
-                  <div className="absolute inset-0 z-0">
-                    {videoElement && (
-                      <div ref={el => el?.appendChild(videoElement)} className="h-full" />
-                    )}
-                  </div>
-
-                  {/* AR Overlay */}
-                  <div className="absolute inset-0 z-10 pointer-events-none">
-                    {/* Step-specific AR elements */}
-                    {currentStep === 0 && (
-                      <>
-                        {/* Corner detection guide */}
-                        <motion.div
-                          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                          animate={{ scale: [0.8, 1.2, 0.8] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <svg width="200" height="200" viewBox="0 0 200 200" className="stroke-primary">
-                            <rect
-                              x="20" y="20"
-                              width="160" height="160"
-                              fill="none"
-                              strokeWidth="4"
-                              strokeDasharray="20,10"
-                            />
-                            <circle
-                              cx="100" cy="100"
-                              r="5"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </motion.div>
-                      </>
-                    )}
-
-                    {currentStep === 1 && (
-                      <>
-                        {/* Edge measurement guide */}
-                        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex items-center">
-                          <motion.div
-                            className="h-1 w-80 bg-primary/50"
-                            animate={{ scaleX: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        </div>
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
-                          <motion.div
-                            className="w-full h-1 bg-primary/30"
-                            animate={{ opacity: [0.2, 0.5, 0.2] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {currentStep === 2 && (
-                      <>
-                        {/* Walking measurement guide */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <motion.div
-                            className="w-1 h-80 bg-primary/50"
-                            animate={{ scaleY: [0.8, 1.2, 0.8] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                          <motion.div
-                            className="absolute h-full w-1 bg-primary/30"
-                            animate={{ opacity: [0.2, 0.5, 0.2] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {/* Distance markers */}
-                    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
-                      {[...Array(5)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="h-1 w-8 bg-primary"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Controls overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-6">
-                    <motion.p
-                      className="text-white text-center text-xl font-medium mb-6"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      key={currentStep}
+      {showCalibration ? (
+        <div className="p-4">
+          <ARCalibrationTool />
+          <Button
+            variant="outline"
+            className="mt-4 w-full"
+            onClick={() => setShowCalibration(false)}
+          >
+            Back to Measurement
+          </Button>
+        </div>
+      ) : (
+        <Card className={`${isMeasuring ? 'h-full border-0 rounded-none' : 'w-full max-w-md mx-auto'}`}>
+          <CardHeader>
+            <CardTitle>Measure Your Lawn</CardTitle>
+          </CardHeader>
+          <CardContent className={`space-y-4 ${isMeasuring ? 'h-full p-0' : ''}`}>
+            {!isMeasuring && (
+              <>
+                <p className="text-muted-foreground">
+                  Get accurate measurements of your lawn using your device's camera.
+                  {!isCalibrated && " Please calibrate your device first for accurate measurements."}
+                </p>
+                <div className="space-y-2">
+                  {!isCalibrated && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowCalibration(true)}
                     >
-                      {MEASUREMENT_STEPS[currentStep]?.instruction}
-                    </motion.p>
-
-                    {/* Step indicators */}
-                    <div className="flex justify-center gap-2 mb-6">
-                      {MEASUREMENT_STEPS.map((_, index) => (
-                        <motion.div
-                          key={index}
-                          className={`h-2 w-2 rounded-full ${
-                            index === currentStep ? 'bg-primary' : 'bg-primary/30'
-                          }`}
-                          animate={index === currentStep ? {
-                            scale: [1, 1.2, 1],
-                            opacity: [0.5, 1, 0.5]
-                          } : {}}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Control buttons */}
-                    <div className="flex gap-4 max-w-md mx-auto">
-                      <Button
-                        variant="outline"
-                        className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
-                        onClick={stopMeasurement}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        className="flex-1 bg-primary/90 hover:bg-primary transition-colors duration-200"
-                        onClick={handleNextStep}
-                      >
-                        {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Measurement results */}
-                  {measurements.area > 0 && (
-                    <motion.div
-                      className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white z-20"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <p className="text-center font-medium">
-                        {measurements.length > 0 && measurements.width === 0 ? (
-                          `Length: ${Math.round(measurements.length)} ft`
-                        ) : (
-                          <>
-                            <span className="block">Area: {Math.round(measurements.area)} sq ft</span>
-                            <span className="text-sm text-white/70">
-                              ({Math.round(measurements.length)} × {Math.round(measurements.width)} ft)
-                            </span>
-                          </>
-                        )}
-                      </p>
-                    </motion.div>
+                      Calibrate Device
+                    </Button>
                   )}
+                  <Button
+                    className="w-full"
+                    onClick={handleMeasurement}
+                    disabled={!isCalibrated}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Start Camera Measurement
+                  </Button>
                 </div>
-              </motion.div>
+              </>
             )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+            <AnimatePresence>
+              {!isMeasuring ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="h-full relative"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <div className="relative h-[calc(100vh-8rem)]">
+                    <div className="absolute inset-0 z-0">
+                      {videoElement && (
+                        <div ref={el => el?.appendChild(videoElement)} className="h-full" />
+                      )}
+                    </div>
+
+                    <div className="absolute inset-0 z-10 pointer-events-none">
+                      {currentStep === 0 && (
+                        <>
+                          <motion.div
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                            animate={{ scale: [0.8, 1.2, 0.8] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <svg width="200" height="200" viewBox="0 0 200 200" className="stroke-primary">
+                              <rect
+                                x="20" y="20"
+                                width="160" height="160"
+                                fill="none"
+                                strokeWidth="4"
+                                strokeDasharray="20,10"
+                              />
+                              <circle
+                                cx="100" cy="100"
+                                r="5"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          </motion.div>
+                        </>
+                      )}
+
+                      {currentStep === 1 && (
+                        <>
+                          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex items-center">
+                            <motion.div
+                              className="h-1 w-80 bg-primary/50"
+                              animate={{ scaleX: [0.8, 1.2, 0.8] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                          </div>
+                          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
+                            <motion.div
+                              className="w-full h-1 bg-primary/30"
+                              animate={{ opacity: [0.2, 0.5, 0.2] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {currentStep === 2 && (
+                        <>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <motion.div
+                              className="w-1 h-80 bg-primary/50"
+                              animate={{ scaleY: [0.8, 1.2, 0.8] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                            <motion.div
+                              className="absolute h-full w-1 bg-primary/30"
+                              animate={{ opacity: [0.2, 0.5, 0.2] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
+                        {[...Array(5)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="h-1 w-8 bg-primary"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-6">
+                      <motion.p
+                        className="text-white text-center text-xl font-medium mb-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        key={currentStep}
+                      >
+                        {MEASUREMENT_STEPS[currentStep]?.instruction}
+                      </motion.p>
+
+                      <div className="flex justify-center gap-2 mb-6">
+                        {MEASUREMENT_STEPS.map((_, index) => (
+                          <motion.div
+                            key={index}
+                            className={`h-2 w-2 rounded-full ${
+                              index === currentStep ? 'bg-primary' : 'bg-primary/30'
+                            }`}
+                            animate={index === currentStep ? {
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            } : {}}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="flex gap-4 max-w-md mx-auto">
+                        <Button
+                          variant="outline"
+                          className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                          onClick={stopMeasurement}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="flex-1 bg-primary/90 hover:bg-primary transition-colors duration-200"
+                          onClick={handleNextStep}
+                        >
+                          {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {measurements.area > 0 && (
+                      <motion.div
+                        className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white z-20"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <p className="text-center font-medium">
+                          {measurements.length > 0 && measurements.width === 0 ? (
+                            `Length: ${Math.round(measurements.length)} ft`
+                          ) : (
+                            <>
+                              <span className="block">Area: {Math.round(measurements.area)} sq ft</span>
+                              <span className="text-sm text-white/70">
+                                ({Math.round(measurements.length)} × {Math.round(measurements.width)} ft)
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

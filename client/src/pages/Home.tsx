@@ -14,9 +14,8 @@ import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Home = () => {
-  // Filter out À La Carte plan for center placement
-  const centerPlan = subscriptionPlans.find(plan => plan.id === "alacarte");
-  const tierPlans = subscriptionPlans.filter(plan => plan.id !== "alacarte").sort((a, b) => (a.price || 0) - (b.price || 0));
+  // Sort all plans by price, including À La Carte
+  const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
 
   return (
     <div>
@@ -112,88 +111,55 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid gap-8">
-            {/* Center À La Carte Plan */}
-            {centerPlan && (
+          {/* Subscription Tiers Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {allPlans.map((plan, index) => (
               <motion.div
+                key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mx-auto max-w-md"
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="h-full"
               >
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  className="h-full"
                 >
-                  <Card className="bg-primary/5 border-primary/20">
+                  <Card className={`h-full flex flex-col ${plan.id === 'alacarte' ? 'bg-primary/5 border-primary/20' : ''}`}>
                     <CardHeader>
                       <CardTitle className="text-center">
-                        <span className="text-2xl font-bold text-primary">{centerPlan.name}</span>
+                        <span className={`text-xl font-bold ${plan.id === 'alacarte' ? 'text-primary' : ''}`}>
+                          {plan.name}
+                        </span>
                       </CardTitle>
+                      <div className="text-center mt-2">
+                        <span className="text-3xl font-bold text-primary">${plan.price}</span>
+                        <span className="text-sm text-muted-foreground ml-1">/month</span>
+                      </div>
                       <CardDescription className="text-center mt-2">
-                        Customize your automated lawn care experience. Starting at $29.99.
+                        {plan.description}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2 mb-6">
-                        {centerPlan.features.map((feature, i) => (
+                    <CardContent className="flex-1 flex flex-col">
+                      <ul className="space-y-2 flex-1 mb-6">
+                        {plan.features.slice(0, 4).map((feature, i) => (
                           <li key={i} className="flex items-start gap-2">
                             <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                             <span className="text-sm">{feature}</span>
                           </li>
                         ))}
                       </ul>
-                      <Button asChild className="w-full">
-                        <Link href="/services">Learn More</Link>
+                      <Button asChild className="w-full mt-auto">
+                        <Link href="/services">
+                          {plan.id === 'alacarte' ? 'Learn More' : 'Select Plan'}
+                        </Link>
                       </Button>
                     </CardContent>
                   </Card>
                 </motion.div>
               </motion.div>
-            )}
-
-            {/* Subscription Tiers */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8">
-              {tierPlans.map((plan, index) => (
-                <motion.div
-                  key={plan.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card className="h-full">
-                      <CardHeader>
-                        <CardTitle className="text-center">
-                          {plan.name}
-                        </CardTitle>
-                        <div className="text-center mt-2">
-                          <span className="text-3xl font-bold text-primary">${plan.price}</span>
-                          <span className="text-sm text-muted-foreground ml-1">/month</span>
-                        </div>
-                        <CardDescription className="text-center mt-2">{plan.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-2 mb-6">
-                          {plan.features.slice(0, 3).map((feature, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <Button asChild className="w-full">
-                          <Link href="/services">Select Plan</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </motion.div>
-              ))}
-            </div>
+            ))}
           </div>
 
           <div className="mt-12 text-center">
