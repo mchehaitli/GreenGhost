@@ -202,7 +202,7 @@ export const Home = () => {
                       </ul>
                       <Button asChild className="w-full mt-auto">
                         <Link href="/services">
-                          {plan.id === 'alacarte' ? 'Learn More' : 'Select Plan'}
+                          Join Waitlist
                         </Link>
                       </Button>
                     </CardContent>
@@ -210,16 +210,6 @@ export const Home = () => {
                 </motion.div>
               </motion.div>
             ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              All plans include our automated service system with one dedicated representative
-              and robotic maintenance equipment.
-            </p>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/services">View All Services</Link>
-            </Button>
           </div>
         </div>
       </section>
@@ -245,7 +235,7 @@ export const Home = () => {
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/services">View Our Services</Link>
+            <Link href="/services">Join Waitlist</Link>
           </Button>
         </div>
       </motion.section>

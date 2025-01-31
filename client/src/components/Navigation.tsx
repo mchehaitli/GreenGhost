@@ -57,9 +57,6 @@ const Navigation = () => {
           >
             Join Waitlist
           </Button>
-          <Button asChild>
-            <Link href="/services">Learn More</Link>
-          </Button>
         </nav>
 
         {/* Mobile Navigation */}
