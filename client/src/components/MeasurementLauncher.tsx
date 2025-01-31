@@ -9,17 +9,17 @@ const MEASUREMENT_STEPS = [
   {
     id: 1,
     instruction: "Please stand at one corner of your lawn",
-    voicePrompt: "Welcome! Please position yourself at one corner of your lawn. Take your time to find the best starting point."
+    voicePrompt: "Hi there! I'm here to help you measure your lawn. Let's start by positioning yourself at any corner of your lawn - pick whichever feels most comfortable. Take your time, I'll wait for you to be ready."
   },
   {
     id: 2,
     instruction: "Point your camera along the edge of your lawn",
-    voicePrompt: "Great! Now, point your camera along the edge of your lawn. Try to keep it parallel to the ground for the most accurate measurement."
+    voicePrompt: "Perfect spot! Now, let's get that first measurement. Could you point your camera along the edge of your lawn? Try to keep it parallel to the ground - just like taking a photo of the horizon. Don't worry if it takes a few tries to get it right."
   },
   {
     id: 3,
     instruction: "Walk to the next corner while keeping the camera steady",
-    voicePrompt: "Perfect. Now slowly walk to the next corner while keeping your camera steady. I'll help you measure the distance."
+    voicePrompt: "You're doing great! For this last part, we'll measure the other side. Just walk slowly to the next corner, keeping your camera steady. I'll help you track the distance as you go. Take it nice and easy, no rush!"
   }
 ];
 
@@ -40,9 +40,9 @@ const MeasurementLauncher = () => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
 
-      // Customize voice to sound more natural
-      utterance.rate = 0.9; // Slightly slower than default
-      utterance.pitch = 1.1; // Slightly higher pitch
+      // Customize voice to sound more natural and friendly
+      utterance.rate = 0.9; // Slightly slower for better clarity
+      utterance.pitch = 1.1; // Slightly higher for friendliness
       utterance.volume = 1.0;
 
       // Try to use a more natural-sounding voice
@@ -142,7 +142,7 @@ const MeasurementLauncher = () => {
     setVideoElement(null);
     setCurrentStep(0);
     setMeasurements({ length: 0, width: 0, area: 0 });
-    speak("Measurement cancelled. Feel free to start again when you're ready.");
+    speak("No problem! We can try again whenever you're ready. Just click start when you want to begin.");
   };
 
   const handleNextStep = (e: React.MouseEvent) => {
@@ -155,14 +155,14 @@ const MeasurementLauncher = () => {
 
       if (currentStep === 0) {
         setMeasurements(prev => ({ ...prev, length: simulatedMeasurement }));
-        speak("Length recorded. Let's measure the width now.");
+        speak("Great work! I've got that first measurement. Now let's measure the width - just follow the same process for the next side.");
       } else if (currentStep === 1) {
         setMeasurements(prev => ({
           ...prev,
           width: simulatedMeasurement,
           area: prev.length * simulatedMeasurement
         }));
-        speak("Width recorded. One final measurement to go.");
+        speak("Perfect! We've got the width. Just one more measurement and we'll have your total lawn size.");
       }
 
       // Advance to next step
@@ -173,7 +173,7 @@ const MeasurementLauncher = () => {
     } else {
       // Final measurement and completion
       const finalArea = Math.round(measurements.area);
-      speak(`Measurement complete! Your lawn is approximately ${finalArea} square feet.`);
+      speak(`Fantastic job! We've completed the measurements. Your lawn is approximately ${finalArea} square feet. That's about ${Math.round(finalArea/100)} parking spaces worth of green space!`);
       toast({
         title: "Measurement Complete",
         description: `Estimated lawn area: ${finalArea} sq ft`
