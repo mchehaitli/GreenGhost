@@ -145,7 +145,8 @@ const MeasurementLauncher = () => {
     speak("Measurement cancelled. Feel free to start again when you're ready.");
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = (e: React.MouseEvent) => {
+    e.preventDefault();
     console.log("Handling next step, current step:", currentStep);
 
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
@@ -299,10 +300,7 @@ const MeasurementLauncher = () => {
                         </Button>
                         <Button 
                           className="flex-1 bg-primary/90 hover:bg-primary"
-                          onClick={() => {
-                            console.log("Next button clicked");
-                            handleNextStep();
-                          }}
+                          onClick={handleNextStep}
                         >
                           {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
                         </Button>
