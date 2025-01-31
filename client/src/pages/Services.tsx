@@ -13,6 +13,7 @@ import {
   Leaf,
   TreePine,
   Flower2,
+  PenTool,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -26,6 +27,12 @@ const Services = () => {
       title: "Automated Lawn Mowing",
       description: "Precision cutting with robotic mowers for a perfect lawn every time.",
       tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
+    },
+    {
+      icon: <PenTool className="w-6 h-6" />,
+      title: "Landscape Design",
+      description: "Custom landscape design with 3D visualization and AR planning.",
+      tooltip: "Professional landscape architects use cutting-edge AR technology to create and visualize your dream outdoor space before implementation."
     },
     {
       icon: <Droplets className="w-6 h-6" />,
@@ -127,7 +134,7 @@ const Services = () => {
           >
             {isLoading ? (
               <>
-                {[...Array(8)].map((_, index) => (
+                {[...Array(9)].map((_, index) => (
                   <motion.div key={index} variants={itemVariants}>
                     <ServiceCardSkeleton />
                   </motion.div>
