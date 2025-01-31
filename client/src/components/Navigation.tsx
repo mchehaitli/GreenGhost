@@ -21,12 +21,12 @@ const Navigation = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/">
           <a className="flex items-center space-x-2">
             <span className="text-xl font-bold text-primary">GreenGhost</span>
-            <span className="text-xl font-bold">Tech</span>
+            <span className="text-xl font-bold text-foreground">Tech</span>
           </a>
         </Link>
 
