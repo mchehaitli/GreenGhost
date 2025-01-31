@@ -4,7 +4,7 @@ import { Link } from "wouter";
 const Hero = () => {
   return (
     <div className="relative flex items-center justify-center min-h-[80vh] bg-background">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-8">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
             The Future of{" "}
