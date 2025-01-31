@@ -81,7 +81,7 @@ const About = () => {
       <section className="py-24 bg-gradient-to-b from-background to-primary/5">
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-16">Our Core Values</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
