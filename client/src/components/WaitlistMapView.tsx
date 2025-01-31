@@ -10,19 +10,19 @@ interface WaitlistEntry {
 const getApproximateCoordinates = (zipCode: string) => {
   // Map first digit of ZIP to relative coordinates on SVG
   const coordinates: Record<string, [number, number]> = {
-    '0': [400, 150], // Northeast
-    '1': [380, 180], // Northeast
-    '2': [350, 250], // East Coast
-    '3': [300, 300], // Southeast
-    '4': [250, 200], // Midwest
-    '5': [200, 180], // Midwest
-    '6': [200, 300], // South Central
-    '7': [150, 200], // Central
-    '8': [100, 150], // Mountain
-    '9': [50, 200],  // West Coast
+    '0': [380, 120], // Northeast
+    '1': [350, 140], // Northeast
+    '2': [320, 180], // East Coast
+    '3': [280, 220], // Southeast
+    '4': [240, 160], // Midwest
+    '5': [200, 140], // Midwest
+    '6': [180, 240], // South Central
+    '7': [140, 180], // Central
+    '8': [100, 160], // Mountain
+    '9': [60, 140],  // West Coast
   };
 
-  return coordinates[zipCode[0]] || [250, 200]; // Center as fallback
+  return coordinates[zipCode[0]] || [200, 180]; // Center as fallback
 };
 
 interface WaitlistMapViewProps {
@@ -38,37 +38,62 @@ const WaitlistMapView = ({ entries }: WaitlistMapViewProps) => {
   }, [entries]);
 
   return (
-    <div className="relative w-full h-full bg-muted/10 rounded-lg">
+    <div className="relative w-full h-full bg-muted/5 rounded-lg border">
       <svg
-        viewBox="0 0 450 350"
+        viewBox="0 0 400 300"
         className="w-full h-full"
         style={{ maxHeight: '400px' }}
       >
-        {/* Simplified US Map Outline */}
+        {/* Improved US Map Outline */}
         <path
-          d="M50,150 L100,100 L200,80 L300,90 L400,150 L380,200 L350,250 L300,300 L200,320 L100,250 L50,150"
+          d="M60,140 
+             L80,120 
+             L120,110 
+             L180,100 
+             L220,90 
+             L280,100 
+             L340,120 
+             L380,140 
+             L360,180 
+             L340,200 
+             L320,220 
+             L280,240 
+             L240,250 
+             L200,260 
+             L160,240 
+             L120,220 
+             L80,180 
+             L60,140"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
-          className="text-muted-foreground/20"
+          strokeWidth="1.5"
+          className="text-muted-foreground/30"
         />
 
         {/* Plot points for each ZIP code */}
         {points.map((point, index) => (
           <g key={`${point.id}-${index}`}>
-            {/* Glowing effect */}
+            {/* Larger glow effect */}
             <circle
               cx={point.coordinates[0]}
               cy={point.coordinates[1]}
-              r="8"
+              r="10"
+              className="fill-primary/10"
+              style={{ filter: 'blur(6px)' }}
+            />
+            {/* Smaller glow for better contrast */}
+            <circle
+              cx={point.coordinates[0]}
+              cy={point.coordinates[1]}
+              r="6"
               className="fill-primary/20"
-              style={{ filter: 'blur(4px)' }}
+              style={{ filter: 'blur(3px)' }}
             />
             {/* Main dot */}
             <circle
               cx={point.coordinates[0]}
               cy={point.coordinates[1]}
-              r="4"
+              r="3"
               className="fill-primary"
             />
           </g>
