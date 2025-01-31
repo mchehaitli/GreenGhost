@@ -17,7 +17,7 @@ const Home = () => {
       <Hero />
 
       {/* Features Section */}
-      <section className="py-20 bg-slate-50">
+      <section className="py-20 bg-background/50 border-t border-border/40">
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-12">
             Why Choose GreenGhost Tech?
@@ -75,7 +75,7 @@ const Home = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-background border-t border-border/40">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold mb-4">Simple, Affordable Plans</h2>

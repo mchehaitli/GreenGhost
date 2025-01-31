@@ -12,6 +12,20 @@ export interface SubscriptionPlan {
 
 export const subscriptionPlans: SubscriptionPlan[] = [
   {
+    id: "starter",
+    name: "Starter Automation",
+    price: 49.99,
+    description: "Perfect starter package for small yards",
+    features: [
+      "Monthly automated lawn mowing",
+      "Basic system monitoring",
+      "Email support",
+      "Up to 1,000 sq ft coverage"
+    ],
+    serviceFrequency: "Monthly",
+    maxBookingsPerMonth: 1
+  },
+  {
     id: "basic",
     name: "Basic Automation",
     price: 89.99,
