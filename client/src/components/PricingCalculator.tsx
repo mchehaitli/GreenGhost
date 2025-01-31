@@ -36,7 +36,6 @@ const additionalServices: AdditionalService[] = [
   { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06 },
   { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08 },
   { id: "mulching", name: "Mulching Service", pricePerSqft: 0.05 },
-  { id: "treeService", name: "Tree Health Monitoring", pricePerSqft: 0.07 },
   { id: "hardscaping", name: "Hardscape Cleaning", pricePerSqft: 0.06 },
   { id: "seasonalCleanup", name: "Seasonal Cleanup", pricePerSqft: 0.08 }
 ];

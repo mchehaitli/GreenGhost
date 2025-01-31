@@ -11,7 +11,6 @@ import {
   Droplets,
   Sun,
   Leaf,
-  TreePine,
   Flower2,
   PenTool,
 } from "lucide-react";
@@ -57,12 +56,6 @@ const Services = () => {
       title: "Automated Leaf Collection",
       description: "Smart systems that detect and remove fallen leaves.",
       tooltip: "Advanced sensors identify and collect fallen leaves, maintaining a clean and healthy lawn year-round."
-    },
-    {
-      icon: <TreePine className="w-6 h-6" />,
-      title: "Tree Health Monitoring",
-      description: "AI-powered monitoring of tree health and growth.",
-      tooltip: "Sophisticated sensors monitor tree health indicators and alert you to potential issues before they become serious."
     },
     {
       icon: <Flower2 className="w-6 h-6" />,
@@ -134,7 +127,7 @@ const Services = () => {
           >
             {isLoading ? (
               <>
-                {[...Array(9)].map((_, index) => (
+                {[...Array(8)].map((_, index) => (
                   <motion.div key={index} variants={itemVariants}>
                     <ServiceCardSkeleton />
                   </motion.div>
