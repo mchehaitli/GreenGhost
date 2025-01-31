@@ -8,7 +8,6 @@ import Home from "@/pages/Home";
 import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
-import ThemeCustomization from "@/pages/ThemeCustomization";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,7 +17,6 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
-      <Route path="/theme" component={ThemeCustomization} />
       <Route component={NotFound} />
     </Switch>
   );

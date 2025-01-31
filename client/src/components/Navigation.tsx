@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu, Palette } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +18,6 @@ const Navigation = () => {
     { href: "/services", label: "Services" },
     { href: "/quote", label: "Get Quote" },
     { href: "/about", label: "About" },
-    { href: "/theme", label: "Theme", icon: <Palette className="w-4 h-4" /> },
   ];
 
   return (
@@ -37,13 +36,12 @@ const Navigation = () => {
             <Link key={item.href} href={item.href}>
               <a
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary inline-flex items-center gap-2",
+                  "text-sm font-medium transition-colors hover:text-primary",
                   location === item.href
                     ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
-                {item.icon}
                 {item.label}
               </a>
             </Link>
@@ -67,13 +65,12 @@ const Navigation = () => {
                   <a
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "text-sm font-medium transition-colors hover:text-primary inline-flex items-center gap-2",
+                      "text-sm font-medium transition-colors hover:text-primary",
                       location === item.href
                         ? "text-primary"
                         : "text-muted-foreground"
                     )}
                   >
-                    {item.icon}
                     {item.label}
                   </a>
                 </Link>

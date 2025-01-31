@@ -4,11 +4,6 @@ import { db } from "@db";
 import { quoteRequests } from "@db/schema";
 import { insertQuoteSchema } from "@db/schema";
 import { eq } from "drizzle-orm";
-import multer from "multer";
-import fs from "fs/promises";
-import path from "path";
-
-const upload = multer({ dest: "uploads/" });
 
 export function registerRoutes(app: Express): Server {
   // Quote request endpoints
@@ -29,38 +24,6 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       // Handle validation errors
-      if (error instanceof Error) {
-        res.status(400).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Internal server error" });
-      }
-    }
-  });
-
-  // Theme upload endpoint
-  app.post("/api/theme/upload", upload.single("theme"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      // Read the uploaded file
-      const themeContent = await fs.readFile(req.file.path, "utf-8");
-
-      // Validate JSON structure
-      const theme = JSON.parse(themeContent);
-      if (!theme.variant || !theme.primary || !theme.appearance || !theme.radius === undefined) {
-        throw new Error("Invalid theme format");
-      }
-
-      // Write to theme.json
-      await fs.writeFile("theme.json", JSON.stringify(theme, null, 2));
-
-      // Clean up uploaded file
-      await fs.unlink(req.file.path);
-
-      res.json({ message: "Theme updated successfully" });
-    } catch (error) {
       if (error instanceof Error) {
         res.status(400).json({ message: error.message });
       } else {
