@@ -77,7 +77,7 @@ const Services = () => {
               Experience premium automated landscaping services
             </p>
             <Button asChild size="lg">
-              <Link href="/services">Learn More</Link>
+              <Link href="/waitlist">Join Waitlist</Link>
             </Button>
           </div>
         </div>
@@ -138,14 +138,14 @@ const Services = () => {
       >
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
-          <p className="mb-8">Sign up today to learn more about our automated solutions.</p>
+          <p className="mb-8">Join our waitlist today to experience the future of lawn care.</p>
           <Button
             asChild
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/services">Get Started</Link>
+            <Link href="/waitlist">Join Waitlist</Link>
           </Button>
         </div>
       </motion.section>
