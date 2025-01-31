@@ -7,9 +7,9 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
             <Link href="/">
-              <a className="flex items-center space-x-2">
-                <span className="text-xl font-bold text-primary">GreenGhost</span>
-                <span className="text-xl font-bold text-foreground">Tech</span>
+              <a className="flex items-center space-x-2 group">
+                <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
+                <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
               </a>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
@@ -21,21 +21,21 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link href="/services">
-                  <a className="text-sm text-muted-foreground hover:text-primary">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Lawn Maintenance
                   </a>
                 </Link>
               </li>
               <li>
                 <Link href="/services">
-                  <a className="text-sm text-muted-foreground hover:text-primary">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Landscape Design
                   </a>
                 </Link>
               </li>
               <li>
                 <Link href="/services">
-                  <a className="text-sm text-muted-foreground hover:text-primary">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Automation Systems
                   </a>
                 </Link>
@@ -47,14 +47,14 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link href="/about">
-                  <a className="text-sm text-muted-foreground hover:text-primary">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     About Us
                   </a>
                 </Link>
               </li>
               <li>
                 <Link href="/quote">
-                  <a className="text-sm text-muted-foreground hover:text-primary">
+                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Get Quote
                   </a>
                 </Link>

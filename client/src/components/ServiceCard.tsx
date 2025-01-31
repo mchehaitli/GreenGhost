@@ -8,13 +8,15 @@ interface ServiceCardProps {
 
 const ServiceCard = ({ title, description, icon }: ServiceCardProps) => {
   return (
-    <Card className="transition-all hover:shadow-lg">
+    <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110">
             {icon}
           </div>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="transition-colors duration-300 group-hover:text-primary">
+            {title}
+          </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
