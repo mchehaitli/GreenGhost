@@ -9,10 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { GhostMascot } from "./GhostMascot";
+import WaitlistDialog from "./WaitlistDialog";
 
 const Navigation = () => {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -48,6 +50,13 @@ const Navigation = () => {
               </a>
             </Link>
           ))}
+          <Button 
+            variant="outline" 
+            onClick={() => setShowWaitlist(true)}
+            className="bg-primary/10 text-primary hover:bg-primary/20"
+          >
+            Join Waitlist
+          </Button>
           <Button asChild>
             <Link href="/services">Learn More</Link>
           </Button>
@@ -77,10 +86,24 @@ const Navigation = () => {
                   </a>
                 </Link>
               ))}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowWaitlist(true);
+                  setOpen(false);
+                }}
+                className="bg-primary/10 text-primary hover:bg-primary/20"
+              >
+                Join Waitlist
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
       </div>
+      <WaitlistDialog 
+        open={showWaitlist} 
+        onOpenChange={setShowWaitlist}
+      />
     </header>
   );
 };

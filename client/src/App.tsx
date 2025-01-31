@@ -13,7 +13,6 @@ import Waitlist from "@/pages/Waitlist";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
-import WaitlistButton from "@/components/WaitlistButton";
 
 function Router() {
   return (
@@ -58,7 +57,6 @@ function App() {
           open={showInitialDialog} 
           onOpenChange={setShowInitialDialog}
         />
-        <WaitlistButton />
       </div>
       <Toaster />
     </QueryClientProvider>
