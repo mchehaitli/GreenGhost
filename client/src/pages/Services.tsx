@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
 import ServiceCardSkeleton from "@/components/ServiceCardSkeleton";
+import PricingCalculator from "@/components/PricingCalculator";
 import {
   Bot,
   Sprout,
@@ -113,26 +114,19 @@ const Services = () => {
               </>
             )}
           </motion.div>
+        </div>
+      </section>
 
-          <motion.div
-            className="mt-12 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="max-w-2xl mx-auto">
-              <CardContent className="pt-6">
-                <h3 className="text-2xl font-bold mb-4">À La Carte Services Available</h3>
-                <p className="text-muted-foreground mb-6">
-                  Choose individual automated services based on your needs. Perfect for those who want flexibility 
-                  in their lawn care routine. Contact us for custom pricing based on your specific requirements.
-                </p>
-                <Button asChild>
-                  <Link href="/services">Learn More</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+      {/* Pricing Calculator Section */}
+      <section className="py-20 bg-background">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Calculate Your Service Cost</h2>
+            <p className="text-lg text-muted-foreground">
+              Get an instant estimate for our automated lawn care services
+            </p>
+          </div>
+          <PricingCalculator />
         </div>
       </section>
 
