@@ -1,11 +1,12 @@
 import Hero from "@/components/Hero";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge"; // Added import for Badge
+import { Badge } from "@/components/ui/badge";
 import {
   Bot,
   Activity,
   Waves,
+  Sprout,
   CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -23,7 +24,7 @@ const Home = () => {
           <h2 className="text-3xl font-bold text-center mb-12">
             Why Choose GreenGhost Tech?
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -73,6 +74,22 @@ const Home = () => {
                     </Badge>
                   </div>
                   <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="h-full transition-all duration-300 hover:shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
+                    <Sprout className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Year-Round Green</h3>
+                  <p className="text-muted-foreground">Exclusive fertilizer blend keeping your lawn lush and green through all seasons.</p>
                 </CardContent>
               </Card>
             </motion.div>
