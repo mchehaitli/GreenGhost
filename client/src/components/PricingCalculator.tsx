@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import MeasurementLauncher from "./MeasurementLauncher";
 
 interface AdditionalService {
   id: string;
@@ -48,14 +49,14 @@ const PricingCalculator = () => {
 
   const calculatePrice = () => {
     setIsCalculating(true);
-    
+
     // Base price calculation
     const basePricePerSqft = 0.10; // $0.10 per sq ft
     const frequencyMultiplier = frequencies.find(f => f.value === frequency)?.multiplier || 1;
-    
+
     // Calculate base price
     let basePrice = lawnSize * basePricePerSqft * frequencyMultiplier;
-    
+
     // Add costs for additional services
     const additionalCosts = selectedServices.reduce((total, serviceId) => {
       const service = additionalServices.find(s => s.id === serviceId);
@@ -64,7 +65,7 @@ const PricingCalculator = () => {
       }
       return total;
     }, 0);
-    
+
     // Simulate API call delay
     setTimeout(() => {
       setTotalPrice(basePrice + additionalCosts);
@@ -91,16 +92,20 @@ const PricingCalculator = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Lawn Size Input */}
+          {/* Add Measurement Launcher */}
           <div className="space-y-2">
-            <Label htmlFor="lawnSize">Lawn Size (sq ft)</Label>
+            <Label>Lawn Size</Label>
+            <MeasurementLauncher />
+            <p className="text-sm text-muted-foreground mt-2">
+              Use our AI measurement tool or enter the size manually below
+            </p>
             <Input
-              id="lawnSize"
               type="number"
               min="100"
               value={lawnSize}
               onChange={(e) => setLawnSize(Number(e.target.value))}
-              className="w-full"
+              className="w-full mt-2"
+              placeholder="Enter lawn size in sq ft"
             />
           </div>
 
