@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
+import ServiceCardSkeleton from "@/components/ServiceCardSkeleton";
 import {
   Bot,
   Sprout,
@@ -11,8 +12,11 @@ import {
   Sun,
   Workflow,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 const Services = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const services = [
     {
       icon: <Bot className="w-6 h-6" />,
@@ -34,10 +38,41 @@ const Services = () => {
     }
   ];
 
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <section className="bg-background py-20">
+      <motion.section 
+        className="bg-background py-20"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">Our Services</h1>
@@ -49,27 +84,50 @@ const Services = () => {
             </Button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Services Grid */}
       <section className="py-20 bg-muted/10">
         <div className="container">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <ServiceCard
-                key={index}
-                icon={service.icon}
-                title={service.title}
-                description={service.description}
-                tooltip={service.tooltip}
-              />
-            ))}
-          </div>
+          <motion.div 
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {isLoading ? (
+              <>
+                {[...Array(3)].map((_, index) => (
+                  <motion.div key={index} variants={itemVariants}>
+                    <ServiceCardSkeleton />
+                  </motion.div>
+                ))}
+              </>
+            ) : (
+              <>
+                {services.map((service, index) => (
+                  <motion.div key={index} variants={itemVariants}>
+                    <ServiceCard
+                      icon={service.icon}
+                      title={service.title}
+                      description={service.description}
+                      tooltip={service.tooltip}
+                    />
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </motion.div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-primary text-primary-foreground py-20">
+      <motion.section 
+        className="bg-primary text-primary-foreground py-20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+      >
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
           <p className="mb-8">Contact us today to learn more about our automated solutions.</p>
@@ -82,7 +140,7 @@ const Services = () => {
             <Link href="/quote">Get Started</Link>
           </Button>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };
