@@ -31,7 +31,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     price: 39.99,
     description: "Perfect starter package for small yards",
     features: [
-      "Includes all À La Carte features",
       "Monthly automated lawn mowing",
       "Basic system monitoring",
       "Email support",
