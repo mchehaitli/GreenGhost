@@ -32,13 +32,13 @@ function App() {
   const [showInitialDialog, setShowInitialDialog] = useState(false);
 
   useEffect(() => {
-    // Show the dialog after a short delay
     const timer = setTimeout(() => {
-      // Check if user has already seen the dialog
-      const hasSeenDialog = localStorage.getItem('hasSeenWaitlistDialog');
-      if (!hasSeenDialog) {
-        setShowInitialDialog(true);
-        localStorage.setItem('hasSeenWaitlistDialog', 'true');
+      if (typeof window !== 'undefined') {
+        const hasSeenDialog = window.localStorage.getItem('hasSeenWaitlistDialog');
+        if (!hasSeenDialog) {
+          setShowInitialDialog(true);
+          window.localStorage.setItem('hasSeenWaitlistDialog', 'true');
+        }
       }
     }, 3000);
 
@@ -55,7 +55,12 @@ function App() {
         <Footer />
         <WaitlistDialog 
           open={showInitialDialog} 
-          onOpenChange={setShowInitialDialog}
+          onOpenChange={(open) => {
+            setShowInitialDialog(open);
+            if (!open) {
+              window.localStorage.setItem('hasSeenWaitlistDialog', 'true');
+            }
+          }}
         />
       </div>
       <Toaster />
