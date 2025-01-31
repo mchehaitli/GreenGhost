@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, Ghost } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -25,6 +25,7 @@ const Navigation = () => {
       <div className="container flex h-16 items-center justify-between px-8">
         <Link href="/">
           <a className="flex items-center space-x-2">
+            <Ghost className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold text-primary">GreenGhost</span>
             <span className="text-xl font-bold text-foreground">Tech</span>
           </a>
