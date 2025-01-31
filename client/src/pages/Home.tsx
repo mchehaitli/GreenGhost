@@ -77,7 +77,7 @@ const Home = () => {
             >
               <div className="aspect-video relative">
                 <img
-                  src="/01IN30PXL652BXAyqX0nJgD-2.fit_lim.size_1050x.jpg"
+                  src="/attached_assets/01IN30PXL652BXAyqX0nJgD-2.fit_lim.size_1050x.jpg"
                   alt="GreenGhost Autonomous Lawn Mower"
                   className="w-full h-full object-cover"
                 />
