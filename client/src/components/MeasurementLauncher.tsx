@@ -212,105 +212,106 @@ const MeasurementLauncher = () => {
               </motion.div>
             ) : (
               <motion.div
-                className="h-full"
+                className="h-full relative"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
                 <div className="relative h-[calc(100vh-8rem)]">
-                  {videoElement && (
-                    <div ref={el => el?.appendChild(videoElement)} className="absolute inset-0" />
-                  )}
-                  {/* Enhanced AR Overlay */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Measurement guidelines */}
-                    <div className="absolute inset-0">
-                      {/* Dynamic measurement grid based on current step */}
-                      {currentStep === 0 && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="absolute inset-0 grid grid-cols-3 grid-rows-3"
-                        >
-                          {[...Array(9)].map((_, i) => (
-                            <div key={i} className="border border-primary/20" />
-                          ))}
-                        </motion.div>
-                      )}
+                  {/* Camera feed container */}
+                  <div className="absolute inset-0 z-0">
+                    {videoElement && (
+                      <div ref={el => el?.appendChild(videoElement)} className="h-full" />
+                    )}
+                  </div>
 
-                      {/* Corner markers */}
+                  {/* Measurement guidelines - no pointer events */}
+                  <div className="absolute inset-0 z-10 pointer-events-none">
+                    {/* Dynamic measurement grid based on current step */}
+                    {currentStep === 0 && (
                       <motion.div
-                        className="absolute top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-primary"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                      <motion.div
-                        className="absolute top-4 right-4 w-16 h-16 border-t-2 border-r-2 border-primary"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                      />
-                      <motion.div
-                        className="absolute bottom-4 left-4 w-16 h-16 border-b-2 border-l-2 border-primary"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                      />
-                      <motion.div
-                        className="absolute bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-primary"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
-                      />
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-0 grid grid-cols-3 grid-rows-3"
+                      >
+                        {[...Array(9)].map((_, i) => (
+                          <div key={i} className="border border-primary/20" />
+                        ))}
+                      </motion.div>
+                    )}
+
+                    {/* Corner markers */}
+                    <motion.div
+                      className="absolute top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-primary"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    <motion.div
+                      className="absolute top-4 right-4 w-16 h-16 border-t-2 border-r-2 border-primary"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                    />
+                    <motion.div
+                      className="absolute bottom-4 left-4 w-16 h-16 border-b-2 border-l-2 border-primary"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                    />
+                    <motion.div
+                      className="absolute bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-primary"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+                    />
+                  </div>
+
+                  {/* Controls overlay - with pointer events */}
+                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-6">
+                    <motion.p
+                      className="text-white text-center text-xl font-medium mb-6"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={currentStep}
+                    >
+                      {MEASUREMENT_STEPS[currentStep]?.instruction}
+                    </motion.p>
+
+                    {/* Step indicators */}
+                    <div className="flex justify-center gap-2 mb-6">
+                      {MEASUREMENT_STEPS.map((_, index) => (
+                        <motion.div
+                          key={index}
+                          className={`h-2 w-2 rounded-full ${
+                            index === currentStep ? 'bg-primary' : 'bg-primary/30'
+                          }`}
+                          animate={index === currentStep ? {
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 1, 0.5]
+                          } : {}}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      ))}
                     </div>
 
-                    {/* Enhanced instruction overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <motion.p
-                        className="text-white text-center text-xl font-medium mb-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        key={currentStep}
+                    <div className="flex gap-4 max-w-md mx-auto relative z-30">
+                      <Button
+                        variant="outline"
+                        className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                        onClick={() => stopMeasurement()}
                       >
-                        {MEASUREMENT_STEPS[currentStep]?.instruction}
-                      </motion.p>
-
-                      {/* Step indicators */}
-                      <div className="flex justify-center gap-2 mb-6">
-                        {MEASUREMENT_STEPS.map((_, index) => (
-                          <motion.div
-                            key={index}
-                            className={`h-2 w-2 rounded-full ${
-                              index === currentStep ? 'bg-primary' : 'bg-primary/30'
-                            }`}
-                            animate={index === currentStep ? {
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5]
-                            } : {}}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        ))}
-                      </div>
-
-                      <div className="flex gap-4 max-w-md mx-auto">
-                        <Button
-                          variant="outline"
-                          className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20"
-                          onClick={() => stopMeasurement()}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          className="flex-1 bg-primary/90 hover:bg-primary"
-                          onClick={() => handleNextStep()}
-                        >
-                          {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
-                        </Button>
-                      </div>
+                        Cancel
+                      </Button>
+                      <Button
+                        className="flex-1 bg-primary/90 hover:bg-primary transition-colors duration-200"
+                        onClick={() => handleNextStep()}
+                      >
+                        {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
+                      </Button>
                     </div>
                   </div>
 
                   {/* Measurement results */}
                   {measurements.area > 0 && (
                     <motion.div
-                      className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white"
+                      className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white z-20"
                       initial={{ opacity: 0, y: -20 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
