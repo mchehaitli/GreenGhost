@@ -39,16 +39,11 @@ const MeasurementLauncher = () => {
   const speak = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-
-      // Customize voice to sound more natural and friendly
-      utterance.rate = 0.9; // Slightly slower for better clarity
-      utterance.pitch = 1.1; // Slightly higher for friendliness
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
       utterance.volume = 1.0;
 
-      // Try to use a more natural-sounding voice
       const voices = window.speechSynthesis.getVoices();
-      console.log("Available voices:", voices.map(v => v.name));
-
       const preferredVoice = voices.find(voice =>
         voice.name.includes('Google') ||
         voice.name.includes('Natural') ||
@@ -59,18 +54,12 @@ const MeasurementLauncher = () => {
         utterance.voice = preferredVoice;
       }
 
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
-
-      console.log("Speaking:", text);
-    } else {
-      console.log("Speech synthesis not available");
     }
   };
 
-  // Initialize speech synthesis
   useEffect(() => {
-    // Ensure voices are loaded
     const initVoices = () => {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
@@ -89,10 +78,8 @@ const MeasurementLauncher = () => {
     };
   }, []);
 
-  // Handle step changes and voice prompts
   useEffect(() => {
     if (isMeasuring && MEASUREMENT_STEPS[currentStep]) {
-      console.log("Current step:", currentStep);
       speak(MEASUREMENT_STEPS[currentStep].voicePrompt);
     }
   }, [currentStep, isMeasuring]);
@@ -142,37 +129,28 @@ const MeasurementLauncher = () => {
     setVideoElement(null);
     setCurrentStep(0);
     setMeasurements({ length: 0, width: 0, area: 0 });
-    speak("No problem! We can try again whenever you're ready. Just click start when you want to begin.");
+    speak("No problem! We can try again whenever you're ready.");
   };
 
   const handleNextStep = () => {
-    console.log("Handling next step, current step:", currentStep);
-
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
-      // Simulate measurement for the current step
-      const simulatedMeasurement = Math.random() * 20 + 10; // 10-30 feet
+      const simulatedMeasurement = Math.random() * 20 + 10;
 
       if (currentStep === 0) {
         setMeasurements(prev => ({ ...prev, length: simulatedMeasurement }));
-        speak("Great work! I've got that first measurement. Now let's measure the width - just follow the same process for the next side.");
+        speak("Great work! I've got that first measurement. Now let's measure the width.");
       } else if (currentStep === 1) {
         setMeasurements(prev => ({
           ...prev,
           width: simulatedMeasurement,
           area: prev.length * simulatedMeasurement
         }));
-        speak("Perfect! We've got the width. Just one more measurement and we'll have your total lawn size.");
       }
 
-      // Advance to next step
-      setCurrentStep(prev => {
-        console.log("Advancing to step:", prev + 1);
-        return prev + 1;
-      });
+      setCurrentStep(prev => prev + 1);
     } else {
-      // Final measurement and completion
       const finalArea = Math.round(measurements.area);
-      speak(`Fantastic job! We've completed the measurements. Your lawn is approximately ${finalArea} square feet. That's about ${Math.round(finalArea/100)} parking spaces worth of green space!`);
+      speak(`Fantastic job! Your lawn is approximately ${finalArea} square feet.`);
       toast({
         title: "Measurement Complete",
         description: `Estimated lawn area: ${finalArea} sq ft`
@@ -188,12 +166,12 @@ const MeasurementLauncher = () => {
           <CardTitle>Measure Your Lawn</CardTitle>
         </CardHeader>
         <CardContent className={`space-y-4 ${isMeasuring ? 'h-full p-0' : ''}`}>
-          {!isMeasuring && (
+          {!isMeasuring ? (
             <p className="text-muted-foreground">
               Get accurate measurements of your lawn using your device's camera. Our AI-powered
               system will guide you through the process with voice instructions.
             </p>
-          )}
+          ) : null}
 
           <AnimatePresence>
             {!isMeasuring ? (
@@ -225,45 +203,87 @@ const MeasurementLauncher = () => {
                     )}
                   </div>
 
-                  {/* Measurement guidelines - no pointer events */}
+                  {/* AR Overlay */}
                   <div className="absolute inset-0 z-10 pointer-events-none">
-                    {/* Dynamic measurement grid based on current step */}
+                    {/* Step-specific AR elements */}
                     {currentStep === 0 && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 grid grid-cols-3 grid-rows-3"
-                      >
-                        {[...Array(9)].map((_, i) => (
-                          <div key={i} className="border border-primary/20" />
-                        ))}
-                      </motion.div>
+                      <>
+                        {/* Corner detection guide */}
+                        <motion.div
+                          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                          animate={{ scale: [0.8, 1.2, 0.8] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <svg width="200" height="200" viewBox="0 0 200 200" className="stroke-primary">
+                            <rect
+                              x="20" y="20"
+                              width="160" height="160"
+                              fill="none"
+                              strokeWidth="4"
+                              strokeDasharray="20,10"
+                            />
+                            <circle
+                              cx="100" cy="100"
+                              r="5"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </motion.div>
+                      </>
                     )}
 
-                    {/* Corner markers */}
-                    <motion.div
-                      className="absolute top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-primary"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    <motion.div
-                      className="absolute top-4 right-4 w-16 h-16 border-t-2 border-r-2 border-primary"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                    />
-                    <motion.div
-                      className="absolute bottom-4 left-4 w-16 h-16 border-b-2 border-l-2 border-primary"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                    />
-                    <motion.div
-                      className="absolute bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-primary"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
-                    />
+                    {currentStep === 1 && (
+                      <>
+                        {/* Edge measurement guide */}
+                        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex items-center">
+                          <motion.div
+                            className="h-1 w-80 bg-primary/50"
+                            animate={{ scaleX: [0.8, 1.2, 0.8] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        </div>
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
+                          <motion.div
+                            className="w-full h-1 bg-primary/30"
+                            animate={{ opacity: [0.2, 0.5, 0.2] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {currentStep === 2 && (
+                      <>
+                        {/* Walking measurement guide */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <motion.div
+                            className="w-1 h-80 bg-primary/50"
+                            animate={{ scaleY: [0.8, 1.2, 0.8] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                          <motion.div
+                            className="absolute h-full w-1 bg-primary/30"
+                            animate={{ opacity: [0.2, 0.5, 0.2] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Distance markers */}
+                    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
+                      {[...Array(5)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="h-1 w-8 bg-primary"
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
+                        />
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Controls overlay - with pointer events */}
+                  {/* Controls overlay */}
                   <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-6">
                     <motion.p
                       className="text-white text-center text-xl font-medium mb-6"
@@ -291,17 +311,18 @@ const MeasurementLauncher = () => {
                       ))}
                     </div>
 
-                    <div className="flex gap-4 max-w-md mx-auto relative z-30">
+                    {/* Control buttons */}
+                    <div className="flex gap-4 max-w-md mx-auto">
                       <Button
                         variant="outline"
                         className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
-                        onClick={() => stopMeasurement()}
+                        onClick={stopMeasurement}
                       >
                         Cancel
                       </Button>
                       <Button
                         className="flex-1 bg-primary/90 hover:bg-primary transition-colors duration-200"
-                        onClick={() => handleNextStep()}
+                        onClick={handleNextStep}
                       >
                         {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
                       </Button>
