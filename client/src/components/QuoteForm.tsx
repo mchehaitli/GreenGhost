@@ -144,9 +144,9 @@ const QuoteForm = () => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="small">Small (< 1/4 acre)</SelectItem>
+                    <SelectItem value="small">Small (&lt; 1/4 acre)</SelectItem>
                     <SelectItem value="medium">Medium (1/4 - 1 acre)</SelectItem>
-                    <SelectItem value="large">Large (> 1 acre)</SelectItem>
+                    <SelectItem value="large">Large (&gt; 1 acre)</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
