@@ -22,42 +22,42 @@ export const GhostMascot = ({
     lg: "w-16 h-16"
   };
 
-  const floatingAnimation = animated ? {
-    y: [0, -10, 0],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  } : {};
-
-  const waveAnimation = animated && isWaving ? {
-    rotate: [0, -20, 20, -20, 20, 0],
-    transition: {
-      duration: 1,
-      ease: "easeInOut"
-    }
-  } : {};
-
-  const handleClick = () => {
-    if (animated && !isWaving) {
-      setIsWaving(true);
-      setTimeout(() => setIsWaving(false), 1000);
-    }
-  };
-
-  const Component = animated ? motion.div : "div";
+  if (!animated) {
+    return (
+      <div className={cn("text-primary", sizes[size], className)}>
+        <Ghost className="w-full h-full" />
+      </div>
+    );
+  }
 
   return (
-    <Component
+    <motion.div
       className={cn("cursor-pointer text-primary", sizes[size], className)}
-      animate={waveAnimation || floatingAnimation}
-      whileHover={animated ? { scale: 1.1 } : {}}
-      whileTap={animated ? { scale: 0.9 } : {}}
-      onClick={handleClick}
+      animate={isWaving ? {
+        rotate: [0, -20, 20, -20, 20, 0],
+        transition: {
+          duration: 1,
+          ease: "easeInOut"
+        }
+      } : {
+        y: [0, -10, 0],
+        transition: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => {
+        if (!isWaving) {
+          setIsWaving(true);
+          setTimeout(() => setIsWaving(false), 1000);
+        }
+      }}
     >
       <Ghost className="w-full h-full" />
-    </Component>
+    </motion.div>
   );
 };
 
