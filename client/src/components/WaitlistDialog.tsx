@@ -33,7 +33,7 @@ interface WaitlistDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
+const WaitlistDialog = ({ open = false, onOpenChange }: WaitlistDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
