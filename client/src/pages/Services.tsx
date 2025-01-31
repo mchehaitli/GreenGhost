@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card"; // Assuming these are needed
+
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +40,6 @@ const Services = () => {
     }
   ];
 
-  // Simulate loading state
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -66,7 +67,6 @@ const Services = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
       <motion.section 
         className="bg-background py-20"
         initial={{ opacity: 0, y: -20 }}
@@ -86,7 +86,6 @@ const Services = () => {
         </div>
       </motion.section>
 
-      {/* Services Grid */}
       <section className="py-20 bg-muted/10">
         <div className="container">
           <motion.div 
@@ -118,10 +117,29 @@ const Services = () => {
               </>
             )}
           </motion.div>
+
+          <motion.div
+            className="mt-12 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="max-w-2xl mx-auto">
+              <CardContent className="pt-6">
+                <h3 className="text-2xl font-bold mb-4">À La Carte Services Available</h3>
+                <p className="text-muted-foreground mb-6">
+                  Choose individual automated services based on your needs. Perfect for those who want flexibility 
+                  in their lawn care routine. Contact us for custom pricing based on your specific requirements.
+                </p>
+                <Button asChild>
+                  <Link href="/quote">Get Custom Quote</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
-      {/* CTA */}
       <motion.section 
         className="bg-primary text-primary-foreground py-20"
         initial={{ opacity: 0 }}

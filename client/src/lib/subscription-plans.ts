@@ -3,11 +3,11 @@ import { CheckCircle2 } from "lucide-react";
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  price: number;
+  price?: number;
   description: string;
   features: string[];
   serviceFrequency: string;
-  maxBookingsPerMonth: number;
+  maxBookingsPerMonth?: number;
 }
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -24,6 +24,19 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     ],
     serviceFrequency: "Monthly",
     maxBookingsPerMonth: 1
+  },
+  {
+    id: "alacarte",
+    name: "À La Carte Services",
+    description: "Customize your automated lawn care experience",
+    features: [
+      "Choose individual services",
+      "Pay per service",
+      "Flexible scheduling",
+      "No long-term commitment",
+      "Access to all service options"
+    ],
+    serviceFrequency: "As needed",
   },
   {
     id: "basic",
