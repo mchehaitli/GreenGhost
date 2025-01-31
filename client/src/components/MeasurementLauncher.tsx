@@ -9,17 +9,17 @@ const MEASUREMENT_STEPS = [
   {
     id: 1,
     instruction: "Please stand at one corner of your lawn",
-    voicePrompt: "Stand at one corner of your lawn and tap next when ready."
+    voicePrompt: "Welcome! Please position yourself at one corner of your lawn. Take your time to find the best starting point."
   },
   {
     id: 2,
     instruction: "Point your camera along the edge of your lawn",
-    voicePrompt: "Now, point your camera along the edge of your lawn. Keep it steady."
+    voicePrompt: "Great! Now, point your camera along the edge of your lawn. Try to keep it parallel to the ground for the most accurate measurement."
   },
   {
     id: 3,
     instruction: "Walk to the next corner while keeping the camera steady",
-    voicePrompt: "Walk slowly to the next corner while keeping your camera pointed at the lawn edge."
+    voicePrompt: "Perfect. Now slowly walk to the next corner while keeping your camera steady. I'll help you measure the distance."
   }
 ];
 
@@ -35,19 +35,43 @@ const MeasurementLauncher = () => {
     area: 0
   });
 
-  // Initialize speech synthesis
-  useEffect(() => {
+  // Enhanced speech synthesis with more natural voice
+  const speak = (text: string) => {
     if ('speechSynthesis' in window) {
-      // Using Web Speech API for browser compatibility
       const synth = window.speechSynthesis;
-      const utterance = new SpeechSynthesisUtterance(MEASUREMENT_STEPS[currentStep]?.voicePrompt);
-      if (isMeasuring) {
-        synth.speak(utterance);
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // Customize voice to sound more natural
+      utterance.rate = 0.9; // Slightly slower than default
+      utterance.pitch = 1.1; // Slightly higher pitch
+      utterance.volume = 1.0;
+
+      // Try to use a more natural-sounding voice if available
+      const voices = synth.getVoices();
+      const preferredVoice = voices.find(voice => 
+        voice.name.includes('Google') || // Prefer Google voices
+        voice.name.includes('Natural') || // Or voices labeled as natural
+        voice.name.includes('Premium')
+      );
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
       }
-      return () => {
-        synth.cancel();
-      };
+
+      synth.cancel(); // Cancel any ongoing speech
+      synth.speak(utterance);
     }
+  };
+
+  useEffect(() => {
+    if (isMeasuring && MEASUREMENT_STEPS[currentStep]) {
+      speak(MEASUREMENT_STEPS[currentStep].voicePrompt);
+    }
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, [currentStep, isMeasuring]);
 
   const handleMeasurement = async () => {
@@ -65,7 +89,6 @@ const MeasurementLauncher = () => {
       setIsMeasuring(true);
       setCurrentStep(0);
 
-      // Create and set up video element
       const video = document.createElement('video');
       video.srcObject = stream;
       video.autoplay = true;
@@ -74,8 +97,8 @@ const MeasurementLauncher = () => {
       setVideoElement(video);
 
       toast({
-        title: "Camera Access Granted",
-        description: "Follow the voice prompts to measure your lawn."
+        title: "Camera Ready",
+        description: "I'll guide you through the measurement process with voice instructions."
       });
     } catch (err) {
       console.error("Error accessing camera:", err);
@@ -95,12 +118,13 @@ const MeasurementLauncher = () => {
     setIsMeasuring(false);
     setVideoElement(null);
     setCurrentStep(0);
+    speak("Measurement cancelled. Feel free to start again when you're ready.");
   };
 
   const handleNextStep = () => {
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
-      // Simulate measurement (replace with actual AR measurement)
+      // Enhanced measurement simulation with more realistic values
       const simulatedMeasurement = Math.random() * 20 + 10; // 10-30 feet
       if (currentStep === 0) {
         setMeasurements(prev => ({ ...prev, length: simulatedMeasurement }));
@@ -112,91 +136,105 @@ const MeasurementLauncher = () => {
         }));
       }
     } else {
-      // Measurement complete
+      const finalArea = Math.round(measurements.area);
+      speak(`Measurement complete! Your lawn is approximately ${finalArea} square feet.`);
       toast({
         title: "Measurement Complete",
-        description: `Estimated lawn area: ${Math.round(measurements.area)} sq ft`
+        description: `Estimated lawn area: ${finalArea} sq ft`
       });
       stopMeasurement();
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Measure Your Lawn</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground">
-          Get accurate measurements of your lawn using your device's camera. Our AI-powered
-          system will guide you through the process.
-        </p>
-
-        <AnimatePresence>
-          {!isMeasuring ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Button 
-                className="w-full" 
-                onClick={handleMeasurement}
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Start Camera Measurement
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
-              <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
-                {videoElement && (
-                  <div ref={el => el?.appendChild(videoElement)} className="absolute inset-0" />
-                )}
-                {/* AR Overlay */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-0 border-2 border-primary/50 animate-pulse" />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
-                    <p className="text-white text-center font-medium">
-                      {MEASUREMENT_STEPS[currentStep]?.instruction}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={stopMeasurement}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={handleNextStep}
-                >
-                  {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
-                </Button>
-              </div>
-
-              {measurements.area > 0 && (
-                <div className="p-4 bg-primary/5 rounded-lg">
-                  <p className="text-center text-sm">
-                    Estimated Area: {Math.round(measurements.area)} sq ft
-                  </p>
-                </div>
-              )}
-            </motion.div>
+    <div className={`${isMeasuring ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+      <Card className={`${isMeasuring ? 'h-full border-0 rounded-none' : 'w-full max-w-md mx-auto'}`}>
+        <CardHeader className={isMeasuring ? 'absolute top-0 left-0 right-0 z-10 bg-background/80 backdrop-blur-sm' : ''}>
+          <CardTitle>Measure Your Lawn</CardTitle>
+        </CardHeader>
+        <CardContent className={`space-y-4 ${isMeasuring ? 'h-full p-0' : ''}`}>
+          {!isMeasuring && (
+            <p className="text-muted-foreground">
+              Get accurate measurements of your lawn using your device's camera. Our AI-powered
+              system will guide you through the process with voice instructions.
+            </p>
           )}
-        </AnimatePresence>
-      </CardContent>
-    </Card>
+
+          <AnimatePresence>
+            {!isMeasuring ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Button 
+                  className="w-full" 
+                  onClick={handleMeasurement}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Start Camera Measurement
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                className="h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="relative h-[calc(100vh-8rem)]">
+                  {videoElement && (
+                    <div ref={el => el?.appendChild(videoElement)} className="absolute inset-0" />
+                  )}
+                  {/* AR Overlay */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Measurement guidelines */}
+                    <div className="absolute inset-0">
+                      <div className="absolute inset-0 border-2 border-primary/50 animate-pulse" />
+                      {/* Corner indicators */}
+                      <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-primary" />
+                      <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-primary" />
+                      <div className="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-primary" />
+                      <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-primary" />
+                    </div>
+                    {/* Instructions overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
+                      <p className="text-white text-center text-lg font-medium mb-4">
+                        {MEASUREMENT_STEPS[currentStep]?.instruction}
+                      </p>
+                      <div className="flex gap-4 max-w-md mx-auto">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/20"
+                          onClick={stopMeasurement}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          className="flex-1 bg-primary/90 hover:bg-primary"
+                          onClick={handleNextStep}
+                        >
+                          {currentStep === MEASUREMENT_STEPS.length - 1 ? 'Finish' : 'Next Step'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Measurement results */}
+                  {measurements.area > 0 && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white">
+                      <p className="text-center font-medium">
+                        Estimated Area: {Math.round(measurements.area)} sq ft
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
