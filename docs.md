@@ -1,6 +1,6 @@
 # Theme Migration Guide
 
-To migrate your theme, we need the following files from your previous website:
+To migrate your theme and content, we need the following files from your previous website:
 
 ## Required Files:
 1. CSS Variables and Base Styles
