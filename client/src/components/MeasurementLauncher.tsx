@@ -118,24 +118,31 @@ const MeasurementLauncher = () => {
     setIsMeasuring(false);
     setVideoElement(null);
     setCurrentStep(0);
+    setMeasurements({ length: 0, width: 0, area: 0 });
     speak("Measurement cancelled. Feel free to start again when you're ready.");
   };
 
   const handleNextStep = () => {
     if (currentStep < MEASUREMENT_STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
-      // Enhanced measurement simulation with more realistic values
+      // Simulate measurement for the current step
       const simulatedMeasurement = Math.random() * 20 + 10; // 10-30 feet
+
       if (currentStep === 0) {
         setMeasurements(prev => ({ ...prev, length: simulatedMeasurement }));
+        speak("Length recorded. Let's measure the width now.");
       } else if (currentStep === 1) {
         setMeasurements(prev => ({
           ...prev,
           width: simulatedMeasurement,
           area: prev.length * simulatedMeasurement
         }));
+        speak("Width recorded. One final measurement to go.");
       }
+
+      // Advance to next step
+      setCurrentStep(prev => prev + 1);
     } else {
+      // Final measurement and completion
       const finalArea = Math.round(measurements.area);
       speak(`Measurement complete! Your lawn is approximately ${finalArea} square feet.`);
       toast({
@@ -186,22 +193,74 @@ const MeasurementLauncher = () => {
                   {videoElement && (
                     <div ref={el => el?.appendChild(videoElement)} className="absolute inset-0" />
                   )}
-                  {/* AR Overlay */}
+                  {/* Enhanced AR Overlay */}
                   <div className="absolute inset-0 pointer-events-none">
                     {/* Measurement guidelines */}
                     <div className="absolute inset-0">
-                      <div className="absolute inset-0 border-2 border-primary/50 animate-pulse" />
-                      {/* Corner indicators */}
-                      <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-primary" />
-                      <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-primary" />
-                      <div className="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-primary" />
-                      <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-primary" />
+                      {/* Dynamic measurement grid based on current step */}
+                      {currentStep === 0 && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0 grid grid-cols-3 grid-rows-3"
+                        >
+                          {[...Array(9)].map((_, i) => (
+                            <div key={i} className="border border-primary/20" />
+                          ))}
+                        </motion.div>
+                      )}
+
+                      {/* Corner markers */}
+                      <motion.div
+                        className="absolute top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-primary"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                      <motion.div
+                        className="absolute top-4 right-4 w-16 h-16 border-t-2 border-r-2 border-primary"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                      />
+                      <motion.div
+                        className="absolute bottom-4 left-4 w-16 h-16 border-b-2 border-l-2 border-primary"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                      />
+                      <motion.div
+                        className="absolute bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-primary"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+                      />
                     </div>
-                    {/* Instructions overlay */}
+
+                    {/* Enhanced instruction overlay */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <p className="text-white text-center text-lg font-medium mb-4">
+                      <motion.p 
+                        className="text-white text-center text-xl font-medium mb-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        key={currentStep}
+                      >
                         {MEASUREMENT_STEPS[currentStep]?.instruction}
-                      </p>
+                      </motion.p>
+
+                      {/* Step indicators */}
+                      <div className="flex justify-center gap-2 mb-6">
+                        {MEASUREMENT_STEPS.map((_, index) => (
+                          <motion.div
+                            key={index}
+                            className={`h-2 w-2 rounded-full ${
+                              index === currentStep ? 'bg-primary' : 'bg-primary/30'
+                            }`}
+                            animate={index === currentStep ? {
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            } : {}}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        ))}
+                      </div>
+
                       <div className="flex gap-4 max-w-md mx-auto">
                         <Button 
                           variant="outline" 
@@ -222,11 +281,24 @@ const MeasurementLauncher = () => {
 
                   {/* Measurement results */}
                   {measurements.area > 0 && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white">
+                    <motion.div 
+                      className="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-black/50 backdrop-blur-sm rounded-lg text-white"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
                       <p className="text-center font-medium">
-                        Estimated Area: {Math.round(measurements.area)} sq ft
+                        {measurements.length > 0 && measurements.width === 0 ? (
+                          `Length: ${Math.round(measurements.length)} ft`
+                        ) : (
+                          <>
+                            <span className="block">Area: {Math.round(measurements.area)} sq ft</span>
+                            <span className="text-sm text-white/70">
+                              ({Math.round(measurements.length)} × {Math.round(measurements.width)} ft)
+                            </span>
+                          </>
+                        )}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
