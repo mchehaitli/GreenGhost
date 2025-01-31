@@ -1,12 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface ServiceCardProps {
   title: string;
   description: string;
   icon: React.ReactNode;
+  tooltip?: string;
 }
 
-const ServiceCard = ({ title, description, icon }: ServiceCardProps) => {
+const ServiceCard = ({ title, description, icon, tooltip }: ServiceCardProps) => {
   return (
     <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
       <CardHeader>
@@ -14,9 +22,23 @@ const ServiceCard = ({ title, description, icon }: ServiceCardProps) => {
           <div className="p-2 rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110">
             {icon}
           </div>
-          <CardTitle className="transition-colors duration-300 group-hover:text-primary">
-            {title}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="transition-colors duration-300 group-hover:text-primary">
+              {title}
+            </CardTitle>
+            {tooltip && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help transition-colors hover:text-primary" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">{tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

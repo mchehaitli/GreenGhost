@@ -17,17 +17,20 @@ const Services = () => {
     {
       icon: <Bot className="w-6 h-6" />,
       title: "Automated Lawn Mowing",
-      description: "Precision cutting with robotic mowers for a perfect lawn every time."
+      description: "Precision cutting with robotic mowers for a perfect lawn every time.",
+      tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
     },
     {
       icon: <Droplets className="w-6 h-6" />,
       title: "Smart Irrigation",
-      description: "Water-efficient systems that adapt to weather conditions."
+      description: "Water-efficient systems that adapt to weather conditions.",
+      tooltip: "Smart irrigation controllers analyze real-time weather data, soil moisture levels, and plant needs to optimize watering schedules, reducing water usage by up to 50%."
     },
     {
       icon: <Scissors className="w-6 h-6" />,
       title: "Scheduled Maintenance",
-      description: "Regular automated maintenance to keep your lawn looking its best."
+      description: "Regular automated maintenance to keep your lawn looking its best.",
+      tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
     }
   ];
 
@@ -58,6 +61,7 @@ const Services = () => {
                 icon={service.icon}
                 title={service.title}
                 description={service.description}
+                tooltip={service.tooltip}
               />
             ))}
           </div>
