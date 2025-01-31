@@ -32,7 +32,6 @@ const additionalServices: AdditionalService[] = [
   { id: "fertilization", name: "Fertilization", pricePerSqft: 0.08 },
   { id: "weedControl", name: "Weed Control", pricePerSqft: 0.07 },
   { id: "leafRemoval", name: "Leaf Removal", pricePerSqft: 0.06 },
-  { id: "pestControl", name: "Pest Control", pricePerSqft: 0.09 },
   { id: "soilTesting", name: "Soil Analysis & Treatment", pricePerSqft: 0.04 },
   { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06 },
   { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08 },
