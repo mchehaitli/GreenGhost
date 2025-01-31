@@ -1,6 +1,7 @@
 import Hero from "@/components/Hero";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge"; // Added import for Badge
 import {
   Bot,
   Activity,
@@ -65,7 +66,12 @@ const Home = () => {
                   <div className="rounded-lg p-3 bg-primary/10 w-fit mb-4">
                     <Waves className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">Pool Servicing</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold">Pool Servicing</h3>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      Launching Summer 2025
+                    </Badge>
+                  </div>
                   <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
                 </CardContent>
               </Card>
@@ -145,8 +151,7 @@ const Home = () => {
             Ready to Transform Your Landscape?
           </h2>
           <p className="mb-8 max-w-2xl mx-auto">
-            Get started with our automated landscaping solutions today and
-            experience the future of property maintenance.
+            Experience the future of property maintenance with our automated landscaping solutions.
           </p>
           <Button
             asChild
