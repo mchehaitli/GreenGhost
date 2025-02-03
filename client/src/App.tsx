@@ -12,6 +12,7 @@ import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
 import AdminWaitlist from "@/pages/admin/Waitlist";
 import ThemeCustomization from "@/pages/ThemeCustomization";
+import HowItWorks from "@/pages/HowItWorks";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 
@@ -20,6 +21,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
+      <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />

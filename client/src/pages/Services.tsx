@@ -48,34 +48,6 @@ const Services = () => {
     }
   ];
 
-  const steps = [
-    {
-      icon: <ClipboardCheck className="w-8 h-8" />,
-      title: "Get a Free Quote",
-      description: "Tell us about your lawn by filling out our quick online form for a personalized estimate."
-    },
-    {
-      icon: <FileSearch className="w-8 h-8" />,
-      title: "Lawn Assessment & Custom Plan",
-      description: "We'll schedule a visit to map your lawn, understand your needs, and create a custom maintenance plan tailored just for you."
-    },
-    {
-      icon: <Settings className="w-8 h-8" />,
-      title: "Automated System Setup",
-      description: "Our team will install and configure your smart lawn care system, setting up the perfect schedule for a healthy, beautiful lawn."
-    },
-    {
-      icon: <ThumbsUp className="w-8 h-8" />,
-      title: "Effortless Lawn Care",
-      description: "Relax and enjoy! Your automated system will take care of your lawn, providing precise care and attention, all managed remotely."
-    },
-    {
-      icon: <HeartHandshake className="w-8 h-8" />,
-      title: "Ongoing Support & Monitoring",
-      description: "We'll continuously monitor your lawn's health and provide support whenever you need it, ensuring your lawn stays in top condition."
-    }
-  ];
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -121,45 +93,6 @@ const Services = () => {
           </div>
         </div>
       </motion.section>
-
-      {/* Get Started Steps */}
-      <section className="py-20 bg-primary/5">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Get Your Dream Lawn in 5 Easy Steps</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Our streamlined process makes it simple to transform your lawn care experience
-            </p>
-          </div>
-          <motion.div 
-            className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="relative"
-              >
-                <Card className="h-full">
-                  <CardContent className="pt-6">
-                    <div className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto">
-                      {step.icon}
-                    </div>
-                    <h3 className="font-semibold mb-2 text-center">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground text-center">{step.description}</p>
-                    {index < steps.length - 1 && (
-                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20" />
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
       <section className="py-20 bg-muted/10">
         <div className="container">
