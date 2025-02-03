@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -32,15 +32,6 @@ function Router() {
 
 function App() {
   const [showWaitlistPopup, setShowWaitlistPopup] = useState(false);
-
-  useEffect(() => {
-    // Simple timer to show popup after 3 seconds
-    const timer = setTimeout(() => {
-      setShowWaitlistPopup(true);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
