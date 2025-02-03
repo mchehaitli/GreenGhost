@@ -64,13 +64,11 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
+                <div className="text-primary font-semibold mb-2 text-center">
+                  Step {index + 1}
+                </div>
                 <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
-                    <div className="relative">
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg">
-                        {index + 1}
-                      </div>
-                    </div>
                     <div className="rounded-full p-3 bg-gradient-to-br from-primary/10 to-emerald-500/10 w-fit mb-4 mx-auto transition-all duration-300 hover:scale-110 hover:from-primary/20 hover:to-emerald-500/20 group">
                       <div className="text-primary transition-colors duration-300 group-hover:text-emerald-500">
                         {step.icon}
