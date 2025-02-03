@@ -67,7 +67,7 @@ const HowItWorks = () => {
                 <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
                     <div className="relative">
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-emerald-500 text-primary-foreground flex items-center justify-center font-bold shadow-lg">
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg">
                         {index + 1}
                       </div>
                     </div>
