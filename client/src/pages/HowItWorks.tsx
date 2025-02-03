@@ -69,7 +69,7 @@ const HowItWorks = () => {
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <motion.h1 
-              className="text-4xl font-bold mb-6"
+              className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -106,12 +106,14 @@ const HowItWorks = () => {
                   transition: { type: "spring", stiffness: 300 }
                 }}
               >
-                <Card className="h-full bg-card">
+                <Card className="h-full bg-card border border-primary/20">
                   <CardContent className="pt-6">
                     <div className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto">
-                      {step.icon}
+                      <div className="text-primary">
+                        {step.icon}
+                      </div>
                     </div>
-                    <h3 className="font-semibold mb-2 text-center text-card-foreground">{step.title}</h3>
+                    <h3 className="font-semibold mb-2 text-center text-primary">{step.title}</h3>
                     <p className="text-sm text-muted-foreground text-center">{step.description}</p>
                     {index < steps.length - 1 && (
                       <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20" />

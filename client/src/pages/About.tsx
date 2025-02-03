@@ -17,7 +17,7 @@ const About = () => {
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h1 
-              className="text-4xl font-bold mb-6 text-foreground"
+              className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -50,7 +50,7 @@ const About = () => {
                 viewport={{ once: true }}
                 className="space-y-6"
               >
-                <h2 className="text-3xl font-bold text-foreground">Our Genesis Story</h2>
+                <h2 className="text-3xl font-bold text-primary">Our Genesis Story</h2>
                 <div className="space-y-4">
                   <p className="text-muted-foreground">
                     Born at the intersection of Silicon Valley innovation and environmental 
@@ -71,7 +71,7 @@ const About = () => {
                 </div>
               </motion.div>
               <motion.div 
-                className="relative aspect-square bg-gradient-to-br from-primary/10 to-background rounded-full flex items-center justify-center"
+                className="relative aspect-square bg-gradient-to-br from-primary/20 to-background rounded-full flex items-center justify-center border border-primary/20"
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -88,7 +88,7 @@ const About = () => {
       <section className="py-20 bg-background">
         <div className="container">
           <motion.h2 
-            className="text-3xl font-bold text-center mb-16 text-foreground"
+            className="text-3xl font-bold text-center mb-16 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -120,11 +120,11 @@ const About = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-card p-8 rounded-lg shadow-lg"
+                className="bg-card p-8 rounded-lg shadow-lg border border-primary/20"
                 whileHover={{ scale: 1.05 }}
               >
                 {value.icon}
-                <h3 className="text-xl font-semibold mb-4 text-card-foreground">{value.title}</h3>
+                <h3 className="text-xl font-semibold mb-4 text-primary">{value.title}</h3>
                 <p className="text-muted-foreground">{value.description}</p>
               </motion.div>
             ))}
