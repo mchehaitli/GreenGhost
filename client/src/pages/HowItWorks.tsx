@@ -55,7 +55,7 @@ const HowItWorks = () => {
 
       <section className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
-          <div className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-5 gap-12 max-w-6xl mx-auto">
             {steps.map((step, index) => (
               <div 
                 key={index} 
