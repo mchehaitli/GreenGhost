@@ -91,7 +91,7 @@ const Services = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container relative z-20">
+        <div className="container relative z-10">
           <div className="max-w-2xl mx-auto text-center">
             <motion.h1 
               className="text-4xl font-bold mb-6"
@@ -114,7 +114,9 @@ const Services = () => {
             </Button>
           </div>
         </div>
-        <GrassAnimation />
+        <div className="relative h-32">
+          <GrassAnimation />
+        </div>
       </motion.section>
 
       <section className="py-20 bg-muted/10 relative">
