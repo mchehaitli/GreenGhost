@@ -18,6 +18,8 @@ import {
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { LeafParticles } from "@/components/LeafParticle";
+import GrassAnimation from "@/components/GrassAnimation";
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -74,27 +76,48 @@ const Services = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <motion.div 
+      className="min-h-screen relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <LeafParticles />
+
       <motion.section 
-        className="bg-background py-20"
+        className="bg-background py-20 relative"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6">Our Services</h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <motion.h1 
+              className="text-4xl font-bold mb-6"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              Our Services
+            </motion.h1>
+            <motion.p 
+              className="text-lg text-muted-foreground mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               Experience premium automated landscaping services
-            </p>
+            </motion.p>
             <Button asChild size="lg">
               <Link href="/waitlist">Join Waitlist</Link>
             </Button>
           </div>
         </div>
+        <GrassAnimation />
       </motion.section>
 
-      <section className="py-20 bg-muted/10">
+      <section className="py-20 bg-muted/10 relative">
         <div className="container">
           <motion.div 
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
@@ -105,7 +128,14 @@ const Services = () => {
             {isLoading ? (
               <>
                 {[...Array(4)].map((_, index) => (
-                  <motion.div key={index} variants={itemVariants}>
+                  <motion.div 
+                    key={index} 
+                    variants={itemVariants}
+                    whileHover={{ 
+                      scale: 1.05,
+                      transition: { type: "spring", stiffness: 300 }
+                    }}
+                  >
                     <ServiceCardSkeleton />
                   </motion.div>
                 ))}
@@ -113,7 +143,14 @@ const Services = () => {
             ) : (
               <>
                 {services.map((service, index) => (
-                  <motion.div key={index} variants={itemVariants}>
+                  <motion.div 
+                    key={index} 
+                    variants={itemVariants}
+                    whileHover={{ 
+                      scale: 1.05,
+                      transition: { type: "spring", stiffness: 300 }
+                    }}
+                  >
                     <ServiceCard
                       icon={service.icon}
                       title={service.title}
@@ -126,25 +163,41 @@ const Services = () => {
             )}
           </motion.div>
         </div>
+        <GrassAnimation />
       </section>
 
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-background relative">
         <div className="container">
-          <div className="text-center mb-12">
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
             <h2 className="text-3xl font-bold mb-4">Calculate Your Service Cost</h2>
             <p className="text-lg text-muted-foreground">
               Get an instant estimate for our automated lawn care services
             </p>
-          </div>
-          <PricingCalculator />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <PricingCalculator />
+          </motion.div>
         </div>
+        <GrassAnimation />
       </section>
 
       <motion.section 
-        className="bg-primary text-primary-foreground py-20"
+        className="bg-primary text-primary-foreground py-20 relative"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
       >
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
@@ -158,8 +211,9 @@ const Services = () => {
             <Link href="/waitlist">Join Waitlist</Link>
           </Button>
         </div>
+        <GrassAnimation />
       </motion.section>
-    </div>
+    </motion.div>
   );
 };
 
