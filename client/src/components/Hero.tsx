@@ -16,12 +16,6 @@ const Hero = () => {
             Experience premium lawn care with our robotic equipment. Precision landscaping 
             powered by cutting-edge automation.
           </p>
-          <p className="mt-4 text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto italic">
-            With the landscaping industry facing unprecedented labor shortages (turns out we prefer 
-            air-conditioned offices to summer heat - who knew?), our robotic workforce is ready to 
-            step in. But even robots have busy schedules, so secure your spot before our calendar 
-            fills up!
-          </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">
               <Link href="/services">View Services</Link>
