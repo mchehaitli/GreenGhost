@@ -19,7 +19,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { LeafParticles } from "@/components/LeafParticle";
-import GrassAnimation from "@/components/GrassAnimation";
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -114,9 +113,6 @@ const Services = () => {
             </Button>
           </div>
         </div>
-        <div className="relative h-32">
-          <GrassAnimation />
-        </div>
       </motion.section>
 
       <section className="py-20 bg-muted/10 relative">
@@ -165,7 +161,6 @@ const Services = () => {
             )}
           </motion.div>
         </div>
-        <GrassAnimation />
       </section>
 
       <section className="py-20 bg-background relative">
@@ -191,7 +186,6 @@ const Services = () => {
             <PricingCalculator />
           </motion.div>
         </div>
-        <GrassAnimation />
       </section>
 
       <motion.section 
@@ -213,7 +207,6 @@ const Services = () => {
             <Link href="/waitlist">Join Waitlist</Link>
           </Button>
         </div>
-        <GrassAnimation />
       </motion.section>
     </motion.div>
   );

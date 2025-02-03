@@ -37,6 +37,14 @@ interface WaitlistEntry {
   created_at: string;
 }
 
+const COLORS = [
+  'var(--primary)',
+  'color-mix(in srgb, var(--primary) 90%, transparent)',
+  'color-mix(in srgb, var(--primary) 80%, transparent)',
+  'color-mix(in srgb, var(--primary) 70%, transparent)',
+  'color-mix(in srgb, var(--primary) 60%, transparent)'
+];
+
 const AdminWaitlist = () => {
   const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ['/api/waitlist'],
@@ -75,7 +83,7 @@ const AdminWaitlist = () => {
     value: count,
   }));
 
-  const COLORS = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
+  
 
   const handleExport = () => {
     const csv = [
@@ -102,8 +110,8 @@ const AdminWaitlist = () => {
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Waitlist Management</h1>
-        <Button onClick={handleExport} className="gap-2">
+        <h1 className="text-3xl font-bold text-foreground">Waitlist Management</h1>
+        <Button onClick={handleExport} className="gap-2 bg-primary hover:bg-primary/90">
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
@@ -111,30 +119,30 @@ const AdminWaitlist = () => {
 
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-card-foreground">
               Total Signups
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSignups}</div>
+            <div className="text-2xl font-bold text-card-foreground">{totalSignups}</div>
             <p className="text-xs text-muted-foreground">
               Total waitlist registrations
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-card-foreground">
               Last 7 Days
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{last7DaysSignups}</div>
+            <div className="text-2xl font-bold text-card-foreground">{last7DaysSignups}</div>
             <p className="text-xs text-muted-foreground">
               New signups in the past week
             </p>
@@ -144,23 +152,29 @@ const AdminWaitlist = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle>Signup Timeline</CardTitle>
+            <CardTitle className="text-card-foreground">Signup Timeline</CardTitle>
             <CardDescription>Daily registration trend</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timelineData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" className="text-muted-foreground" />
+                  <YAxis className="text-muted-foreground" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid var(--border)' 
+                    }}
+                    labelStyle={{ color: 'var(--foreground)' }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="signups"
-                    stroke="#22c55e"
+                    stroke="var(--primary)"
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -169,9 +183,9 @@ const AdminWaitlist = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle>Geographic Distribution</CardTitle>
+            <CardTitle className="text-card-foreground">Geographic Distribution</CardTitle>
             <CardDescription>Signups by ZIP code region</CardDescription>
           </CardHeader>
           <CardContent>
@@ -184,7 +198,7 @@ const AdminWaitlist = () => {
                     cy="50%"
                     innerRadius={60}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--primary)"
                     paddingAngle={5}
                     dataKey="value"
                   >
@@ -192,7 +206,13 @@ const AdminWaitlist = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid var(--border)' 
+                    }}
+                    labelStyle={{ color: 'var(--foreground)' }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -201,9 +221,9 @@ const AdminWaitlist = () => {
       </div>
 
       {/* Data Table */}
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Waitlist Entries</CardTitle>
+          <CardTitle className="text-card-foreground">Waitlist Entries</CardTitle>
           <CardDescription>
             Detailed view of all registrations
           </CardDescription>
@@ -212,17 +232,17 @@ const AdminWaitlist = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>ZIP Code</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead className="text-muted-foreground">Email</TableHead>
+                <TableHead className="text-muted-foreground">ZIP Code</TableHead>
+                <TableHead className="text-muted-foreground">Joined</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {entries.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>{entry.email}</TableCell>
-                  <TableCell>{entry.zip_code}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-card-foreground">{entry.email}</TableCell>
+                  <TableCell className="text-card-foreground">{entry.zip_code}</TableCell>
+                  <TableCell className="text-card-foreground">
                     {format(new Date(entry.created_at), 'MMM d, yyyy h:mm a')}
                   </TableCell>
                 </TableRow>
