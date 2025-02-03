@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import MeasurementLauncher from "./MeasurementLauncher";
 
 interface AdditionalService {
   id: string;
@@ -98,21 +97,20 @@ const PricingCalculator = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Add Measurement Launcher */}
+          {/* Lawn Size Input */}
           <div className="space-y-2">
             <Label>Lawn Size</Label>
-            <MeasurementLauncher />
-            <p className="text-sm text-muted-foreground mt-2">
-              Use our AI measurement tool or enter the size manually below
-            </p>
             <Input
               type="number"
               min="100"
               value={lawnSize}
               onChange={(e) => setLawnSize(Number(e.target.value))}
-              className="w-full mt-2"
+              className="w-full"
               placeholder="Enter lawn size in sq ft"
             />
+            <p className="text-sm text-muted-foreground">
+              Don't know your lawn size? Our team will measure it during the assessment.
+            </p>
           </div>
 
           {/* Service Frequency */}
