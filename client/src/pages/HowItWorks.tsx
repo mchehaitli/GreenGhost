@@ -9,6 +9,7 @@ import {
   ThumbsUp,
   HeartHandshake,
 } from "lucide-react";
+import { LeafParticles } from "@/components/LeafParticle";
 
 const HowItWorks = () => {
   const steps = [
@@ -58,14 +59,34 @@ const HowItWorks = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <motion.div 
+      className="min-h-screen relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <LeafParticles />
+
       <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6">How It Works</h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <motion.h1 
+              className="text-4xl font-bold mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              How It Works
+            </motion.h1>
+            <motion.p 
+              className="text-lg text-muted-foreground mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
               Experience our streamlined process to transform your lawn care
-            </p>
+            </motion.p>
           </div>
         </div>
       </section>
@@ -83,13 +104,17 @@ const HowItWorks = () => {
                 key={index}
                 variants={itemVariants}
                 className="relative"
+                whileHover={{ 
+                  scale: 1.05,
+                  transition: { type: "spring", stiffness: 300 }
+                }}
               >
-                <Card className="h-full">
+                <Card className="h-full bg-card">
                   <CardContent className="pt-6">
                     <div className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto">
                       {step.icon}
                     </div>
-                    <h3 className="font-semibold mb-2 text-center">{step.title}</h3>
+                    <h3 className="font-semibold mb-2 text-center text-card-foreground">{step.title}</h3>
                     <p className="text-sm text-muted-foreground text-center">{step.description}</p>
                     {index < steps.length - 1 && (
                       <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20" />
@@ -100,14 +125,19 @@ const HowItWorks = () => {
             ))}
           </motion.div>
 
-          <div className="mt-16 text-center">
-            <Button asChild size="lg">
+          <motion.div 
+            className="mt-16 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
               <Link href="/quote">Get Started Today</Link>
             </Button>
-          </div>
+          </motion.div>
         </div>
       </section>
-    </div>
+    </motion.div>
   );
 };
 
