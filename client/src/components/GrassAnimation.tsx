@@ -2,18 +2,18 @@ import { motion } from "framer-motion";
 
 const GrassAnimation = () => {
   return (
-    <div className="absolute bottom-0 left-0 w-full h-24 overflow-hidden pointer-events-none z-10">
+    <div className="absolute bottom-0 left-0 w-full h-32 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
       <motion.div
         className="absolute bottom-0 left-0 w-full h-full"
         style={{
-          background: "linear-gradient(45deg, var(--primary) 0%, var(--primary)/60 100%)",
-          clipPath: "polygon(0% 100%, 100% 100%, 100% 20%, 95% 25%, 90% 15%, 85% 25%, 80% 15%, 75% 25%, 70% 15%, 65% 25%, 60% 15%, 55% 25%, 50% 15%, 45% 25%, 40% 15%, 35% 25%, 30% 15%, 25% 25%, 20% 15%, 15% 25%, 10% 15%, 5% 25%, 0% 20%)"
+          background: "linear-gradient(45deg, var(--primary) 0%, var(--primary)/40 100%)",
+          clipPath: "polygon(0% 100%, 100% 100%, 100% 0%, 95% 15%, 90% 5%, 85% 15%, 80% 5%, 75% 15%, 70% 5%, 65% 15%, 60% 5%, 55% 15%, 50% 5%, 45% 15%, 40% 5%, 35% 15%, 30% 5%, 25% 15%, 20% 5%, 15% 15%, 10% 5%, 5% 15%, 0% 0%)"
         }}
         animate={{
-          translateX: [-20, 20, -20],
+          translateX: [-30, 30, -30],
         }}
         transition={{
-          duration: 3,
+          duration: 4,
           repeat: Infinity,
           ease: "easeInOut"
         }}

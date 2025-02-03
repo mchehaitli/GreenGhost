@@ -86,12 +86,12 @@ const Services = () => {
       <LeafParticles />
 
       <motion.section 
-        className="bg-background py-20 relative"
+        className="bg-background py-20 relative overflow-hidden"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="container">
+        <div className="container relative z-20">
           <div className="max-w-2xl mx-auto text-center">
             <motion.h1 
               className="text-4xl font-bold mb-6"
