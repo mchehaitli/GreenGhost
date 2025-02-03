@@ -9,16 +9,10 @@ import {
   Scissors,
   Activity,
   Droplets,
-  FileSearch,
-  ClipboardCheck,
-  Settings,
-  ThumbsUp,
-  HeartHandshake,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { LeafParticles } from "@/components/LeafParticle";
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -82,8 +76,6 @@ const Services = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <LeafParticles />
-
       <motion.section 
         className="bg-background py-20 relative overflow-hidden"
         initial={{ opacity: 0, y: -20 }}
@@ -108,14 +100,14 @@ const Services = () => {
             >
               Experience premium automated landscaping services
             </motion.p>
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
               <Link href="/waitlist">Join Waitlist</Link>
             </Button>
           </div>
         </div>
       </motion.section>
 
-      <section className="py-20 bg-muted/10 relative">
+      <section className="py-20 bg-background/50">
         <div className="container">
           <motion.div 
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"

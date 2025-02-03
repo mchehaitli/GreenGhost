@@ -9,7 +9,6 @@ import {
   ThumbsUp,
   HeartHandshake,
 } from "lucide-react";
-import { LeafParticles } from "@/components/LeafParticle";
 
 const HowItWorks = () => {
   const steps = [
@@ -66,8 +65,6 @@ const HowItWorks = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <LeafParticles />
-
       <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
@@ -91,7 +88,7 @@ const HowItWorks = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-primary/5">
+      <section className="py-20 bg-background/50">
         <div className="container">
           <motion.div 
             className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto"

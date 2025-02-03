@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Bot, Sprout, Cpu, LineChart } from "lucide-react";
-import { LeafParticles } from "@/components/LeafParticle";
 
 const About = () => {
   return (
@@ -13,7 +12,6 @@ const About = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <LeafParticles />
       {/* Hero Header */}
       <section className="bg-background py-20">
         <div className="container">
@@ -41,7 +39,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-20 bg-primary/5">
+      <section className="py-20 bg-background/50">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -73,7 +71,7 @@ const About = () => {
                 </div>
               </motion.div>
               <motion.div 
-                className="relative aspect-square bg-gradient-to-br from-primary/10 to-primary/5 rounded-full flex items-center justify-center"
+                className="relative aspect-square bg-gradient-to-br from-primary/10 to-background rounded-full flex items-center justify-center"
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
