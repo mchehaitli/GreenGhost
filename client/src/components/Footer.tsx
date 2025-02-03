@@ -75,9 +75,6 @@ const Footer = () => {
                 contact@greenghosttech.com
               </li>
               <li className="text-sm text-muted-foreground">
-                (555) 123-4567
-              </li>
-              <li className="text-sm text-muted-foreground">
                 Beta Launch: Summer 2025
               </li>
             </ul>
