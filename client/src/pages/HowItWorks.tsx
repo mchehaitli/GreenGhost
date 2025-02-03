@@ -43,7 +43,7 @@ const HowItWorks = () => {
       <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent animate-fade-in">
+            <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-green-500 via-primary to-emerald-500 bg-clip-text text-transparent animate-fade-in">
               How It Works
             </h1>
             <p className="text-lg text-muted-foreground mb-8 animate-fade-up">
@@ -53,7 +53,7 @@ const HowItWorks = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-background/50">
+      <section className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
           <div className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto">
             {steps.map((step, index) => (
@@ -64,22 +64,22 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <Card className="h-full bg-card border border-primary/20 transition-all duration-300 hover:shadow-lg hover:scale-105">
+                <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
                     <div className="relative">
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-emerald-500 text-primary-foreground flex items-center justify-center font-bold shadow-lg">
                         {index + 1}
                       </div>
                     </div>
-                    <div className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto transition-transform duration-300 hover:scale-110 hover:bg-primary/20">
-                      <div className="text-primary">
+                    <div className="rounded-full p-3 bg-gradient-to-br from-primary/10 to-emerald-500/10 w-fit mb-4 mx-auto transition-all duration-300 hover:scale-110 hover:from-primary/20 hover:to-emerald-500/20 group">
+                      <div className="text-primary transition-colors duration-300 group-hover:text-emerald-500">
                         {step.icon}
                       </div>
                     </div>
                     <h3 className="font-semibold mb-2 text-center text-primary">{step.title}</h3>
                     <p className="text-sm text-muted-foreground text-center">{step.description}</p>
                     {index < steps.length - 1 && (
-                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20" />
+                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-emerald-500/50" />
                     )}
                   </CardContent>
                 </Card>
@@ -88,7 +88,11 @@ const HowItWorks = () => {
           </div>
 
           <div className="mt-16 text-center animate-fade-up" style={{ animationDelay: '1000ms' }}>
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
+            <Button 
+              asChild 
+              size="lg" 
+              className="bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 transition-all duration-300"
+            >
               <Link href="/quote">Get Started Today</Link>
             </Button>
           </div>
