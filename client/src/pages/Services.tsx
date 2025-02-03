@@ -9,7 +9,6 @@ import {
   Scissors,
   Activity,
   Droplets,
-  Sun,
   Leaf,
   Flower2,
   PenTool,
@@ -49,12 +48,6 @@ const Services = () => {
       title: "Scheduled Maintenance",
       description: "Regular automated maintenance to keep your lawn looking its best.",
       tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
-    },
-    {
-      icon: <Sun className="w-6 h-6" />,
-      title: "Solar-Powered Solutions",
-      description: "Eco-friendly robotic maintenance powered by solar energy.",
-      tooltip: "Our solar-powered maintenance systems reduce carbon footprint while providing reliable service around the clock."
     },
     {
       icon: <Leaf className="w-6 h-6" />,
