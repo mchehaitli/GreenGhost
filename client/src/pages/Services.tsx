@@ -80,7 +80,7 @@ const Services = () => {
     {
       icon: <ClipboardCheck className="w-8 h-8" />,
       title: "Get a Free Quote",
-      description: "Tell us about your lawn! Fill out our quick online form or give us a call for a personalized estimate."
+      description: "Tell us about your lawn by filling out our quick online form for a personalized estimate."
     },
     {
       icon: <FileSearch className="w-8 h-8" />,
@@ -103,6 +103,7 @@ const Services = () => {
       description: "We'll continuously monitor your lawn's health and provide support whenever you need it, ensuring your lawn stays in top condition."
     }
   ];
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
