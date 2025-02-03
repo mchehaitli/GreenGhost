@@ -55,7 +55,7 @@ const HowItWorks = () => {
 
       <section className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
-          <div className="grid md:grid-cols-5 gap-12 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-5 gap-16 max-w-6xl mx-auto">
             {steps.map((step, index) => (
               <div 
                 key={index} 
@@ -64,9 +64,9 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-lg mb-4 text-center">
-                  <span className="font-medium">Step </span>
-                  <span className="text-primary font-bold text-xl">{index + 1}</span>
+                <div className="text-muted-foreground text-lg mb-6 text-center">
+                  <span className="font-medium">STEP </span>
+                  <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
                 <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
