@@ -64,8 +64,9 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-primary font-semibold mb-2 text-center">
-                  Step {index + 1}
+                <div className="text-muted-foreground text-lg mb-4 text-center">
+                  <span className="font-medium">Step </span>
+                  <span className="text-primary font-bold text-xl">{index + 1}</span>
                 </div>
                 <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
@@ -76,9 +77,6 @@ const HowItWorks = () => {
                     </div>
                     <h3 className="font-semibold mb-2 text-center text-primary">{step.title}</h3>
                     <p className="text-sm text-muted-foreground text-center">{step.description}</p>
-                    {index < steps.length - 1 && (
-                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-emerald-500/50" />
-                    )}
                   </CardContent>
                 </Card>
               </div>
