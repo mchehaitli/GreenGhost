@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
 import {
   ClipboardCheck,
   FileSearch,
@@ -39,122 +38,105 @@ const HowItWorks = () => {
     }
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   return (
-    <motion.div 
-      className="min-h-screen relative overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="min-h-screen relative overflow-hidden">
       <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <motion.h1 
-              className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
+            <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent animate-fade-in">
               How It Works
-            </motion.h1>
-            <motion.p 
-              className="text-lg text-muted-foreground mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8 animate-fade-up">
               Experience our streamlined process to transform your lawn care
-            </motion.p>
+            </p>
           </div>
         </div>
       </section>
 
       <section className="py-20 bg-background/50">
         <div className="container">
-          <motion.div 
-            className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
+          <div className="grid md:grid-cols-5 gap-8 max-w-6xl mx-auto">
             {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="relative"
-                whileHover={{ 
-                  scale: 1.02,
-                  transition: { type: "spring", stiffness: 300 }
+              <div 
+                key={index} 
+                className="relative animate-step"
+                style={{ 
+                  animationDelay: `${index * 200}ms`,
                 }}
               >
-                <Card className="h-full bg-card border border-primary/20">
+                <Card className="h-full bg-card border border-primary/20 transition-all duration-300 hover:shadow-lg hover:scale-105">
                   <CardContent className="pt-6">
-                    <motion.div 
-                      className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto"
-                      whileHover={{ 
-                        scale: 1.1,
-                        backgroundColor: "var(--primary-20)",
-                      }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
+                    <div className="relative">
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                        {index + 1}
+                      </div>
+                    </div>
+                    <div className="rounded-full p-3 bg-primary/10 w-fit mb-4 mx-auto transition-transform duration-300 hover:scale-110 hover:bg-primary/20">
                       <div className="text-primary">
                         {step.icon}
                       </div>
-                    </motion.div>
+                    </div>
                     <h3 className="font-semibold mb-2 text-center text-primary">{step.title}</h3>
                     <p className="text-sm text-muted-foreground text-center">{step.description}</p>
                     {index < steps.length - 1 && (
-                      <motion.div 
-                        className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20"
-                        initial={{ scaleX: 0, originX: 0 }}
-                        whileInView={{ scaleX: 1 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
-                        viewport={{ once: true }}
-                      />
+                      <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/20" />
                     )}
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
 
-          <motion.div 
-            className="mt-16 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.5 }}
-            viewport={{ once: true }}
-          >
+          <div className="mt-16 text-center animate-fade-up" style={{ animationDelay: '1000ms' }}>
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
               <Link href="/quote">Get Started Today</Link>
             </Button>
-          </motion.div>
+          </div>
         </div>
       </section>
-    </motion.div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes fadeUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes stepIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease forwards;
+        }
+
+        .animate-fade-up {
+          animation: fadeUp 0.5s ease forwards;
+        }
+
+        .animate-step {
+          opacity: 0;
+          animation: stepIn 0.5s ease forwards;
+        }
+      `}</style>
+    </div>
   );
 };
 
