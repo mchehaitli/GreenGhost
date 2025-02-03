@@ -9,11 +9,8 @@ import {
   Scissors,
   Activity,
   Droplets,
-  Leaf,
-  Flower2,
-  PenTool,
-  ClipboardCheck,
   FileSearch,
+  ClipboardCheck,
   Settings,
   ThumbsUp,
   HeartHandshake,
@@ -32,12 +29,6 @@ const Services = () => {
       tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
     },
     {
-      icon: <PenTool className="w-6 h-6" />,
-      title: "Landscape Design",
-      description: "Custom landscape design with 3D visualization and AR planning.",
-      tooltip: "Professional landscape architects use cutting-edge AR technology to create and visualize your dream outdoor space before implementation."
-    },
-    {
       icon: <Droplets className="w-6 h-6" />,
       title: "Smart Irrigation",
       description: "Water-efficient systems that adapt to weather conditions.",
@@ -48,18 +39,6 @@ const Services = () => {
       title: "Scheduled Maintenance",
       description: "Regular automated maintenance to keep your lawn looking its best.",
       tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
-    },
-    {
-      icon: <Leaf className="w-6 h-6" />,
-      title: "Automated Leaf Collection",
-      description: "Smart systems that detect and remove fallen leaves.",
-      tooltip: "Advanced sensors identify and collect fallen leaves, maintaining a clean and healthy lawn year-round."
-    },
-    {
-      icon: <Flower2 className="w-6 h-6" />,
-      title: "Garden Care Automation",
-      description: "Smart solutions for flower beds and gardens.",
-      tooltip: "Automated care systems for your garden, including precise watering, fertilization, and maintenance schedules."
     },
     {
       icon: <Activity className="w-6 h-6" />,
@@ -96,7 +75,6 @@ const Services = () => {
       description: "We'll continuously monitor your lawn's health and provide support whenever you need it, ensuring your lawn stays in top condition."
     }
   ];
-
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -193,7 +171,7 @@ const Services = () => {
           >
             {isLoading ? (
               <>
-                {[...Array(8)].map((_, index) => (
+                {[...Array(4)].map((_, index) => (
                   <motion.div key={index} variants={itemVariants}>
                     <ServiceCardSkeleton />
                   </motion.div>
