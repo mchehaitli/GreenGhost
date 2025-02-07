@@ -15,7 +15,7 @@ const About = () => {
       {/* Hero Header */}
       <section className="bg-background py-20">
         <div className="container">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center pb-8">
             <motion.div 
               className="flex items-center justify-center gap-2 mb-4"
               initial={{ opacity: 0, y: 20 }}
@@ -26,7 +26,7 @@ const About = () => {
               <span className="text-muted-foreground">Founded in Frisco, Texas</span>
             </motion.div>
             <motion.h1 
-              className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
+              className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent pb-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -48,7 +48,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-20 bg-background/50">
+      <section className="py-20 bg-background/50 mt-8">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
