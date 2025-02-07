@@ -16,6 +16,10 @@ const Navigation = () => {
   const [open, setOpen] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
@@ -27,7 +31,7 @@ const Navigation = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-8">
         <Link href="/">
-          <a className="flex items-center space-x-2 group transition-transform duration-300 hover:scale-105">
+          <a className="flex items-center space-x-2 group transition-transform duration-300 hover:scale-105" onClick={scrollToTop}>
             <GhostMascot size="sm" animated={false} />
             <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
             <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
@@ -39,6 +43,7 @@ const Navigation = () => {
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <a
+                onClick={scrollToTop}
                 className={cn(
                   "text-sm font-medium transition-all duration-300",
                   "relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full",
@@ -72,7 +77,10 @@ const Navigation = () => {
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <a
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false);
+                      scrollToTop();
+                    }}
                     className={cn(
                       "text-sm font-medium p-2 rounded-md transition-all duration-300",
                       location === item.href
