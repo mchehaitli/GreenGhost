@@ -59,12 +59,12 @@ const HowItWorks = () => {
             {steps.map((step, index) => (
               <div 
                 key={index} 
-                className="flex flex-col items-center mt-16"
+                className="flex flex-col items-center mt-8"
                 style={{ 
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-xl mb-4 text-center">
+                <div className="text-muted-foreground text-xl mb-2 text-center">
                   <span className="font-medium">STEP </span>
                   <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
