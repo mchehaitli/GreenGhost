@@ -1,13 +1,17 @@
 import { Link } from "wouter";
 
 const Footer = () => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="border-t">
       <div className="container py-8 md:py-12 px-8">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
           <div className="col-span-2 md:col-span-1">
             <Link href="/">
-              <a className="flex items-center space-x-2 group">
+              <a className="flex items-center space-x-2 group" onClick={scrollToTop}>
                 <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
                 <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
               </a>
@@ -21,14 +25,14 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link href="/about">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
+                  <a onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     About Us
                   </a>
                 </Link>
               </li>
               <li>
                 <Link href="/waitlist">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
+                  <a onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Join Waitlist
                   </a>
                 </Link>
