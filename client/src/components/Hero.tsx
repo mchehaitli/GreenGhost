@@ -14,8 +14,7 @@ const Hero = () => {
             Landscaping
           </h1>
           <p className="mt-6 text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto">
-            Experience premium lawn care with our robotic equipment. Precision landscaping 
-            powered by cutting-edge automation.
+            Ready for the Best Lawn on the Block? Discover Our Automated Lawn Care Solutions.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg" variant="outline">
