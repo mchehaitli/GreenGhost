@@ -33,7 +33,7 @@ interface WaitlistDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const WaitlistDialog = ({ open = false, onOpenChange }: WaitlistDialogProps) => {
+const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -130,7 +130,7 @@ const WaitlistDialog = ({ open = false, onOpenChange }: WaitlistDialogProps) => 
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
