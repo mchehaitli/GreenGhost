@@ -12,9 +12,12 @@ import {
 import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import WaitlistDialog from "@/components/WaitlistDialog";
 
 export const Home = () => {
   const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
+  const [showWaitlist, setShowWaitlist] = useState(false);
 
   return (
     <div>
@@ -226,19 +229,22 @@ export const Home = () => {
           <h2 className="text-3xl font-bold mb-4">
             Ready to Transform Your Landscape?
           </h2>
-          <p className="mb-8 max-w-2xl mx-auto">
-            Experience the future of property maintenance with our automated landscaping solutions.
-          </p>
+          <p className="mb-8">Experience the future of property maintenance with our automated landscaping solutions.</p>
           <Button
-            asChild
+            onClick={() => setShowWaitlist(true)}
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/services">Join Waitlist</Link>
+            Join Waitlist
           </Button>
         </div>
       </motion.section>
+
+      <WaitlistDialog 
+        open={showWaitlist} 
+        onOpenChange={setShowWaitlist}
+      />
     </div>
   );
 };

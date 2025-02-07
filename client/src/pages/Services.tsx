@@ -13,9 +13,11 @@ import {
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import WaitlistDialog from "@/components/WaitlistDialog"; // Added import
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [showWaitlist, setShowWaitlist] = useState(false); // Added state
   const services = [
     {
       icon: <Bot className="w-6 h-6" />,
@@ -191,15 +193,20 @@ const Services = () => {
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
           <p className="mb-8">Join our waitlist today to experience the future of lawn care.</p>
           <Button
-            asChild
+            onClick={() => setShowWaitlist(true)}
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            <Link href="/waitlist">Join Waitlist</Link>
+            Join Waitlist
           </Button>
         </div>
       </motion.section>
+
+      <WaitlistDialog 
+        open={showWaitlist} 
+        onOpenChange={setShowWaitlist}
+      />
     </motion.div>
   );
 };
