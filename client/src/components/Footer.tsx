@@ -4,7 +4,7 @@ const Footer = () => {
   return (
     <footer className="border-t">
       <div className="container py-8 md:py-12 px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
           <div className="col-span-2 md:col-span-1">
             <Link href="/">
               <a className="flex items-center space-x-2 group">
@@ -15,32 +15,6 @@ const Footer = () => {
             <p className="mt-4 text-sm text-muted-foreground">
               Premium automated landscaping solutions for residential estates and commercial properties
             </p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-4">Services</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/services">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
-                    Lawn Maintenance
-                  </a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
-                    Landscape Design
-                  </a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
-                    Automation Systems
-                  </a>
-                </Link>
-              </li>
-            </ul>
           </div>
           <div>
             <h3 className="font-semibold mb-4">Company</h3>
@@ -56,13 +30,6 @@ const Footer = () => {
                 <Link href="/waitlist">
                   <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
                     Join Waitlist
-                  </a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services">
-                  <a className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
-                    Our Solutions
                   </a>
                 </Link>
               </li>
