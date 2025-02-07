@@ -89,7 +89,7 @@ const HowItWorks = () => {
               size="lg" 
               className="bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 transition-all duration-300"
             >
-              <Link href="/quote">Get Started Today</Link>
+              <Link href="/waitlist">Join Waitlist</Link>
             </Button>
           </div>
         </div>
