@@ -13,7 +13,7 @@ const About = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Hero Header */}
-      <section className="bg-background py-20">
+      <section className="bg-background py-12">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center pb-8">
             <motion.div 
@@ -48,7 +48,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-12 bg-background/50 mt-4">
+      <section className="py-8 bg-background/50">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
