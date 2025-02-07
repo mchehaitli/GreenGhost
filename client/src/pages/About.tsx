@@ -48,7 +48,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-20 bg-background/50 mt-8">
+      <section className="py-12 bg-background/50 mt-4">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
