@@ -13,19 +13,12 @@ import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
-import WaitlistDialog from "@/components/WaitlistDialog";
 
 export const Home = () => {
   const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
-  const [showWaitlist, setShowWaitlist] = useState(false);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleWaitlistClick = () => {
-    scrollToTop();
-    setShowWaitlist(true);
   };
 
   return (
@@ -240,20 +233,17 @@ export const Home = () => {
           </h2>
           <p className="mb-8">Experience the future of property maintenance with our automated landscaping solutions.</p>
           <Button
-            onClick={handleWaitlistClick}
+            asChild
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
           >
-            Join Waitlist
+            <Link href="/waitlist" onClick={scrollToTop}>
+              Join Waitlist
+            </Link>
           </Button>
         </div>
       </motion.section>
-
-      <WaitlistDialog 
-        open={showWaitlist} 
-        onOpenChange={setShowWaitlist}
-      />
     </div>
   );
 };
