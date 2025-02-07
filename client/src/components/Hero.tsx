@@ -17,11 +17,11 @@ const Hero = () => {
             powered by cutting-edge automation.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/waitlist">Join Waitlist</Link>
-            </Button>
             <Button asChild size="lg">
               <Link href="/services">View Services</Link>
+            </Button>
+            <Button asChild size="lg" variant="secondary">
+              <Link href="/waitlist">Join Waitlist</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href="/about">About Us</Link>
