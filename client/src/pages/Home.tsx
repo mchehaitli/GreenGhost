@@ -19,6 +19,15 @@ export const Home = () => {
   const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
   const [showWaitlist, setShowWaitlist] = useState(false);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleWaitlistClick = () => {
+    scrollToTop();
+    setShowWaitlist(true);
+  };
+
   return (
     <div>
       <Hero />
@@ -231,7 +240,7 @@ export const Home = () => {
           </h2>
           <p className="mb-8">Experience the future of property maintenance with our automated landscaping solutions.</p>
           <Button
-            onClick={() => setShowWaitlist(true)}
+            onClick={handleWaitlistClick}
             size="lg"
             variant="secondary"
             className="bg-white text-primary hover:bg-white/90"
