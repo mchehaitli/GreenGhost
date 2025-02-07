@@ -9,8 +9,9 @@ const Hero = () => {
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
           <GhostMascot size="lg" className="mb-8" />
           <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-            The Future of Lawn Care is{" "}
-            <span className="text-primary">Automated</span>
+            Welcome to the Future of{" "}
+            <span className="text-primary">Automated</span>{" "}
+            Landscaping
           </h1>
           <p className="mt-6 text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto">
             Experience premium lawn care with our robotic equipment. Precision landscaping 
