@@ -31,7 +31,7 @@ const About = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              About Us
+              Revolutionizing Landscape Care Through Technology
             </motion.h1>
             <motion.p 
               className="text-xl text-muted-foreground leading-relaxed mb-12"
