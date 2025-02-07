@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Bot, Sprout, Cpu, LineChart } from "lucide-react";
+import { Bot, Sprout, Cpu, LineChart, MapPin } from "lucide-react";
 
 const About = () => {
   return (
@@ -16,6 +16,15 @@ const About = () => {
       <section className="bg-background py-20">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
+            <motion.div 
+              className="flex items-center justify-center gap-2 mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <MapPin className="h-5 w-5 text-primary" />
+              <span className="text-muted-foreground">Founded in Frisco, Texas</span>
+            </motion.div>
             <motion.h1 
               className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
               initial={{ opacity: 0, y: 20 }}
@@ -53,18 +62,19 @@ const About = () => {
                 <h2 className="text-3xl font-bold text-primary">Our Genesis Story</h2>
                 <div className="space-y-4">
                   <p className="text-muted-foreground">
-                    Born at the intersection of Silicon Valley innovation and environmental 
-                    stewardship, GreenGhost Tech emerged from a simple observation: the 
-                    landscaping industry was ripe for disruption.
+                    Born in the heart of Frisco, Texas, where innovation meets tradition, 
+                    GreenGhost Tech emerged from a simple observation: the landscaping 
+                    industry was ready for a technological revolution.
                   </p>
                   <p className="text-muted-foreground">
-                    Our founders, a team of robotics engineers and landscape architects, 
-                    saw an opportunity to address the increasing labor shortages and 
-                    environmental concerns in traditional landscaping while delivering 
-                    superior results through automation.
+                    Our founders, a team of robotics engineers and landscape architects 
+                    from North Texas, combined their expertise to address the growing 
+                    challenges in traditional landscaping while pioneering sustainable, 
+                    automated solutions for our unique climate.
                   </p>
                   <p className="text-muted-foreground">
-                    Today, we're proud to be at the forefront of the green technology 
+                    Today, from our headquarters in Frisco's thriving tech corridor, 
+                    we're proud to be at the forefront of the green technology 
                     revolution, making professional landscape maintenance more accessible, 
                     sustainable, and efficient than ever before.
                   </p>
@@ -145,15 +155,14 @@ const About = () => {
             >
               <h2 className="text-3xl font-bold">The Future of Landscaping is Here</h2>
               <p className="text-xl opacity-90">
-                We're in the final stages of deployment, set to launch before summer 2025. 
-                Join our waitlist now for a chance to win a full year of free maintenance 
-                and be among the first to experience the future of property care.
+                Starting from our home in Frisco, we're preparing to revolutionize 
+                lawn care across Texas. Join our waitlist now to be among the first 
+                to experience the future of property care.
               </p>
               <p className="text-lg opacity-80">
                 <span className="italic">Pro tip:</span> With the landscaping industry facing unprecedented 
-                labor shortages (turns out humans prefer air-conditioned offices to summer heat - who knew?), 
-                our robotic workforce is ready to step in. But even robots have busy schedules, so secure 
-                your spot before our calendar fills up!
+                labor shortages, our robotic workforce is ready to step in. But even robots have busy schedules, 
+                so secure your spot before our calendar fills up!
               </p>
               <Button 
                 asChild 
