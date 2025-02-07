@@ -40,20 +40,20 @@ const HowItWorks = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <section className="bg-background py-20">
+      <section className="bg-background pt-8 pb-4">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-green-500 via-primary to-emerald-500 bg-clip-text text-transparent animate-fade-in">
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-500 via-primary to-emerald-500 bg-clip-text text-transparent animate-fade-in">
               How It Works
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 animate-fade-up">
+            <p className="text-lg text-muted-foreground animate-fade-up">
               Experience our streamlined process to transform your lawn care
             </p>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-b from-background via-primary/5 to-background">
+      <section className="py-12 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
           <div className="grid md:grid-cols-5 gap-16 max-w-6xl mx-auto">
             {steps.map((step, index) => (
@@ -64,7 +64,7 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-lg mb-6 text-center">
+                <div className="text-muted-foreground text-xl mb-10 text-center">
                   <span className="font-medium">STEP </span>
                   <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
