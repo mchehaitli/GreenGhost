@@ -55,16 +55,16 @@ const HowItWorks = () => {
 
       <section className="py-12 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto relative">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto">
             {steps.map((step, index) => (
               <div 
                 key={index} 
-                className="relative flex flex-col items-center"
+                className="flex flex-col items-center mt-16"
                 style={{ 
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-xl mb-4 text-center absolute -top-10">
+                <div className="text-muted-foreground text-xl mb-4 text-center">
                   <span className="font-medium">STEP </span>
                   <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
