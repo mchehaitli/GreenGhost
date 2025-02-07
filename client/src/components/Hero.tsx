@@ -8,10 +8,10 @@ const Hero = () => {
       <div className="container mx-auto px-8">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
           <GhostMascot size="lg" className="mb-8" />
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text">
             Welcome to the Future of{" "}
-            <span className="text-primary">Automated</span>{" "}
-            Landscaping
+            <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text">{" "}Automated</span>{" "}
+            <span className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text">Landscaping</span>
           </h1>
           <p className="mt-6 text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto">
             Ready for the Best Lawn on the Block?
