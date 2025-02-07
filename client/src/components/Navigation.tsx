@@ -27,6 +27,10 @@ const Navigation = () => {
     { href: "/about", label: "About Us" },
   ];
 
+  const handleWaitlistClick = () => {
+    setShowWaitlist(true);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-8">
@@ -58,7 +62,7 @@ const Navigation = () => {
           ))}
           <Button 
             variant="outline" 
-            onClick={() => setShowWaitlist(true)}
+            onClick={handleWaitlistClick}
             className="bg-primary/10 text-primary hover:bg-primary/20"
           >
             Join Waitlist
@@ -95,8 +99,8 @@ const Navigation = () => {
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  setShowWaitlist(true);
                   setOpen(false);
+                  setShowWaitlist(true);
                 }}
                 className="bg-primary/10 text-primary hover:bg-primary/20"
               >
