@@ -64,7 +64,7 @@ const HowItWorks = () => {
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-xl mb-2 text-center">
+                <div className="text-muted-foreground text-xl mb-1 text-center">
                   <span className="font-medium">STEP </span>
                   <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
