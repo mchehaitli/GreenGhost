@@ -13,9 +13,9 @@ const About = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Hero Header */}
-      <section className="bg-background py-12">
+      <section className="bg-background py-8">
         <div className="container">
-          <div className="max-w-3xl mx-auto text-center pb-8">
+          <div className="max-w-3xl mx-auto text-center">
             <motion.div 
               className="flex items-center justify-center gap-2 mb-4"
               initial={{ opacity: 0, y: 20 }}
@@ -34,7 +34,7 @@ const About = () => {
               Revolutionizing Landscape Care Through Technology
             </motion.h1>
             <motion.p 
-              className="text-xl text-muted-foreground leading-relaxed mb-12"
+              className="text-xl text-muted-foreground leading-relaxed mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
@@ -48,7 +48,7 @@ const About = () => {
       </section>
 
       {/* Story Section */}
-      <section className="py-8 bg-background/50">
+      <section className="py-4 bg-background/50">
         <div className="container">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
