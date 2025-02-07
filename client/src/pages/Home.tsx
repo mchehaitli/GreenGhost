@@ -139,7 +139,7 @@ export const Home = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-semibold">Pool Servicing</h3>
                     <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                      Launching Summer 2025
+                      Launching Soon
                     </Badge>
                   </div>
                   <p className="text-muted-foreground">Automated pool maintenance with smart chemical balancing and cleaning systems.</p>
