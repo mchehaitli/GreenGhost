@@ -55,20 +55,20 @@ const HowItWorks = () => {
 
       <section className="py-12 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container">
-          <div className="grid md:grid-cols-5 gap-16 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-6xl mx-auto relative">
             {steps.map((step, index) => (
               <div 
                 key={index} 
-                className="relative animate-step"
+                className="relative flex flex-col items-center"
                 style={{ 
                   animationDelay: `${index * 200}ms`,
                 }}
               >
-                <div className="text-muted-foreground text-xl mb-10 text-center">
+                <div className="text-muted-foreground text-xl mb-4 text-center absolute -top-10">
                   <span className="font-medium">STEP </span>
                   <span className="text-primary font-bold text-2xl">{index + 1}</span>
                 </div>
-                <Card className="h-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
+                <Card className="h-full w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-105">
                   <CardContent className="pt-6">
                     <div className="rounded-full p-3 bg-gradient-to-br from-primary/10 to-emerald-500/10 w-fit mb-4 mx-auto transition-all duration-300 hover:scale-110 hover:from-primary/20 hover:to-emerald-500/20 group">
                       <div className="text-primary transition-colors duration-300 group-hover:text-emerald-500">
