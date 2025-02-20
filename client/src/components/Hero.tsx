@@ -10,7 +10,7 @@ const Hero = () => {
           <GhostMascot size="lg" className="mb-8" />
           <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text text-transparent">
             Welcome to the Future of{" "}
-            <span className="text-primary bg-gradient-to-r from-primary via-emerald-500 to-primary/80 bg-clip-text">{" "}Automated</span>{" "}
+            <span className="text-[#34D399] bg-gradient-to-r from-[#34D399] via-[#059669] to-[#34D399]/80 bg-clip-text">{" "}Automated</span>{" "}
             <span className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text">Landscaping</span>
           </h1>
           <p className="mt-6 text-xl text-muted-foreground sm:text-2xl max-w-2xl mx-auto font-medium">
@@ -26,7 +26,7 @@ const Hero = () => {
             <Button asChild size="lg" variant="outline" className="text-lg">
               <Link href="/services">View Services</Link>
             </Button>
-            <Button asChild size="lg" className="text-lg bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90">
+            <Button asChild size="lg" className="text-lg bg-gradient-to-r from-[#34D399] to-[#059669] hover:from-[#34D399]/90 hover:to-[#059669]/90">
               <Link href="/waitlist">Join Waitlist</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="text-lg">

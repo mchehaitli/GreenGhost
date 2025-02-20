@@ -18,7 +18,7 @@ const WaitlistButton = () => {
         <Button
           variant="default"
           size="lg"
-          className="rounded-l-lg rounded-r-none px-4 py-8 shadow-lg bg-primary hover:bg-primary/90"
+          className="rounded-l-lg rounded-r-none px-4 py-8 shadow-lg bg-gradient-to-r from-[#34D399] to-[#059669] hover:from-[#34D399]/90 hover:to-[#059669]/90"
           onClick={() => setShowDialog(true)}
         >
           <span className="absolute -rotate-90 flex items-center whitespace-nowrap text-primary-foreground font-semibold">
