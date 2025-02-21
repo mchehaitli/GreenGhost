@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,8 +35,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { login, user, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useLocation();
 
-  // Initialize form first before any conditional returns
+  // If user is already authenticated, redirect to admin waitlist
+  if (user) {
+    return <Redirect to="/admin/waitlist" />;
+  }
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -53,6 +58,7 @@ export default function Login() {
       console.log('Login: Attempting login...');
       await login(data);
       console.log('Login: Success, auth state will handle redirect');
+      setLocation('/admin/waitlist');
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -64,80 +70,78 @@ export default function Login() {
     }
   };
 
-  // Handle all rendering conditions in the return statement
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
-    <>
-      {user ? (
-        <Redirect to="/admin/waitlist" />
-      ) : isLoading ? (
-        <div className="container flex items-center justify-center min-h-screen">
-          <LoadingSpinner size="lg" />
-        </div>
-      ) : (
-        <div className="container flex items-center justify-center min-h-screen py-10">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Login to Admin Panel</CardTitle>
-              <CardDescription>
-                Enter your credentials to access the waitlist analytics
-              </CardDescription>
-            </CardHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardContent className="space-y-4">
-                  {error && (
-                    <Alert variant="destructive" className="mb-4">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input {...field} autoComplete="username" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password" 
-                            {...field} 
-                            autoComplete="current-password"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={form.formState.isSubmitting}
-                  >
-                    {form.formState.isSubmitting ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
-                    ) : null}
-                    Login
-                  </Button>
-                </CardFooter>
-              </form>
-            </Form>
-          </Card>
-        </div>
-      )}
-    </>
+    <div className="container flex items-center justify-center min-h-screen py-10">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Login to Admin Panel</CardTitle>
+          <CardDescription>
+            Enter your credentials to access the waitlist analytics
+          </CardDescription>
+        </CardHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} autoComplete="username" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        {...field} 
+                        autoComplete="current-password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? (
+                  <LoadingSpinner size="sm" className="mr-2" />
+                ) : null}
+                Login
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
+      </Card>
+    </div>
   );
 }

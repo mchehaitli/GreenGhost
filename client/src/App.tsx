@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,8 +18,11 @@ import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
+  const { user } = useAuth();
+
   return (
     <Switch>
       {/* Public Routes */}
@@ -30,7 +33,11 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
-      <Route path="/login" component={Login} />
+
+      {/* Auth Routes */}
+      <Route path="/login">
+        {user ? <Redirect to="/admin/waitlist" /> : <Login />}
+      </Route>
 
       {/* Protected Routes */}
       <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
