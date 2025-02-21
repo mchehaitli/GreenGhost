@@ -77,23 +77,25 @@ async function startServer() {
       });
 
       // Handle server errors
-      server.on('error', (error: NodeJS.ErrnoException) => {
+      server.on('error', async (error: NodeJS.ErrnoException) => {
         if (error.syscall !== 'listen') {
           throw error;
         }
 
-        switch (error.code) {
-          case 'EACCES':
-            console.error(`Port ${PORT} requires elevated privileges`);
-            process.exit(1);
-            break;
-          case 'EADDRINUSE':
-            console.error(`Port ${PORT} is already in use`);
-            process.exit(1);
-            break;
-          default:
-            throw error;
+        if (error.code === 'EADDRINUSE') {
+          console.error(`Port ${PORT} is already in use. Attempting to free it...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          server.close();
+          server.listen(PORT, HOST);
+          return;
         }
+
+        if (error.code === 'EACCES') {
+          console.error(`Port ${PORT} requires elevated privileges`);
+          process.exit(1);
+        }
+
+        throw error;
       });
 
     } catch (error) {
