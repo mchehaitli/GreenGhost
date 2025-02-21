@@ -8,8 +8,9 @@ import { promisify } from "util";
 import { eq } from "drizzle-orm";
 import { fromZodError } from "zod-validation-error";
 import { z } from "zod";
-import { db, pool } from "./db";
+import { db } from "./db";
 import { users, type SelectUser, insertUserSchema } from "../db/schema";
+import pg from 'pg';
 
 declare global {
   namespace Express {
@@ -19,6 +20,11 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 const PostgresSessionStore = connectPg(session);
+
+// Create a new pg Pool instance for session store
+const sessionPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -39,8 +45,13 @@ async function getUserByUsername(username: string): Promise<SelectUser | undefin
 }
 
 export function setupAuth(app: Express) {
-  // Initialize session store
-  const store = new PostgresSessionStore({ pool, createTableIfMissing: true });
+  // Initialize session store with proper pg Pool
+  const store = new PostgresSessionStore({
+    pool: sessionPool,
+    createTableIfMissing: true,
+    tableName: 'session'
+  });
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'dev-secret-key',
     resave: false,
