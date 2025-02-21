@@ -49,6 +49,16 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
+      // Optimistically update the cache
+      const newEntry = {
+        id: Date.now(),
+        email: values.email,
+        zip_code: values.zipCode,
+        created_at: new Date().toISOString()
+      };
+      
+      queryClient.setQueryData(["waitlist"], (old: any[] = []) => [newEntry, ...old]);
+
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -69,7 +79,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: "You're now entered for a chance to win free maintenance for a year.",
       });
       
-      // Invalidate and refetch waitlist data
+      // Refetch to get the accurate data
       await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
 
       if (onOpenChange) {
