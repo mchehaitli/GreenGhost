@@ -65,9 +65,9 @@ async function startServer() {
 
       if (process.env.NODE_ENV === 'production') {
         log('Setting up static file serving...');
-        app.use(express.static(path.resolve(__dirname, '../public')));
+        app.use(express.static(path.resolve(__dirname, '../dist/public')));
         app.get('*', (_req, res) => {
-          res.sendFile(path.resolve(__dirname, '../public/index.html'));
+          res.sendFile(path.resolve(__dirname, '../dist/public/index.html'));
         });
       } else {
         log('Setting up Vite development server...');
