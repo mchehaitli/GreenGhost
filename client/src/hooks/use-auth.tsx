@@ -17,38 +17,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-async function fetchJson(input: RequestInfo, init?: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      ...init?.headers,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text);
-  }
-  return response.json();
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const { data: user, error, isLoading, refetch } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
-    queryFn: () => 
-      fetchJson("/api/user")
-        .catch(error => {
-          console.log('Auth check failed:', error.message);
-          if (error.message.includes("401")) {
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/user", {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('Auth check failed: Not authenticated');
             return null;
           }
-          throw error;
-        }),
-    staleTime: 0, // Always check fresh auth state
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Auth check error:', error);
+        return null;
+      }
+    },
+    staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -58,16 +50,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       console.log("Login attempt for:", credentials.username);
-      const data = await fetchJson("/api/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(credentials),
+        credentials: 'include'
       });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Login failed');
+      }
+
+      const data = await response.json();
       console.log("Login successful for:", credentials.username);
       return data;
     },
     onSuccess: () => {
       console.log("Refetching user data after successful login");
-      refetch(); // Immediately refetch user data after successful login
+      refetch();
       toast({
         title: "Logged in successfully",
         description: "Welcome back!",
@@ -80,21 +83,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
-      throw error; // Re-throw to be caught by the login form
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
       console.log("Logout attempt...");
-      await fetchJson("/api/logout", {
+      const response = await fetch("/api/logout", {
         method: "POST",
+        credentials: 'include'
       });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
       console.log("Logout successful");
     },
     onSuccess: () => {
       console.log("Clearing user data after logout");
-      refetch(); // Immediately refetch user data after logout
+      refetch();
       toast({
         title: "Logged out successfully",
       });

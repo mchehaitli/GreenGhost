@@ -34,7 +34,12 @@ function Router() {
 
       {/* Protected Routes */}
       <Route path="/admin/waitlist">
-        {() => <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />}
+        {() => (
+          <ProtectedRoute 
+            path="/admin/waitlist" 
+            component={() => <AdminWaitlist />} 
+          />
+        )}
       </Route>
 
       {/* 404 Route */}

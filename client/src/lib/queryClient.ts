@@ -2,6 +2,9 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Not authenticated");
+    }
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }
@@ -33,8 +36,11 @@ export const getQueryFn: <T>(options: {
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (res.status === 401) {
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      throw new Error("Not authenticated");
     }
 
     await throwIfResNotOk(res);
@@ -44,10 +50,11 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "returnNull" }), // Changed to returnNull for 401s
+      queryFn: getQueryFn({ on401: "throw" }), // Changed to throw for 401s
       refetchInterval: false,    // Don't automatically refetch
       refetchOnWindowFocus: false, // Don't refetch on window focus
-      staleTime: Infinity,      // Data doesn't become stale automatically
+      staleTime: 0,      // Data becomes stale immediately
+      gcTime: 0,        // Remove inactive queries immediately
       retry: false,
     },
     mutations: {

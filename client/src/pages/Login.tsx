@@ -37,6 +37,21 @@ export default function Login() {
   const [_location, setLocation] = useLocation();
   const { login, user, isLoading } = useAuth();
 
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // If user is already authenticated, redirect to admin waitlist
+  if (user) {
+    console.log('User already authenticated, redirecting to admin waitlist');
+    return <Redirect to="/admin/waitlist" />;
+  }
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -50,7 +65,7 @@ export default function Login() {
       setError(null);
       console.log('Login: Attempting login...');
       await login(data);
-      console.log('Login: Success, auth state will handle redirect');
+      console.log('Login: Success, redirecting to admin waitlist');
       setLocation('/admin/waitlist');
     } catch (error) {
       console.error('Login error:', error);
@@ -62,20 +77,6 @@ export default function Login() {
       form.reset({ password: "" });
     }
   };
-
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // If user is already authenticated, redirect to admin waitlist
-  if (user) {
-    return <Redirect to="/admin/waitlist" />;
-  }
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-10">
