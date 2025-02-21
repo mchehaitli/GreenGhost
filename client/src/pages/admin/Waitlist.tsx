@@ -47,8 +47,17 @@ const COLORS = [
 
 const AdminWaitlist = () => {
   const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
-    queryKey: ['/api/waitlist'],
-    queryFn: () => fetch('/api/waitlist').then(res => res.json()),
+    queryKey: ['waitlist'],
+    queryFn: () => fetch('/api/waitlist', {
+      headers: {
+        'Accept': 'application/json',
+      }
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return res.json();
+    }),
   });
 
   // Analytics calculations
