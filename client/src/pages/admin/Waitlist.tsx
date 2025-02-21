@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useEffect } from "react";
 
 type WaitlistEntry = {
   id: number;
@@ -39,6 +40,13 @@ export default function WaitlistPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Force redirect if not authenticated
+  useEffect(() => {
+    if (!user && !authLoading) {
+      setLocation('/login');
+    }
+  }, [user, authLoading, setLocation]);
+
   const { data: entries = [], isLoading: dataLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
     queryFn: async () => {
@@ -61,28 +69,17 @@ export default function WaitlistPage() {
 
   const isLoading = authLoading || dataLoading;
 
-  // If not authenticated or loading auth state, don't render anything
-  if (authLoading) {
+  // If not authenticated, don't render anything - useEffect will handle redirect
+  if (!user) {
+    return null;
+  }
+
+  // Show loading state while checking auth or fetching data
+  if (isLoading) {
     return (
       <div className="container mx-auto py-10">
         <div className="flex items-center justify-center h-48">
           <LoadingSpinner size="lg" />
-        </div>
-      </div>
-    );
-  }
-
-  // If no user after loading, redirect to login
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
-
-  if (dataLoading) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="flex items-center justify-center h-48">
-          <p className="text-lg text-muted-foreground">Loading waitlist data...</p>
         </div>
       </div>
     );

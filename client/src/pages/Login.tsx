@@ -45,6 +45,7 @@ export default function Login() {
     },
   });
 
+  // Redirect to admin waitlist if already logged in
   useEffect(() => {
     if (user && !isLoading) {
       setLocation("/admin/waitlist");
@@ -55,6 +56,7 @@ export default function Login() {
     try {
       setError(null);
       await login(data);
+      // After successful login, user effect will handle redirect
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -65,6 +67,7 @@ export default function Login() {
     }
   };
 
+  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -73,6 +76,7 @@ export default function Login() {
     );
   }
 
+  // Return null if already authenticated - useEffect will handle redirect
   if (user) {
     return null;
   }

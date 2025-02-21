@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Route, useLocation } from "wouter";
+import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   path: string;
@@ -11,28 +12,33 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Force redirect if not authenticated
+  useEffect(() => {
+    if (!user && !isLoading) {
+      setLocation('/login');
+    }
+  }, [user, isLoading, setLocation]);
+
+  // Don't render anything while checking auth
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Route>
+    );
+  }
+
+  // If not authenticated, don't render anything - useEffect will handle redirect
+  if (!user) {
+    return null;
+  }
+
+  // Only render component if authenticated
   return (
     <Route path={path}>
-      {() => {
-        // Always check auth status first
-        if (!user && !isLoading) {
-          // Redirect to login if not authenticated
-          setLocation("/login");
-          return null;
-        }
-
-        // Show loading state while checking auth
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          );
-        }
-
-        // Only render component if authenticated
-        return <Component />;
-      }}
+      <Component />
     </Route>
   );
 }
