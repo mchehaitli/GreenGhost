@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { db } from "@db";
-import { quoteRequests } from "@db/schema";
-import { insertQuoteSchema } from "@db/schema";
+import { db } from "./db";
+import { quoteRequests } from "../db/schema";
+import { insertQuoteSchema } from "../db/schema";
 import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
+import { setupAuth } from "./auth";
 
 export function registerRoutes(app: Express): Server {
   // Register waitlist routes

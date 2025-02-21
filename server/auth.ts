@@ -8,17 +8,17 @@ import { promisify } from "util";
 import { eq } from "drizzle-orm";
 import { fromZodError } from "zod-validation-error";
 import { z } from "zod";
-import { db, pool } from "@/server/db";
-import { users, type SelectUser, insertUserSchema } from "@/db/schema";
-
-const scryptAsync = promisify(scrypt);
-const PostgresSessionStore = connectPg(session);
+import { db, pool } from "./db";
+import { users, type SelectUser, insertUserSchema } from "../db/schema";
 
 declare global {
   namespace Express {
     interface User extends Omit<SelectUser, keyof Express.User> {}
   }
 }
+
+const scryptAsync = promisify(scrypt);
+const PostgresSessionStore = connectPg(session);
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -170,7 +170,7 @@ export function setupAuth(app: Express) {
         return next(err);
       }
       console.log("Logout successful for:", username);
-      res.sendStatus(200);
+      res.json({ message: "Logged out successfully" });
     });
   });
 
