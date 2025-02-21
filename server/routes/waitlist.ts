@@ -2,14 +2,20 @@ import { Router } from 'express';
 import { db } from '../../db';
 import { waitlist, insertWaitlistSchema } from '../../db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { Request, Response, NextFunction } from 'express';
 
 const router = Router();
 
 // Middleware to check if user is authenticated
-const requireAuth = (req, res, next) => {
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  console.log('Auth check - isAuthenticated:', req.isAuthenticated());
+  console.log('Auth check - session:', req.session);
+
   if (!req.isAuthenticated()) {
+    console.log('Authentication required - redirecting to login');
     return res.status(401).json({ error: 'Authentication required' });
   }
+  console.log('User authenticated:', req.user);
   next();
 };
 

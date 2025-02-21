@@ -43,28 +43,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchJson("/api/user")
         .catch(error => {
           if (error.message.includes("401")) {
-            console.log("User not authenticated");
+            console.log("Auth check: Not authenticated");
             return null;
           }
+          console.error("Auth check error:", error);
           throw error;
         }),
     staleTime: 0, // Consider data immediately stale
-    cacheTime: 0, // Don't cache auth state
+    gcTime: 0, // Don't cache auth state
     refetchOnMount: true, // Always refetch on mount
     refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchInterval: 30000, // Regularly check auth status
+    refetchInterval: false, // Don't automatically refetch
     retry: false, // Don't retry failed auth checks
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
+      console.log("Login attempt...");
       const data = await fetchJson("/api/login", {
         method: "POST",
         body: JSON.stringify(credentials),
       });
+      console.log("Login successful");
       return data;
     },
     onSuccess: () => {
+      console.log("Refetching user data after successful login");
       refetch(); // Immediately refetch user data after successful login
       toast({
         title: "Logged in successfully",
@@ -78,16 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
+      throw error; // Re-throw to be caught by the login form
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      console.log("Logout attempt...");
       await fetchJson("/api/logout", {
         method: "POST",
       });
+      console.log("Logout successful");
     },
     onSuccess: () => {
+      console.log("Clearing user data after logout");
       refetch(); // Immediately refetch user data after logout
       toast({
         title: "Logged out successfully",

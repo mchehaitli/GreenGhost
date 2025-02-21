@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
-import { Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Route, Redirect } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
@@ -10,15 +9,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
-  // Immediately redirect to login if not authenticated
-  useEffect(() => {
-    if (!user && !isLoading) {
-      console.log("No authenticated user found, redirecting to login");
-      setLocation('/login');
-    }
-  }, [user, isLoading, setLocation]);
+  console.log('ProtectedRoute state:', { path, isAuthenticated: !!user, isLoading });
 
   return (
     <Route path={path}>
@@ -27,19 +19,19 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <LoadingSpinner size="lg" />
             </div>
           );
         }
 
-        // If no user and not loading, don't render anything (useEffect will handle redirect)
+        // If no user and not loading, redirect to login
         if (!user) {
-          console.log("Protected route: No authenticated user");
-          return null;
+          console.log(`Not authenticated, redirecting to login from ${path}`);
+          return <Redirect to="/login" />;
         }
 
         // If we have a user, render the protected component
-        console.log("Protected route: Rendering protected component");
+        console.log(`Authenticated user ${user.username}, rendering ${path}`);
         return <Component />;
       }}
     </Route>

@@ -20,10 +20,9 @@ import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
-  const [location] = useLocation();
-
   return (
     <Switch>
+      {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
       <Route path="/how-it-works" component={HowItWorks} />
@@ -32,7 +31,11 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/login" component={Login} />
       <Route path="/theme" component={ThemeCustomization} />
+
+      {/* Protected Routes */}
       <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
+
+      {/* 404 Route */}
       <Route component={NotFound} />
     </Switch>
   );
