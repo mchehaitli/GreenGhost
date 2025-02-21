@@ -45,11 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (error.message.includes("401")) return null;
           throw error;
         }),
+    staleTime: 0,
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000, // Check auth status every 30 seconds
-    retry: false,
-    staleTime: 0,
-    cacheTime: 0 // Disable caching to ensure fresh auth checks
+    retry: false
   });
 
   const loginMutation = useMutation({
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user: user || null,
         isLoading,
         error,
         login: loginMutation.mutateAsync,
