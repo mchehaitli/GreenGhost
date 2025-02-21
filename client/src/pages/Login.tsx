@@ -28,24 +28,7 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: data.username,
-          password: data.password
-        }),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const userData = await response.json();
-      login(userData);
+      await login(data);
     } catch (error) {
       console.error('Login failed:', error);
     }
