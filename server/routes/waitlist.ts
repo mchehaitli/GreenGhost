@@ -1,18 +1,22 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { sql } from 'drizzle-orm';
+import { waitlist, insertWaitlistSchema } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 const router = Router();
 
 router.post('/api/waitlist', async (req, res) => {
   try {
     const { email, zipCode } = req.body;
-    
-    await db.execute(sql`
-      INSERT INTO waitlist (email, zip_code)
-      VALUES (${email}, ${zipCode})
-    `);
-    
+
+    // Validate input using our Zod schema
+    const parsedInput = insertWaitlistSchema.parse({
+      email,
+      zip_code: zipCode,
+    });
+
+    await db.insert(waitlist).values(parsedInput);
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error saving to waitlist:', error);
@@ -22,12 +26,8 @@ router.post('/api/waitlist', async (req, res) => {
 
 router.get('/api/waitlist', async (req, res) => {
   try {
-    const entries = await db.execute(sql`
-      SELECT * FROM waitlist 
-      ORDER BY created_at DESC
-    `);
-    
-    res.json(entries.rows);
+    const entries = await db.select().from(waitlist).orderBy(waitlist.created_at);
+    res.json(entries);
   } catch (error) {
     console.error('Error fetching waitlist:', error);
     res.status(500).json({ error: 'Failed to fetch waitlist' });
