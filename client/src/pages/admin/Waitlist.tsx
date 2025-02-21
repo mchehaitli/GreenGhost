@@ -46,19 +46,23 @@ const COLORS = [
 ];
 
 const AdminWaitlist = () => {
-  const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
+  const { data: entries = [], isLoading, error } = useQuery<WaitlistEntry[]>({
     queryKey: ['waitlist'],
-    queryFn: () => fetch('/api/waitlist', {
-      headers: {
-        'Accept': 'application/json',
-      }
-    }).then(res => {
+    queryFn: async () => {
+      const res = await fetch('/api/waitlist');
       if (!res.ok) {
-        throw new Error('Network response was not ok');
+        const errorData = await res.json();
+        throw new Error(errorData.details || 'Failed to fetch waitlist');
       }
       return res.json();
-    }),
+    },
+    retry: 3,
+    refetchOnWindowFocus: true
   });
+
+  if (error) {
+    return <div className="p-8 text-red-500">Error loading waitlist: {error.message}</div>;
+  }
 
   // Analytics calculations
   const totalSignups = entries.length;

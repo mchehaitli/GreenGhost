@@ -32,7 +32,15 @@ router.post('/api/waitlist', async (req, res) => {
 router.get('/api/waitlist', async (req, res) => {
   try {
     console.log('Fetching waitlist entries...');
-    const entries = await db.select().from(waitlist).orderBy(waitlist.created_at);
+    const entries = await db.select({
+      id: waitlist.id,
+      email: waitlist.email,
+      zip_code: waitlist.zip_code,
+      created_at: waitlist.created_at
+    })
+    .from(waitlist)
+    .orderBy(sql`${waitlist.created_at} DESC`);
+    
     console.log('Retrieved entries:', entries);
     res.json(entries);
   } catch (error) {
