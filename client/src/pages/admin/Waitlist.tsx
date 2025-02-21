@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useEffect } from "react";
 
 type WaitlistEntry = {
   id: number;
@@ -38,16 +37,6 @@ const columns: ColumnDef<WaitlistEntry>[] = [
 
 export default function WaitlistPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  // Force redirect if not authenticated
-  useEffect(() => {
-    if (!user && !authLoading) {
-      console.log('No authenticated user, redirecting to login');
-      setLocation('/login');
-      return;
-    }
-  }, [user, authLoading, setLocation]);
 
   const { data: entries = [], isLoading: dataLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -57,7 +46,7 @@ export default function WaitlistPage() {
       });
       if (!response.ok) {
         if (response.status === 401) {
-          setLocation('/login');
+          console.log('Unauthorized access to waitlist data');
           return [];
         }
         throw new Error("Failed to fetch waitlist");
@@ -82,7 +71,7 @@ export default function WaitlistPage() {
     );
   }
 
-  // If no user and not loading, we'll redirect in the useEffect
+  // If not authenticated, ProtectedRoute will handle redirect
   if (!user) {
     return null;
   }

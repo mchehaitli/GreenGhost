@@ -42,13 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: () => 
       fetchJson("/api/user")
         .catch(error => {
+          console.log('Auth check failed:', error.message);
           if (error.message.includes("401")) {
             return null;
           }
           throw error;
         }),
-    staleTime: 5000,
-    gcTime: 10000,
+    staleTime: 0, // Always check fresh auth state
+    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     retry: false,
@@ -56,12 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      console.log("Login attempt...");
+      console.log("Login attempt for:", credentials.username);
       const data = await fetchJson("/api/login", {
         method: "POST",
         body: JSON.stringify(credentials),
       });
-      console.log("Login successful");
+      console.log("Login successful for:", credentials.username);
       return data;
     },
     onSuccess: () => {

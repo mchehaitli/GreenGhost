@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -34,17 +34,15 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { login, user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Login component state:', { user, isLoading });
+  console.log('Login page state:', { isAuthenticated: !!user, isLoading });
 
-  useEffect(() => {
-    if (user) {
-      console.log('Login: User authenticated, redirecting to admin/waitlist');
-      setLocation('/admin/waitlist');
-    }
-  }, [user, setLocation]);
+  // If authenticated, redirect to admin waitlist
+  if (user) {
+    console.log('Login: User authenticated, redirecting to admin waitlist');
+    return <Redirect to="/admin/waitlist" />;
+  }
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -59,7 +57,7 @@ export default function Login() {
       setError(null);
       console.log('Login: Attempting login...');
       await login(data);
-      // After successful login, useEffect will handle redirect
+      console.log('Login: Success, auth state will handle redirect');
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -67,7 +65,7 @@ export default function Login() {
       } else {
         setError("An unexpected error occurred");
       }
-      form.reset({ password: "" }); // Only reset password on error
+      form.reset({ password: "" });
     }
   };
 
@@ -78,11 +76,6 @@ export default function Login() {
         <LoadingSpinner size="lg" />
       </div>
     );
-  }
-
-  // If already authenticated, useEffect will handle redirect
-  if (user) {
-    return null;
   }
 
   return (

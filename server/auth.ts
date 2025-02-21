@@ -24,7 +24,8 @@ const PostgresSessionStore = connectPg(session);
 
 // Create a new pg Pool instance for session store
 const sessionPool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  max: 10
 });
 
 async function hashPassword(password: string) {
@@ -50,7 +51,8 @@ export function setupAuth(app: Express) {
   const store = new PostgresSessionStore({
     pool: sessionPool,
     createTableIfMissing: true,
-    tableName: 'session'
+    tableName: 'session',
+    pruneSessionInterval: 60
   });
 
   const sessionSettings: session.SessionOptions = {
@@ -59,12 +61,16 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for development
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     },
+    name: 'sid'
   };
+
+  log('Setting up authentication middleware...');
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
@@ -163,6 +169,9 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         log(`Login successful for: ${user.username}`);
+        log(`Session ID: ${req.sessionID}`);
+        log(`Session cookie: ${JSON.stringify(req.session.cookie)}`);
+        log(`User data in session: ${JSON.stringify(user)}`);
         res.json({ id: user.id, username: user.username });
       });
     })(req, res, next);
@@ -183,6 +192,11 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
+    log(`Session ID: ${req.sessionID}`);
+    log(`Session cookie: ${JSON.stringify(req.session.cookie)}`);
+    log(`Is authenticated: ${req.isAuthenticated()}`);
+    log(`User in session: ${JSON.stringify(req.user)}`);
+
     if (!req.isAuthenticated()) {
       log('User not authenticated');
       return res.status(401).json({ error: "Not authenticated" });
