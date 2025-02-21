@@ -36,14 +36,7 @@ export default function Login() {
   const { login, user, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Login page state:', { isAuthenticated: !!user, isLoading });
-
-  // If authenticated, redirect to admin waitlist
-  if (user) {
-    console.log('Login: User authenticated, redirecting to admin waitlist');
-    return <Redirect to="/admin/waitlist" />;
-  }
-
+  // Initialize form first before any conditional returns
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -51,6 +44,8 @@ export default function Login() {
       password: "",
     },
   });
+
+  console.log('Login page state:', { isAuthenticated: !!user, isLoading });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -69,78 +64,80 @@ export default function Login() {
     }
   };
 
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
+  // Handle all rendering conditions in the return statement
   return (
-    <div className="container flex items-center justify-center min-h-screen py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login to Admin Panel</CardTitle>
-          <CardDescription>
-            Enter your credentials to access the waitlist analytics
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input {...field} autoComplete="username" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        {...field} 
-                        autoComplete="current-password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? (
-                  <LoadingSpinner size="sm" className="mr-2" />
-                ) : null}
-                Login
-              </Button>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
-    </div>
+    <>
+      {user ? (
+        <Redirect to="/admin/waitlist" />
+      ) : isLoading ? (
+        <div className="container flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : (
+        <div className="container flex items-center justify-center min-h-screen py-10">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Login to Admin Panel</CardTitle>
+              <CardDescription>
+                Enter your credentials to access the waitlist analytics
+              </CardDescription>
+            </CardHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent className="space-y-4">
+                  {error && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input {...field} autoComplete="username" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            {...field} 
+                            autoComplete="current-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? (
+                      <LoadingSpinner size="sm" className="mr-2" />
+                    ) : null}
+                    Login
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
+          </Card>
+        </div>
+      )}
+    </>
   );
 }

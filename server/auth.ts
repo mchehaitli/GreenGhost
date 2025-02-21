@@ -47,7 +47,6 @@ async function getUserByUsername(username: string): Promise<SelectUser | undefin
 }
 
 export function setupAuth(app: Express) {
-  // Initialize session store with proper pg Pool
   const store = new PostgresSessionStore({
     pool: sessionPool,
     createTableIfMissing: true,

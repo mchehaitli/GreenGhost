@@ -1,9 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
 
 const app = express();
+
+// Configure CORS before other middleware
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true, // Important for cookies/auth
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -40,7 +50,7 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // Setup auth first
+    // Setup auth first with proper session handling
     setupAuth(app);
 
     // Then register API routes
