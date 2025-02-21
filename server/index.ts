@@ -67,7 +67,7 @@ async function startServer() {
       log('Vite development server setup complete');
 
       // Server configuration
-      const PORT = Number(process.env.PORT) || 5000; // Changed default port to 5000
+      const PORT = Number(process.env.PORT) || 3000; 
       const HOST = "0.0.0.0";
 
       server.listen(PORT, HOST, () => {
@@ -78,7 +78,6 @@ async function startServer() {
 
       // Handle server errors
       server.on('error', (error: NodeJS.ErrnoException) => {
-        log('Server error:', error.message);
         if (error.syscall !== 'listen') {
           throw error;
         }
@@ -98,7 +97,7 @@ async function startServer() {
       });
 
     } catch (error) {
-      log('Error during server initialization:', error);
+      log('Error during server initialization:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
 

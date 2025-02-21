@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import WaitlistAnalytics from "@/components/WaitlistAnalytics";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, LogOut } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -36,7 +36,7 @@ const columns: ColumnDef<WaitlistEntry>[] = [
 ];
 
 export default function WaitlistPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
 
   const { data: entries = [], isLoading: dataLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -53,14 +53,13 @@ export default function WaitlistPage() {
       }
       return response.json();
     },
-    enabled: !!user, // Only fetch if user is authenticated
-    refetchInterval: 30000, // Refetch every 30 seconds
+    enabled: !!user,
+    refetchInterval: 30000,
     gcTime: Infinity,
   });
 
   const isLoading = authLoading || dataLoading;
 
-  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="container mx-auto py-10">
@@ -71,9 +70,7 @@ export default function WaitlistPage() {
     );
   }
 
-  // If not authenticated, redirect to login
   if (!user) {
-    console.log('Unauthorized access attempt to admin waitlist');
     return <Redirect to="/login" />;
   }
 
@@ -91,15 +88,34 @@ export default function WaitlistPage() {
     XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <div className="container mx-auto py-10 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Waitlist Analytics</h1>
-        <p className="text-muted-foreground mb-6">
-          Track and analyze waitlist signups and regional distribution
-        </p>
-        <WaitlistAnalytics entries={entries} />
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Waitlist Analytics</h1>
+          <p className="text-muted-foreground">
+            Track and analyze waitlist signups and regional distribution
+          </p>
+        </div>
+        <Button 
+          onClick={handleLogout}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
       </div>
+
+      <WaitlistAnalytics entries={entries} />
 
       <div>
         <div className="flex justify-between items-center mb-6">
