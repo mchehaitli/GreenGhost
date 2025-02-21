@@ -1,8 +1,9 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,9 +34,10 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const { login, user, isLoading: authLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [_location, setLocation] = useLocation();
-  const { login, user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,25 +47,18 @@ export default function Login() {
     },
   });
 
-  // If already authenticated, redirect to admin waitlist
   useEffect(() => {
     if (user) {
-      setLocation('/admin/waitlist');
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get("redirect") || "/admin/waitlist";
+      setLocation(decodeURIComponent(redirectTo));
     }
   }, [user, setLocation]);
-
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
+      setIsSubmitting(true);
       await login(data);
     } catch (error) {
       if (error instanceof Error) {
@@ -72,6 +67,8 @@ export default function Login() {
         setError("An unexpected error occurred");
       }
       form.reset({ password: "" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,16 +76,16 @@ export default function Login() {
     <div className="container flex items-center justify-center min-h-screen py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Login to Admin Panel</CardTitle>
+          <CardTitle>Login</CardTitle>
           <CardDescription>
-            Enter your credentials to access the waitlist analytics
+            Sign in to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
               {error && (
-                <Alert variant="destructive" className="mb-4">
+                <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -99,7 +96,11 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} autoComplete="username" />
+                      <Input
+                        {...field}
+                        autoComplete="username"
+                        disabled={isSubmitting}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,10 +113,11 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        {...field}
                         autoComplete="current-password"
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -127,11 +129,11 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={form.formState.isSubmitting}
+                disabled={isSubmitting || authLoading}
               >
-                {form.formState.isSubmitting ? (
+                {(isSubmitting || authLoading) && (
                   <LoadingSpinner size="sm" className="mr-2" />
-                ) : null}
+                )}
                 Login
               </Button>
             </CardFooter>
