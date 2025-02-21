@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,6 +20,8 @@ import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
+  const [location] = useLocation();
+
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -28,7 +30,9 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
-      <Route path="/login" component={Login} />
+      <Route path="/login">
+        <Login />
+      </Route>
       <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route component={NotFound} />

@@ -6,6 +6,9 @@ import WaitlistAnalytics from "@/components/WaitlistAnalytics";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type WaitlistEntry = {
   id: number;
@@ -33,39 +36,49 @@ const columns: ColumnDef<WaitlistEntry>[] = [
 ];
 
 export default function WaitlistPage() {
-  const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
-    queryKey: ["waitlist"],
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const { data: entries = [], isLoading: dataLoading } = useQuery<WaitlistEntry[]>({
+    queryKey: ["/api/waitlist"],
     queryFn: async () => {
-      const response = await fetch("/api/waitlist");
+      const response = await fetch("/api/waitlist", {
+        credentials: 'include'
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          setLocation('/login');
+          return [];
+        }
         throw new Error("Failed to fetch waitlist");
       }
       return response.json();
     },
-    refetchInterval: 5000, // Refresh every 5 seconds
-    gcTime: Infinity, // Keep the data indefinitely
+    enabled: !!user, // Only fetch if user is authenticated
+    refetchInterval: 5000,
+    gcTime: Infinity,
   });
 
-  const exportToExcel = () => {
-    // Format data for export
-    const exportData = entries.map(entry => ({
-      Email: entry.email,
-      'ZIP Code': entry.zip_code,
-      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
-    }));
+  const isLoading = authLoading || dataLoading;
 
-    // Create workbook and worksheet
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(exportData);
+  // If not authenticated or loading auth state, don't render anything
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-center h-48">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    );
+  }
 
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, "Waitlist Entries");
+  // If no user after loading, redirect to login
+  if (!user) {
+    setLocation('/login');
+    return null;
+  }
 
-    // Generate Excel file
-    XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
-  };
-
-  if (isLoading) {
+  if (dataLoading) {
     return (
       <div className="container mx-auto py-10">
         <div className="flex items-center justify-center h-48">
@@ -74,6 +87,20 @@ export default function WaitlistPage() {
       </div>
     );
   }
+
+  const exportToExcel = () => {
+    const exportData = entries.map(entry => ({
+      Email: entry.email,
+      'ZIP Code': entry.zip_code,
+      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    XLSX.utils.book_append_sheet(wb, ws, "Waitlist Entries");
+    XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
 
   return (
     <div className="container mx-auto py-10 space-y-8">
