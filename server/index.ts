@@ -79,7 +79,7 @@ async function startServer() {
       }
 
       // Server configuration
-      const PORT = Number(process.env.PORT) || 3000; 
+      const PORT = Number(process.env.PORT) || 5000; // Changed default port to 5000 for Replit
       const HOST = "0.0.0.0";
 
       server.listen(PORT, HOST, () => {

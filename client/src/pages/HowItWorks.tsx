@@ -13,8 +13,8 @@ const HowItWorks = () => {
   const steps = [
     {
       icon: <ClipboardCheck className="w-8 h-8" />,
-      title: "Schedule a Personalized Assessment",
-      description: "Complete our brief online form to schedule a personalized assessment with your dedicated area representative.",
+      title: "Schedule a Professional Assessment",
+      description: "Fill out our brief online form to connect with a dedicated area representative who will schedule your complimentary property assessment.",
     },
     {
       icon: <FileSearch className="w-8 h-8" />,
