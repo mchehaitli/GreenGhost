@@ -13,7 +13,7 @@ import { users, type SelectUser, insertUserSchema } from "../db/schema";
 
 declare global {
   namespace Express {
-    interface User extends Omit<SelectUser, keyof Express.User> {}
+    interface User extends SelectUser {}
   }
 }
 
@@ -34,10 +34,8 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 async function getUserByUsername(username: string): Promise<SelectUser | undefined> {
-  const result = await db.query.users.findFirst({
-    where: eq(users.username, username),
-  });
-  return result;
+  const [user] = await db.select().from(users).where(eq(users.username, username));
+  return user;
 }
 
 export function setupAuth(app: Express) {
@@ -71,6 +69,14 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
 
+        // Hash the new admin's password if it hasn't been hashed yet
+        if (!user.password.includes('.')) {
+          user.password = await hashPassword(user.password);
+          await db.update(users)
+            .set({ password: user.password })
+            .where(eq(users.id, user.id));
+        }
+
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
           console.log("Invalid password");
@@ -86,15 +92,13 @@ export function setupAuth(app: Express) {
     })
   );
 
-  passport.serializeUser((user: Express.User, done) => {
+  passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, id),
-      });
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       done(null, user || undefined);
     } catch (error) {
       console.error("Deserialization error:", error);
@@ -103,40 +107,6 @@ export function setupAuth(app: Express) {
   });
 
   // Authentication routes
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      console.log("Registration attempt:", req.body);
-      const result = insertUserSchema.safeParse(req.body);
-      if (!result.success) {
-        const error = fromZodError(result.error);
-        return res.status(400).json({ error: error.toString() });
-      }
-
-      const existingUser = await getUserByUsername(result.data.username);
-      if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      const hashedPassword = await hashPassword(result.data.password);
-      const [user] = await db.insert(users)
-        .values({
-          username: result.data.username,
-          password: hashedPassword,
-        })
-        .returning();
-
-      console.log("User registered successfully:", user.username);
-
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json({ user: { id: user.id, username: user.username } });
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      next(error);
-    }
-  });
-
   app.post("/api/login", (req, res, next) => {
     console.log("Login attempt:", req.body.username);
 
@@ -155,13 +125,13 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         console.log("Login successful for:", user.username);
-        res.json({ user: { id: user.id, username: user.username } });
+        res.json({ id: user.id, username: user.username });
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
-    const username = (req.user as SelectUser)?.username;
+    const username = req.user?.username;
     console.log("Logout attempt for:", username);
 
     req.logout((err) => {
@@ -179,6 +149,6 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     const user = req.user as SelectUser;
-    res.json({ user: { id: user.id, username: user.username } });
+    res.json({ id: user.id, username: user.username });
   });
 }
