@@ -30,11 +30,9 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
-      <Route path="/login">
-        <Login />
-      </Route>
-      <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
+      <Route path="/login" component={Login} />
       <Route path="/theme" component={ThemeCustomization} />
+      <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
       <Route component={NotFound} />
     </Switch>
   );
