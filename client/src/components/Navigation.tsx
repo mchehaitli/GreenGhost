@@ -37,18 +37,18 @@ const Navigation = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-8">
           <Link href="/">
-            <a className="flex items-center space-x-2 group" onClick={scrollToTop}>
+            <div className="flex items-center space-x-2 group" onClick={scrollToTop}>
               <GhostMascot size="sm" animated={false} />
               <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
               <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
-            </a>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <a
+                <span
                   onClick={scrollToTop}
                   className={cn(
                     "text-sm font-medium transition-all duration-300",
@@ -59,7 +59,7 @@ const Navigation = () => {
                   )}
                 >
                   {item.label}
-                </a>
+                </span>
               </Link>
             ))}
             <Button 
@@ -82,7 +82,7 @@ const Navigation = () => {
               <div className="flex flex-col space-y-4 mt-4">
                 {navItems.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <a
+                    <span
                       onClick={() => {
                         setOpen(false);
                         scrollToTop();
@@ -95,7 +95,7 @@ const Navigation = () => {
                       )}
                     >
                       {item.label}
-                    </a>
+                    </span>
                   </Link>
                 ))}
                 <Button 
