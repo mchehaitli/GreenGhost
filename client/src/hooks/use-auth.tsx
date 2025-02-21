@@ -45,10 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (error.message.includes("401")) return null;
           throw error;
         }),
-    refetchOnWindowFocus: false,
-    refetchInterval: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Check auth status every 30 seconds
     retry: false,
-    staleTime: Infinity
+    staleTime: 0,
+    cacheTime: 0 // Disable caching to ensure fresh auth checks
   });
 
   const loginMutation = useMutation({
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     },
     onSuccess: () => {
-      refetch();
+      refetch(); // Immediately refetch user data after successful login
       toast({
         title: "Logged in successfully",
         description: "Welcome back!",
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onSuccess: () => {
-      refetch();
+      refetch(); // Immediately refetch user data after logout
       toast({
         title: "Logged out successfully",
       });

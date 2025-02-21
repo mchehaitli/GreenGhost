@@ -9,27 +9,30 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
-  // If we're loading, show a loading spinner
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // If there's no user and we're not loading, redirect to login
-  if (!user && !isLoading && location !== '/login') {
-    setLocation('/login');
-    return null;
-  }
-
-  // If we have a user, render the protected component
   return (
     <Route path={path}>
-      {() => <Component />}
+      {() => {
+        // Always check auth status first
+        if (!user && !isLoading) {
+          // Redirect to login if not authenticated
+          setLocation("/login");
+          return null;
+        }
+
+        // Show loading state while checking auth
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
+
+        // Only render component if authenticated
+        return <Component />;
+      }}
     </Route>
   );
 }
