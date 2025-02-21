@@ -4,7 +4,7 @@ import { GhostMascot } from "./GhostMascot";
 
 const Hero = () => {
   return (
-    <div className="relative flex items-center justify-center min-h-[80vh] bg-background">
+    <div className="relative flex items-center justify-center min-h-[80vh] bg-background mb-16">
       <div className="container mx-auto px-8">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
           <GhostMascot size="lg" className="mb-8" />
