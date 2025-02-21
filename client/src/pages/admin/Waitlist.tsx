@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+import { useEffect } from "react";
 
 type WaitlistEntry = {
   id: number;
@@ -29,6 +31,8 @@ const columns: ColumnDef<WaitlistEntry>[] = [
 ];
 
 export default function WaitlistPage() {
+  const queryClient = useQueryClient();
+  
   const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["waitlist"],
     queryFn: async () => {
@@ -38,6 +42,7 @@ export default function WaitlistPage() {
       }
       return response.json();
     },
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   if (isLoading) {
