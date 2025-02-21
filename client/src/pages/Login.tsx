@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,18 +13,18 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const Login = () => {
-  const { user, login, authLoading } = useAuth();
+export default function Login() {
+  const { login, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   useEffect(() => {
-    if (user && !authLoading) {
-      setLocation('/admin/waitlist');
+    if (user && !isLoading) {
+      setLocation("/admin/waitlist");
     }
-  }, [user, authLoading, setLocation]);
+  }, [user, isLoading, setLocation]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -32,10 +33,6 @@ const Login = () => {
       console.error('Login failed:', error);
     }
   };
-
-  if (authLoading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -66,12 +63,11 @@ const Login = () => {
         <button
           type="submit"
           className="w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
+          disabled={isLoading}
         >
-          Login
+          {isLoading ? 'Loading...' : 'Login'}
         </button>
       </form>
     </div>
   );
-};
-
-export default Login;
+}
