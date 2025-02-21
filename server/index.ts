@@ -3,6 +3,7 @@ import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
+import path from 'path';
 
 async function startServer() {
   try {
@@ -62,9 +63,17 @@ async function startServer() {
         res.status(status).json({ error: message });
       });
 
-      log('Setting up Vite development server...');
-      await setupVite(app, server);
-      log('Vite development server setup complete');
+      if (process.env.NODE_ENV === 'production') {
+        log('Setting up static file serving...');
+        app.use(express.static(path.resolve(__dirname, '../public')));
+        app.get('*', (_req, res) => {
+          res.sendFile(path.resolve(__dirname, '../public/index.html'));
+        });
+      } else {
+        log('Setting up Vite development server...');
+        await setupVite(app, server);
+        log('Vite development server setup complete');
+      }
 
       // Server configuration
       const PORT = Number(process.env.PORT) || 3000; 
