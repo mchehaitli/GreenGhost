@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Route, useLocation } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
   return (
     <Route path={path}>
@@ -22,7 +23,9 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
         }
 
         if (!user) {
-          return <Redirect to="/login" />;
+          // Use setTimeout to ensure state updates are processed before redirect
+          setTimeout(() => setLocation("/login"), 0);
+          return null;
         }
 
         return <Component />;

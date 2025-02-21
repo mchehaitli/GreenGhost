@@ -33,7 +33,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { login, user } = useAuth();
+  const { login, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
@@ -45,28 +45,37 @@ export default function Login() {
     },
   });
 
-  // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
       setLocation("/admin/waitlist");
     }
-  }, [user, setLocation]);
+  }, [user, isLoading, setLocation]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
       await login(data);
-      setLocation("/admin/waitlist");
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
         setError("An unexpected error occurred");
       }
+      // Reset form only on error
+      form.reset();
     }
   };
 
-  // If user is already logged in, don't show the login form
+  // Don't render anything while checking authentication status
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // If already authenticated, don't show the login form
   if (user) {
     return null;
   }

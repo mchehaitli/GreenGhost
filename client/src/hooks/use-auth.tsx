@@ -1,7 +1,11 @@
 import { ReactNode, createContext, useContext } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { SelectUser } from "@/db/schema";
 import { useToast } from "@/hooks/use-toast";
+
+interface SelectUser {
+  id: number;
+  username: string;
+}
 
 interface AuthContextType {
   user: SelectUser | null;
@@ -9,7 +13,6 @@ interface AuthContextType {
   error: Error | null;
   login: (credentials: { username: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
-  register: (data: { username: string; password: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -17,8 +20,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 async function fetchJson(input: RequestInfo, init?: RequestInit) {
   const response = await fetch(input, init);
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error);
+    const text = await response.text();
+    throw new Error(text);
   }
   return response.json();
 }
@@ -27,20 +30,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const { data: user, error, isLoading, refetch } = useQuery<SelectUser | null>({
-    queryKey: ["user"],
-    queryFn: () => fetchJson("/api/user").catch(() => null),
-    staleTime: 0, // Always check the latest auth state
-    cacheTime: 0,
+    queryKey: ["/api/user"],
+    queryFn: () => 
+      fetchJson("/api/user")
+        .catch(error => {
+          if (error.message.includes("401")) return null;
+          throw error;
+        }),
     refetchOnWindowFocus: true,
+    refetchInterval: false,
+    retry: false
   });
 
   const loginMutation = useMutation({
-    mutationFn: (credentials: { username: string; password: string }) =>
-      fetchJson("/api/login", {
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const data = await fetchJson("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
-      }),
+      });
+      return data;
+    },
     onSuccess: () => {
       refetch();
       toast({
@@ -77,29 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: (data: { username: string; password: string }) =>
-      fetchJson("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => {
-      refetch();
-      toast({
-        title: "Registered successfully",
-        description: "Welcome to the platform!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   return (
     <AuthContext.Provider
       value={{
@@ -108,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         login: loginMutation.mutateAsync,
         logout: logoutMutation.mutateAsync,
-        register: registerMutation.mutateAsync,
       }}
     >
       {children}
