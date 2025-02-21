@@ -25,8 +25,11 @@ import {
 } from "@/components/ui/dialog";
 
 const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  zipCode: z.string().regex(/^\d{5}$/, "Please enter a valid 5-digit ZIP code"),
+  email: z.string()
+    .email("Please enter a valid email address")
+    .transform(val => val.toLowerCase()),
+  zipCode: z.string()
+    .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
 });
 
 interface WaitlistDialogProps {
@@ -49,16 +52,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Add optimistic update
-      const newEntry = {
-        id: Date.now(),
-        email: values.email,
-        zip_code: values.zipCode,
-        created_at: new Date().toISOString()
-      };
-
-      queryClient.setQueryData(["waitlist"], (old: any[] = []) => [newEntry, ...old]);
-
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -70,17 +63,24 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to join waitlist');
+        if (data.error === 'Duplicate entry') {
+          toast({
+            title: "Already registered",
+            description: "This email is already on our waitlist.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data.details || 'Failed to join waitlist');
       }
 
       toast({
         title: "Successfully joined waitlist!",
         description: "You're now entered for a chance to win free maintenance for a year.",
       });
-
-      // Refetch to get the accurate data
-      await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
 
       if (onOpenChange) {
         onOpenChange(false);
@@ -90,12 +90,9 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       console.error('Waitlist submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to join waitlist. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
         variant: "destructive",
       });
-
-      // Rollback optimistic update on error
-      await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
     } finally {
       setIsSubmitting(false);
     }

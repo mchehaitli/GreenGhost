@@ -18,9 +18,23 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
+    // Check for existing email
+    const existingEntry = await db
+      .select()
+      .from(waitlist)
+      .where(eq(waitlist.email, email.toLowerCase()))
+      .limit(1);
+
+    if (existingEntry.length > 0) {
+      return res.status(400).json({
+        error: 'Duplicate entry',
+        details: 'This email is already on the waitlist'
+      });
+    }
+
     // Validate input using our Zod schema
     const parsedInput = insertWaitlistSchema.parse({
-      email,
+      email: email.toLowerCase(), // Store emails in lowercase
       zip_code: zipCode,
     });
 

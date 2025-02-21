@@ -24,8 +24,11 @@ import {
 } from "@/components/ui/card";
 
 const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  zipCode: z.string().regex(/^\d{5}$/, "Please enter a valid 5-digit ZIP code"),
+  email: z.string()
+    .email("Please enter a valid email address")
+    .transform(val => val.toLowerCase()),
+  zipCode: z.string()
+    .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
 });
 
 const Waitlist = () => {
@@ -53,11 +56,19 @@ const Waitlist = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to join waitlist');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error === 'Duplicate entry') {
+          toast({
+            title: "Already registered",
+            description: "This email is already on our waitlist.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data.details || 'Failed to join waitlist');
+      }
 
       toast({
         title: "Successfully joined waitlist!",
@@ -68,7 +79,7 @@ const Waitlist = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to join waitlist. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
         variant: "destructive",
       });
     } finally {
