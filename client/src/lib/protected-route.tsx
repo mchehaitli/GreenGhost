@@ -10,23 +10,23 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Route>
-    );
-  }
+  return (
+    <Route path={path}>
+      {() => {
+        if (isLoading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
 
-  if (!user) {
-    return (
-      <Route path={path}>
-        <Redirect to="/login" />
-      </Route>
-    );
-  }
+        if (!user) {
+          return <Redirect to="/login" />;
+        }
 
-  return <Route path={path} component={Component} />;
+        return <Component />;
+      }}
+    </Route>
+  );
 }
