@@ -33,14 +33,9 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { login, user, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useLocation();
-
-  // If user is already authenticated, redirect to admin waitlist
-  if (user) {
-    return <Redirect to="/admin/waitlist" />;
-  }
+  const [_location, setLocation] = useLocation();
+  const { login, user, isLoading } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -49,8 +44,6 @@ export default function Login() {
       password: "",
     },
   });
-
-  console.log('Login page state:', { isAuthenticated: !!user, isLoading });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -77,6 +70,11 @@ export default function Login() {
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  // If user is already authenticated, redirect to admin waitlist
+  if (user) {
+    return <Redirect to="/admin/waitlist" />;
   }
 
   return (
