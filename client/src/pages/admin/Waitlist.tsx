@@ -54,7 +54,7 @@ export default function WaitlistPage() {
       return response.json();
     },
     enabled: !!user, // Only fetch if user is authenticated
-    refetchInterval: 5000,
+    refetchInterval: 30000, // Refetch every 30 seconds is more reasonable
     gcTime: Infinity,
   });
 
