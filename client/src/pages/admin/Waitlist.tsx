@@ -43,7 +43,8 @@ export default function WaitlistPage() {
   // Force redirect if not authenticated
   useEffect(() => {
     if (!user && !authLoading) {
-      setLocation('/login', { replace: true });
+      console.log('No authenticated user, redirecting to login');
+      setLocation('/login');
       return;
     }
   }, [user, authLoading, setLocation]);
@@ -70,10 +71,6 @@ export default function WaitlistPage() {
 
   const isLoading = authLoading || dataLoading;
 
-  if (!user && !authLoading) {
-    return <Redirect to="/login" />;
-  }
-
   // Show loading state while checking auth or fetching data
   if (isLoading) {
     return (
@@ -83,6 +80,11 @@ export default function WaitlistPage() {
         </div>
       </div>
     );
+  }
+
+  // If no user and not loading, we'll redirect in the useEffect
+  if (!user) {
+    return null;
   }
 
   const exportToExcel = () => {

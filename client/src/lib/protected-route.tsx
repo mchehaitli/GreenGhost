@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Route, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
@@ -9,39 +9,34 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Log the current state for debugging
   console.log('ProtectedRoute state:', {
     path,
+    currentLocation: location,
     isAuthenticated: !!user,
     isLoading
   });
 
+  // If still loading, show loading spinner
   if (isLoading) {
     return (
-      <Route path={path}>
-        {() => (
-          <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner size="lg" />
-          </div>
-        )}
-      </Route>
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
-  return (
-    <Route path={path}>
-      {() => {
-        if (!user) {
-          // If not authenticated, redirect to login
-          setLocation('/login');
-          return null;
-        }
+  // If not authenticated and done loading, redirect to login
+  if (!user) {
+    console.log('User not authenticated, redirecting to login');
+    // Use setTimeout to ensure the redirect happens after the current render cycle
+    setTimeout(() => setLocation('/login'), 0);
+    return null;
+  }
 
-        console.log(`Authenticated user ${user.username}, rendering ${path}`);
-        return <Component />;
-      }}
-    </Route>
-  );
+  // If authenticated, render the protected component
+  console.log(`Authenticated user ${user.username}, rendering ${path}`);
+  return <Component />;
 }

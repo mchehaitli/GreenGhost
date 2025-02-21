@@ -29,14 +29,20 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
-      <Route path="/login" component={Login} />
       <Route path="/theme" component={ThemeCustomization} />
+      <Route path="/login">
+        {() => <Login />}
+      </Route>
 
       {/* Protected Routes */}
-      <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
+      <Route path="/admin/waitlist">
+        {() => <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />}
+      </Route>
 
       {/* 404 Route */}
-      <Route component={NotFound} />
+      <Route>
+        {() => <NotFound />}
+      </Route>
     </Switch>
   );
 }
