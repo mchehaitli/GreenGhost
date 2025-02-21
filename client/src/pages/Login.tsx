@@ -37,10 +37,11 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if user is already authenticated
+  console.log('Login component state:', { user, isLoading });
+
   useEffect(() => {
     if (user) {
-      console.log('User authenticated, redirecting to admin/waitlist');
+      console.log('Login: User authenticated, redirecting to admin/waitlist');
       setLocation('/admin/waitlist');
     }
   }, [user, setLocation]);
@@ -56,9 +57,11 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
+      console.log('Login: Attempting login...');
       await login(data);
       // After successful login, useEffect will handle redirect
     } catch (error) {
+      console.error('Login error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -71,10 +74,15 @@ export default function Login() {
   // Show loading state while checking auth
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="container flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  // If already authenticated, useEffect will handle redirect
+  if (user) {
+    return null;
   }
 
   return (
