@@ -18,7 +18,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function fetchJson(input: RequestInfo, init?: RequestInit) {
-  const response = await fetch(input, init);
+  const response = await fetch(input, {
+    ...init,
+    credentials: 'include', // Important: include credentials for session cookie
+    headers: {
+      ...init?.headers,
+      'Content-Type': 'application/json',
+    },
+  });
+
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text);
@@ -39,14 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
     refetchOnWindowFocus: true,
     refetchInterval: false,
-    retry: false
+    retry: false,
+    staleTime: 0
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       const data = await fetchJson("/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
       return data;
@@ -68,10 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () =>
-      fetchJson("/api/logout", {
+    mutationFn: async () => {
+      await fetchJson("/api/logout", {
         method: "POST",
-      }),
+      });
+    },
     onSuccess: () => {
       refetch();
       toast({
