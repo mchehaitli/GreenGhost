@@ -56,9 +56,10 @@ app.use((req, res, next) => {
   });
 
   // Server configuration
-  const PORT = 3000;
+  const PORT = 5000; // Changed to match expected port
   const HOST = "0.0.0.0";
-  server.listen(PORT, HOST, () => {
-    log(`serving on ${HOST}:${PORT}`);
+
+  server.listen(PORT, () => {
+    log(`Server running on port ${PORT}`);
   });
 })();
