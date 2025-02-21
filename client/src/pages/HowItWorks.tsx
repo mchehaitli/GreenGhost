@@ -14,7 +14,7 @@ const HowItWorks = () => {
     {
       icon: <ClipboardCheck className="w-8 h-8" />,
       title: "Get a Free Quote",
-      description: "Tell us about your lawn by filling out our quick online form for a personalized estimate."
+      description: "Complete our brief online form to schedule a personalized assessment with your dedicated area representative."
     },
     {
       icon: <FileSearch className="w-8 h-8" />,
@@ -43,10 +43,10 @@ const HowItWorks = () => {
       <section className="bg-background pt-8 pb-4">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-500 via-primary to-emerald-500 bg-clip-text text-transparent animate-fade-in">
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-500 via-primary to-emerald-500 bg-clip-text text-transparent animate-fadeIn">
               How It Works
             </h1>
-            <p className="text-lg text-muted-foreground animate-fade-up">
+            <p className="text-lg text-muted-foreground animate-fadeUp">
               Experience our streamlined process to transform your lawn care
             </p>
           </div>
@@ -59,7 +59,7 @@ const HowItWorks = () => {
             {steps.map((step, index) => (
               <div 
                 key={index} 
-                className="flex flex-col items-center mt-8"
+                className="flex flex-col items-center mt-8 animate-stepIn"
                 style={{ 
                   animationDelay: `${index * 200}ms`,
                 }}
@@ -83,7 +83,7 @@ const HowItWorks = () => {
             ))}
           </div>
 
-          <div className="mt-16 text-center animate-fade-up" style={{ animationDelay: '1000ms' }}>
+          <div className="mt-16 text-center animate-fadeUp" style={{ animationDelay: '1000ms' }}>
             <Button 
               asChild 
               size="lg" 
@@ -94,8 +94,7 @@ const HowItWorks = () => {
           </div>
         </div>
       </section>
-
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -123,16 +122,15 @@ const HowItWorks = () => {
           }
         }
 
-        .animate-fade-in {
+        .animate-fadeIn {
           animation: fadeIn 0.5s ease forwards;
         }
 
-        .animate-fade-up {
+        .animate-fadeUp {
           animation: fadeUp 0.5s ease forwards;
         }
 
-        .animate-step {
-          opacity: 0;
+        .animate-stepIn {
           animation: stepIn 0.5s ease forwards;
         }
       `}</style>
