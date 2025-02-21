@@ -1,12 +1,24 @@
 import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
+import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Create Zod schemas for users
+export const insertUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+export const selectUserSchema = createSelectSchema(users);
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
 
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),

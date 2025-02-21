@@ -3,6 +3,7 @@ import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/hooks/use-auth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
@@ -15,6 +16,8 @@ import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
+import Login from "@/pages/Login";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
@@ -25,7 +28,8 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
-      <Route path="/admin/waitlist" component={AdminWaitlist} />
+      <Route path="/login" component={Login} />
+      <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route component={NotFound} />
     </Switch>
@@ -37,20 +41,22 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-grow">
-          <Router />
-        </main>
-        <Footer />
-        <WaitlistDialog 
-          open={showWaitlistPopup}
-          onOpenChange={(open) => {
-            setShowWaitlistPopup(open);
-          }}
-        />
-      </div>
-      <Toaster />
+      <AuthProvider>
+        <div className="min-h-screen flex flex-col">
+          <Navigation />
+          <main className="flex-grow">
+            <Router />
+          </main>
+          <Footer />
+          <WaitlistDialog 
+            open={showWaitlistPopup}
+            onOpenChange={(open) => {
+              setShowWaitlistPopup(open);
+            }}
+          />
+        </div>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
