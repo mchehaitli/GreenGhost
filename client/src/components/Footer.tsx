@@ -21,10 +21,10 @@ const Footer = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="col-span-2 md:col-span-1">
               <Link href="/">
-                <a className="flex items-center space-x-2 group" onClick={scrollToTop}>
+                <div className="flex items-center space-x-2 group" onClick={scrollToTop}> {/* Changed <a> to <div> */}
                   <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
                   <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
-                </a>
+                </div>
               </Link>
               <p className="mt-4 text-sm text-muted-foreground">
                 Premium automated landscaping solutions for residential estates and commercial properties
@@ -35,19 +35,19 @@ const Footer = () => {
               <ul className="space-y-2">
                 <li>
                   <Link href="/about">
-                    <a onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block">
+                    <div onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block"> {/* Changed <a> to <div> */}
                       About Us
-                    </a>
+                    </div>
                   </Link>
                 </li>
                 <li>
-                  <a 
+                  <div 
                     href="#" 
                     onClick={handleWaitlistClick}
                     className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block cursor-pointer"
-                  >
+                  > {/* Changed <a> to <div> */}
                     Join Waitlist
-                  </a>
+                  </div>
                 </li>
               </ul>
             </div>
