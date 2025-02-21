@@ -49,13 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({
+          username: credentials.username,
+          password: credentials.password
+        }),
         credentials: 'include'
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'Login failed');
+        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
+        throw new Error(errorData.error || 'Login failed');
       }
 
       return response.json();
