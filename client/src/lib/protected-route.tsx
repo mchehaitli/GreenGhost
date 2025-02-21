@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
+  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -18,10 +19,12 @@ export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
+  // If no user is found after loading, redirect to login
   if (!user) {
     console.log('ProtectedRoute: No authenticated user, redirecting to login');
     return <Redirect to="/login" />;
   }
 
+  // If we have a user, render the protected component
   return <Component />;
 }

@@ -105,7 +105,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username: string, password: string, done) => {
       try {
         log(`Attempting login for username: ${username}`);
-        const user = await getUserByUsername(username);
+        const [user] = await db.select().from(users).where(eq(users.username, username));
 
         if (!user) {
           log('User not found');
