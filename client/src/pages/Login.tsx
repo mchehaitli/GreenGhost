@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -36,11 +36,15 @@ export default function Login() {
   const { login, user, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
+  const [formIsSubmitting, setFormIsSubmitting] = useState(false); // added state for form submission
 
   // If user is already authenticated, redirect to admin waitlist
-  if (user) {
-    return <Redirect to="/admin/waitlist" />;
-  }
+  useEffect(() => {
+    if (user) {
+      setLocation('/admin/waitlist');
+    }
+  }, [user, setLocation]);
+
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -53,12 +57,13 @@ export default function Login() {
   console.log('Login page state:', { isAuthenticated: !!user, isLoading });
 
   const onSubmit = async (data: LoginFormData) => {
+    setFormIsSubmitting(true); // Set submitting state
     try {
       setError(null);
       console.log('Login: Attempting login...');
       await login(data);
       console.log('Login: Success, auth state will handle redirect');
-      setLocation('/admin/waitlist');
+      //setLocation('/admin/waitlist'); // Removed, handled by useEffect
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -67,6 +72,8 @@ export default function Login() {
         setError("An unexpected error occurred");
       }
       form.reset({ password: "" });
+    } finally {
+      setFormIsSubmitting(false); // Reset submitting state
     }
   };
 
@@ -116,9 +123,9 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        {...field}
                         autoComplete="current-password"
                       />
                     </FormControl>
@@ -131,9 +138,9 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={form.formState.isSubmitting}
+                disabled={formIsSubmitting || form.formState.isSubmitting} // added formIsSubmitting check
               >
-                {form.formState.isSubmitting ? (
+                {formIsSubmitting || form.formState.isSubmitting ? ( // added formIsSubmitting check
                   <LoadingSpinner size="sm" className="mr-2" />
                 ) : null}
                 Login
