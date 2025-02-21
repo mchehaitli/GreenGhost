@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Redirect } from "wouter";
+import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   component: React.ComponentType;
@@ -8,6 +9,12 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log("No authenticated user, redirecting to login");
+    }
+  }, [user, isLoading]);
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -18,11 +25,11 @@ export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
-  // If no user is found after loading, redirect to login
+  // If not authenticated, redirect to login
   if (!user) {
     return <Redirect to="/login" />;
   }
 
-  // If we have a user, render the protected component
+  // If authenticated, render the protected component
   return <Component />;
 }

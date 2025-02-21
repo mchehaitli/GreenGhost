@@ -22,7 +22,6 @@ import { ProtectedRoute } from "@/lib/protected-route";
 function Router() {
   return (
     <Switch>
-      {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
       <Route path="/how-it-works" component={HowItWorks} />
@@ -31,13 +30,7 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-
-      {/* Protected Routes */}
-      <Route path="/admin/waitlist">
-        <ProtectedRoute component={AdminWaitlist} />
-      </Route>
-
-      {/* 404 Route */}
+      <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
       <Route component={NotFound} />
     </Switch>
   );

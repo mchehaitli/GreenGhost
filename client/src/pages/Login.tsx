@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -37,6 +37,21 @@ export default function Login() {
   const [_location, setLocation] = useLocation();
   const { login, user, isLoading } = useAuth();
 
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  // If already authenticated, redirect to admin waitlist
+  useEffect(() => {
+    if (user) {
+      setLocation('/admin/waitlist');
+    }
+  }, [user, setLocation]);
+
   // Show loading state while checking auth
   if (isLoading) {
     return (
@@ -46,29 +61,11 @@ export default function Login() {
     );
   }
 
-  // If user is already authenticated, redirect to admin waitlist
-  if (user) {
-    console.log('User already authenticated, redirecting to admin waitlist');
-    return <Redirect to="/admin/waitlist" />;
-  }
-
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
-
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null);
-      console.log('Login: Attempting login...');
       await login(data);
-      console.log('Login: Success, redirecting to admin waitlist');
-      setLocation('/admin/waitlist');
     } catch (error) {
-      console.error('Login error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
