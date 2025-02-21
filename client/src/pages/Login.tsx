@@ -22,6 +22,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -33,6 +35,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { login } = useAuth();
   const [, setLocation] = useLocation();
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -44,10 +47,15 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      setError(null);
       await login(data);
       setLocation("/admin/waitlist");
     } catch (error) {
-      // Error is handled by the mutation
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unexpected error occurred");
+      }
     }
   };
 
@@ -63,6 +71,11 @@ export default function Login() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <FormField
                 control={form.control}
                 name="username"
@@ -70,7 +83,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} autoComplete="username" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -83,7 +96,11 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input 
+                        type="password" 
+                        {...field} 
+                        autoComplete="current-password"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
