@@ -61,12 +61,10 @@ export default function Login() {
       } else {
         setError("An unexpected error occurred");
       }
-      // Reset form only on error
       form.reset();
     }
   };
 
-  // Don't render anything while checking authentication status
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -75,7 +73,6 @@ export default function Login() {
     );
   }
 
-  // If already authenticated, don't show the login form
   if (user) {
     return null;
   }

@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 async function fetchJson(input: RequestInfo, init?: RequestInit) {
   const response = await fetch(input, {
     ...init,
-    credentials: 'include', // Important: include credentials for session cookie
+    credentials: 'include',
     headers: {
       ...init?.headers,
       'Content-Type': 'application/json',
@@ -45,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (error.message.includes("401")) return null;
           throw error;
         }),
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchInterval: false,
     retry: false,
-    staleTime: 0
+    staleTime: Infinity
   });
 
   const loginMutation = useMutation({

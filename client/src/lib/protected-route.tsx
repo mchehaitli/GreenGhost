@@ -23,7 +23,6 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
         }
 
         if (!user) {
-          // Use setTimeout to ensure state updates are processed before redirect
           setTimeout(() => setLocation("/login"), 0);
           return null;
         }
