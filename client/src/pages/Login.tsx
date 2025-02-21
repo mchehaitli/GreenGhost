@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -33,7 +33,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +44,13 @@ export default function Login() {
       password: "",
     },
   });
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation("/admin/waitlist");
+    }
+  }, [user, setLocation]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -58,6 +65,11 @@ export default function Login() {
       }
     }
   };
+
+  // If user is already logged in, don't show the login form
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-10">
