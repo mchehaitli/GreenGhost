@@ -50,10 +50,14 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    log('Starting server initialization...');
+
     // Setup auth first with proper session handling
+    log('Setting up authentication...');
     setupAuth(app);
 
     // Then register API routes
+    log('Registering routes...');
     const server = registerRoutes(app);
 
     // Error handling middleware
@@ -66,17 +70,39 @@ app.use((req, res, next) => {
 
     // Setup static file serving last
     if (app.get("env") === "development") {
+      log('Setting up Vite development server...');
       await setupVite(app, server);
     } else {
+      log('Setting up static file serving...');
       serveStatic(app);
     }
 
     // Server configuration
-    const PORT = 5000;
+    const PORT = process.env.PORT || 5000;
     const HOST = "0.0.0.0";
 
     server.listen(PORT, HOST, () => {
-      log(`Server running on port ${PORT}`);
+      log(`Server running at http://${HOST}:${PORT}`);
+    });
+
+    // Handle server errors
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.syscall !== 'listen') {
+        throw error;
+      }
+
+      switch (error.code) {
+        case 'EACCES':
+          console.error(`Port ${PORT} requires elevated privileges`);
+          process.exit(1);
+          break;
+        case 'EADDRINUSE':
+          console.error(`Port ${PORT} is already in use`);
+          process.exit(1);
+          break;
+        default:
+          throw error;
+      }
     });
   } catch (error) {
     console.error('Server startup error:', error);
