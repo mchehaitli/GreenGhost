@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
@@ -32,17 +31,19 @@ const columns: ColumnDef<WaitlistEntry>[] = [
 
 export default function WaitlistPage() {
   const queryClient = useQueryClient();
-  
+
   const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["waitlist"],
     queryFn: async () => {
       const response = await fetch("/api/waitlist");
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        throw new Error("Failed to fetch waitlist");
       }
       return response.json();
     },
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 1000,
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   if (isLoading) {
