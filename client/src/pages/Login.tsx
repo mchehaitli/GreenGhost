@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -34,9 +34,18 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { login, user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
   console.log('Login page state:', { isAuthenticated: !!user, isLoading });
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (user && !isLoading) {
+      console.log('User already authenticated, redirecting to admin/waitlist');
+      setLocation('/admin/waitlist');
+    }
+  }, [user, isLoading, setLocation]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -50,7 +59,7 @@ export default function Login() {
     try {
       setError(null);
       await login(data);
-      // After successful login, user will be set in context and redirect will happen automatically
+      // After successful login, useEffect will handle redirect
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -68,12 +77,6 @@ export default function Login() {
         <LoadingSpinner size="lg" />
       </div>
     );
-  }
-
-  // If user is authenticated, redirect to admin waitlist
-  if (user) {
-    console.log('User already authenticated, redirecting to admin/waitlist');
-    return <Redirect to="/admin/waitlist" />;
   }
 
   return (
