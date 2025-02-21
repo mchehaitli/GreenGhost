@@ -54,20 +54,26 @@ export function setupAuth(app: Express) {
     pruneSessionInterval: 60
   });
 
+  // Explicitly set session secret for development
+  if (!process.env.SESSION_SECRET) {
+    log('SESSION_SECRET not found, using development secret');
+    process.env.SESSION_SECRET = '0a0df83f14af11c0841035474b9e698664e5be1513c193db84a8b059ca9aef06';
+  }
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'dev-secret-key',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store,
     cookie: {
-      secure: false, // Set to false for development
+      secure: false, // Set to true in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       sameSite: 'lax',
       path: '/'
     },
     name: 'sid',
-    rolling: true // Refresh the cookie age on each request
+    rolling: true // Refresh cookie on each request
   };
 
   log('Setting up authentication middleware...');
@@ -77,9 +83,10 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Initialize the admin user if it doesn't exist
+  // Initialize admin user if it doesn't exist
   const initializeAdminUser = async () => {
     try {
+      log('Checking for admin user...');
       const adminUsername = 'admin';
       const [existingAdmin] = await db
         .select()
@@ -87,18 +94,27 @@ export function setupAuth(app: Express) {
         .where(eq(users.username, adminUsername));
 
       if (!existingAdmin) {
+        log('Admin user not found, creating...');
         const hashedPassword = await hashPassword('password123');
-        await db.insert(users).values({
-          username: adminUsername,
-          password: hashedPassword,
-        });
-        log('Admin user created successfully');
+        const [newAdmin] = await db
+          .insert(users)
+          .values({
+            username: adminUsername,
+            password: hashedPassword,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning();
+        log('Admin user created successfully:', newAdmin.username);
+      } else {
+        log('Admin user already exists');
       }
     } catch (error) {
       console.error('Error initializing admin user:', error);
     }
   };
 
+  // Call initializeAdminUser immediately
   initializeAdminUser();
 
   passport.use(

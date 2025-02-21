@@ -54,13 +54,13 @@ export default function WaitlistPage() {
       return response.json();
     },
     enabled: !!user, // Only fetch if user is authenticated
-    refetchInterval: 30000, // Refetch every 30 seconds is more reasonable
+    refetchInterval: 30000, // Refetch every 30 seconds
     gcTime: Infinity,
   });
 
   const isLoading = authLoading || dataLoading;
 
-  // Show loading state while checking auth or fetching data
+  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="container mx-auto py-10">
@@ -71,9 +71,10 @@ export default function WaitlistPage() {
     );
   }
 
-  // If not authenticated, ProtectedRoute will handle redirect
+  // If not authenticated, redirect to login
   if (!user) {
-    return null;
+    console.log('Unauthorized access attempt to admin waitlist');
+    return <Redirect to="/login" />;
   }
 
   const exportToExcel = () => {
