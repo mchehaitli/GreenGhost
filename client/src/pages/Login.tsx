@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,12 +47,20 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (user) {
-      const params = new URLSearchParams(window.location.search);
-      const redirectTo = params.get("redirect") || "/admin/waitlist";
-      setLocation(decodeURIComponent(redirectTo));
+    if (user && !authLoading) {
+      setLocation('/admin/waitlist');
     }
-  }, [user, setLocation]);
+  }, [user, authLoading, setLocation]);
+
+  // Show loading state while authentication is being checked
+  if (authLoading) {
+    return null;
+  }
+
+  // Don't render login form if user is already authenticated
+  if (user) {
+    return null;
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     try {
