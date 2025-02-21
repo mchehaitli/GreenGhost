@@ -18,11 +18,8 @@ import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
-  const { user } = useAuth();
-
   return (
     <Switch>
       {/* Public Routes */}
@@ -33,17 +30,17 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
-
-      {/* Auth Routes */}
-      <Route path="/login">
-        {user ? <Redirect to="/admin/waitlist" /> : <Login />}
-      </Route>
+      <Route path="/login" component={Login} />
 
       {/* Protected Routes */}
-      <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />
+      <Route path="/admin/waitlist">
+        {() => <ProtectedRoute path="/admin/waitlist" component={AdminWaitlist} />}
+      </Route>
 
       {/* 404 Route */}
-      <Route component={NotFound} />
+      <Route>
+        {() => <NotFound />}
+      </Route>
     </Switch>
   );
 }
