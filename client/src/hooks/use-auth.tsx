@@ -43,18 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchJson("/api/user")
         .catch(error => {
           if (error.message.includes("401")) {
-            console.log("Auth check: Not authenticated");
             return null;
           }
-          console.error("Auth check error:", error);
           throw error;
         }),
-    staleTime: 0, // Consider data immediately stale
-    gcTime: 0, // Don't cache auth state
-    refetchOnMount: true, // Always refetch on mount
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchInterval: false, // Don't automatically refetch
-    retry: false, // Don't retry failed auth checks
+    staleTime: 5000,
+    gcTime: 10000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: false,
   });
 
   const loginMutation = useMutation({

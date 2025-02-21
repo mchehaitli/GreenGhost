@@ -69,9 +69,8 @@ export default function WaitlistPage() {
 
   const isLoading = authLoading || dataLoading;
 
-  // If not authenticated, don't render anything - useEffect will handle redirect
-  if (!user) {
-    return null;
+  if (!user && !authLoading) {
+    return <Redirect to="/login" />;
   }
 
   // Show loading state while checking auth or fetching data
