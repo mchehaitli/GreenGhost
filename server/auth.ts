@@ -66,7 +66,8 @@ export function setupAuth(app: Express) {
       sameSite: 'lax',
       path: '/'
     },
-    name: 'sid'
+    name: 'sid',
+    rolling: true // Refresh the cookie age on each request
   };
 
   log('Setting up authentication middleware...');
