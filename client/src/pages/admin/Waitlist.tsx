@@ -48,6 +48,7 @@ const COLORS = [
 const AdminWaitlist = () => {
   const { data: entries = [], isLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ['/api/waitlist'],
+    queryFn: () => fetch('/api/waitlist').then(res => res.json()),
   });
 
   // Analytics calculations
