@@ -23,33 +23,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, error, isLoading, refetch } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      try {
-        const response = await fetch("/api/user", {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log('Auth check failed: Not authenticated');
-            return null;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch("/api/user", {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          return null;
         }
-        return response.json();
-      } catch (error) {
-        console.error('Auth check error:', error);
-        return null;
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      return response.json();
     },
+    retry: false,
     staleTime: 0,
-    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: false,
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      console.log("Login attempt for:", credentials.username);
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {
@@ -64,12 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(text || 'Login failed');
       }
 
-      const data = await response.json();
-      console.log("Login successful for:", credentials.username);
-      return data;
+      return response.json();
     },
     onSuccess: () => {
-      console.log("Refetching user data after successful login");
       refetch();
       toast({
         title: "Logged in successfully",
@@ -77,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
-      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error.message,
@@ -88,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      console.log("Logout attempt...");
       const response = await fetch("/api/logout", {
         method: "POST",
         credentials: 'include'
@@ -97,17 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error('Logout failed');
       }
-      console.log("Logout successful");
     },
     onSuccess: () => {
-      console.log("Clearing user data after logout");
       refetch();
       toast({
         title: "Logged out successfully",
       });
     },
     onError: (error: Error) => {
-      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: error.message,
@@ -121,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: user || null,
         isLoading,
-        error,
+        error: error instanceof Error ? error : null,
         login: loginMutation.mutateAsync,
         logout: logoutMutation.mutateAsync,
       }}

@@ -34,16 +34,11 @@ function Router() {
 
       {/* Protected Routes */}
       <Route path="/admin/waitlist">
-        <ProtectedRoute 
-          path="/admin/waitlist" 
-          component={AdminWaitlist}
-        />
+        <ProtectedRoute component={AdminWaitlist} />
       </Route>
 
       {/* 404 Route */}
-      <Route>
-        <NotFound />
-      </Route>
+      <Route component={NotFound} />
     </Switch>
   );
 }
