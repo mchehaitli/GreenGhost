@@ -3,6 +3,9 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import WaitlistAnalytics from "@/components/WaitlistAnalytics";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 type WaitlistEntry = {
   id: number;
@@ -43,6 +46,25 @@ export default function WaitlistPage() {
     gcTime: Infinity, // Keep the data indefinitely
   });
 
+  const exportToExcel = () => {
+    // Format data for export
+    const exportData = entries.map(entry => ({
+      Email: entry.email,
+      'ZIP Code': entry.zip_code,
+      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Waitlist Entries");
+
+    // Generate Excel file
+    XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-10">
@@ -64,7 +86,17 @@ export default function WaitlistPage() {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-6">Waitlist Entries</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Waitlist Entries</h2>
+          <Button 
+            onClick={exportToExcel}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export to Excel
+          </Button>
+        </div>
         <DataTable columns={columns} data={entries} />
       </div>
     </div>
