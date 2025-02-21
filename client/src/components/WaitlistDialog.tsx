@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -36,6 +37,7 @@ interface WaitlistDialogProps {
 const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,6 +68,9 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         title: "Successfully joined waitlist!",
         description: "You're now entered for a chance to win free maintenance for a year.",
       });
+      
+      // Invalidate and refetch waitlist data
+      await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
 
       if (onOpenChange) {
         onOpenChange(false);
