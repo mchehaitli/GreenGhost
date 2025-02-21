@@ -84,22 +84,23 @@ const Navigation = () => {
             <SheetContent>
               <div className="flex flex-col space-y-4 mt-4">
                 {navItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <span
-                      onClick={() => {
-                        setOpen(false);
-                        scrollToTop();
-                      }}
-                      className={cn(
-                        "text-sm font-medium p-2 rounded-md transition-all duration-300",
-                        location === item.href
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
+                  <div key={item.href} onClick={() => {
+                    setOpen(false);
+                    scrollToTop();
+                  }}>
+                    <Link href={item.href}>
+                      <div
+                        className={cn(
+                          "text-sm font-medium p-2 rounded-md transition-all duration-300 cursor-pointer",
+                          location === item.href
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                        )}
+                      >
+                        {item.label}
+                      </div>
+                    </Link>
+                  </div>
                 ))}
                 <Button 
                   variant="outline" 
