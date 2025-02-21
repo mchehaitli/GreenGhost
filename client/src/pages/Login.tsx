@@ -37,15 +37,13 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Login page state:', { isAuthenticated: !!user, isLoading });
-
   // Redirect if user is already authenticated
   useEffect(() => {
-    if (user && !isLoading) {
-      console.log('User already authenticated, redirecting to admin/waitlist');
+    if (user) {
+      console.log('User authenticated, redirecting to admin/waitlist');
       setLocation('/admin/waitlist');
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, setLocation]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
