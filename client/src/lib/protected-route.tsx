@@ -12,9 +12,10 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Immediately redirect to login if not authenticated
   useEffect(() => {
-    // Redirect to login if not authenticated and not currently loading
     if (!user && !isLoading) {
+      console.log("No authenticated user found, redirecting to login");
       setLocation('/login');
     }
   }, [user, isLoading, setLocation]);
@@ -22,7 +23,7 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
   return (
     <Route path={path}>
       {() => {
-        // Show loading state while checking auth
+        // If still loading auth state, show loading spinner
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
@@ -31,12 +32,14 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
           );
         }
 
-        // If not authenticated, render nothing (useEffect will handle redirect)
+        // If no user and not loading, don't render anything (useEffect will handle redirect)
         if (!user) {
+          console.log("Protected route: No authenticated user");
           return null;
         }
 
-        // If authenticated, render the protected component
+        // If we have a user, render the protected component
+        console.log("Protected route: Rendering protected component");
         return <Component />;
       }}
     </Route>

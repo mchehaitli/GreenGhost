@@ -5,6 +5,14 @@ import { eq, sql } from 'drizzle-orm';
 
 const router = Router();
 
+// Middleware to check if user is authenticated
+const requireAuth = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
 router.post('/api/waitlist', async (req, res) => {
   try {
     const { email, zipCode } = req.body;
@@ -34,7 +42,7 @@ router.post('/api/waitlist', async (req, res) => {
 
     // Validate input using our Zod schema
     const parsedInput = insertWaitlistSchema.parse({
-      email: email.toLowerCase(), // Store emails in lowercase
+      email: email.toLowerCase(),
       zip_code: zipCode,
     });
 
@@ -62,7 +70,8 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-router.get('/api/waitlist', async (req, res) => {
+// Protect the GET endpoint with authentication middleware
+router.get('/api/waitlist', requireAuth, async (req, res) => {
   try {
     console.log('Fetching waitlist entries...');
     const entries = await db

@@ -42,14 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: () => 
       fetchJson("/api/user")
         .catch(error => {
-          if (error.message.includes("401")) return null;
+          if (error.message.includes("401")) {
+            console.log("User not authenticated");
+            return null;
+          }
           throw error;
         }),
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Check auth status every 30 seconds
-    retry: false
+    staleTime: 0, // Consider data immediately stale
+    cacheTime: 0, // Don't cache auth state
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchInterval: 30000, // Regularly check auth status
+    retry: false, // Don't retry failed auth checks
   });
 
   const loginMutation = useMutation({
@@ -68,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error.message,
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: error.message,
