@@ -43,7 +43,8 @@ export default function WaitlistPage() {
   // Force redirect if not authenticated
   useEffect(() => {
     if (!user && !authLoading) {
-      setLocation('/login');
+      setLocation('/login', { replace: true });
+      return;
     }
   }, [user, authLoading, setLocation]);
 
