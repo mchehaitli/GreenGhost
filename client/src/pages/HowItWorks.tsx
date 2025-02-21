@@ -13,28 +13,28 @@ const HowItWorks = () => {
   const steps = [
     {
       icon: <ClipboardCheck className="w-8 h-8" />,
-      title: "Get a Free Quote",
-      description: "Complete our brief online form to schedule a personalized assessment with your dedicated area representative."
+      title: "Schedule a Personalized Assessment",
+      description: "Complete our brief online form to schedule a personalized assessment with your dedicated area representative.",
     },
     {
       icon: <FileSearch className="w-8 h-8" />,
       title: "Lawn Assessment & Custom Plan",
-      description: "We'll schedule a visit to map your lawn, understand your needs, and create a custom maintenance plan tailored just for you."
+      description: "We'll schedule a visit to map your lawn, understand your needs, and create a custom maintenance plan tailored just for you.",
     },
     {
       icon: <Settings className="w-8 h-8" />,
       title: "Automated System Setup",
-      description: "Our team will install and configure your smart lawn care system, setting up the perfect schedule for a healthy, beautiful lawn."
+      description: "Our team will install and configure your smart lawn care system, setting up the perfect schedule for a healthy, beautiful lawn.",
     },
     {
       icon: <ThumbsUp className="w-8 h-8" />,
       title: "Effortless Lawn Care",
-      description: "Relax and enjoy! Your automated system will take care of your lawn, providing precise care and attention, all managed remotely."
+      description: "Relax and enjoy! Your automated system will take care of your lawn, providing precise care and attention, all managed remotely.",
     },
     {
       icon: <HeartHandshake className="w-8 h-8" />,
       title: "Ongoing Support & Monitoring",
-      description: "We'll continuously monitor your lawn's health and provide support whenever you need it, ensuring your lawn stays in top condition."
+      description: "We'll continuously monitor your lawn's health and provide support whenever you need it, ensuring your lawn stays in top condition.",
     }
   ];
 
