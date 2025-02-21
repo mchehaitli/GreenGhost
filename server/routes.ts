@@ -4,8 +4,12 @@ import { db } from "@db";
 import { quoteRequests } from "@db/schema";
 import { insertQuoteSchema } from "@db/schema";
 import { eq } from "drizzle-orm";
+import waitlistRoutes from './routes/waitlist';
 
 export function registerRoutes(app: Express): Server {
+  // Register waitlist routes
+  app.use(waitlistRoutes);
+
   // Quote request endpoints
   app.post("/api/quote", async (req, res) => {
     try {
