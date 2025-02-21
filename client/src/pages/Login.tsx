@@ -1,49 +1,22 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState, useEffect } from "react";
 
 const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function Login() {
-  const { login, user, isLoading: authLoading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+const Login = () => {
+  const { user, login, authLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
   });
 
   useEffect(() => {
@@ -52,101 +25,53 @@ export default function Login() {
     }
   }, [user, authLoading, setLocation]);
 
-  // Show loading state while authentication is being checked
-  if (authLoading) {
-    return null;
-  }
-
-  // Don't render login form if user is already authenticated
-  if (user) {
-    return null;
-  }
-
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setError(null);
-      setIsSubmitting(true);
-      await login(data);
+      await login(data.username, data.password);
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unexpected error occurred");
-      }
-      form.reset({ password: "" });
-    } finally {
-      setIsSubmitting(false);
+      console.error('Login failed:', error);
     }
   };
 
+  if (authLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="container flex items-center justify-center min-h-screen py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Sign in to access the admin dashboard
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        autoComplete="username"
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        {...field}
-                        autoComplete="current-password"
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting || authLoading}
-              >
-                {(isSubmitting || authLoading) && (
-                  <LoadingSpinner size="sm" className="mr-2" />
-                )}
-                Login
-              </Button>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
+    <div className="flex min-h-screen items-center justify-center">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md space-y-4 p-6">
+        <h1 className="text-2xl font-bold">Login</h1>
+        <div>
+          <input
+            {...register("username")}
+            type="text"
+            placeholder="Username"
+            className="w-full rounded border p-2"
+          />
+          {errors.username && (
+            <p className="text-sm text-red-500">{errors.username.message}</p>
+          )}
+        </div>
+        <div>
+          <input
+            {...register("password")}
+            type="password"
+            placeholder="Password"
+            className="w-full rounded border p-2"
+          />
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
+        </div>
+        <button
+          type="submit"
+          className="w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
+        >
+          Login
+        </button>
+      </form>
     </div>
   );
-}
+};
+
+export default Login;
