@@ -41,16 +41,39 @@ const Waitlist = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.email,
+          zipCode: values.zipCode,
+        }),
+      });
 
-    toast({
-      title: "Successfully joined waitlist!",
-      description: "You're now entered for a chance to win free maintenance for a year.",
-    });
+      if (!response.ok) {
+        throw new Error('Failed to join waitlist');
+      }
 
-    form.reset();
+      const data = await response.json();
+
+      toast({
+        title: "Successfully joined waitlist!",
+        description: "You're now entered for a chance to win free maintenance for a year.",
+      });
+
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to join waitlist. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

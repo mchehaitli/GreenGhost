@@ -49,14 +49,14 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Optimistically update the cache
+      // Add optimistic update
       const newEntry = {
         id: Date.now(),
         email: values.email,
         zip_code: values.zipCode,
         created_at: new Date().toISOString()
       };
-      
+
       queryClient.setQueryData(["waitlist"], (old: any[] = []) => [newEntry, ...old]);
 
       const response = await fetch('/api/waitlist', {
@@ -78,7 +78,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         title: "Successfully joined waitlist!",
         description: "You're now entered for a chance to win free maintenance for a year.",
       });
-      
+
       // Refetch to get the accurate data
       await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
 
@@ -87,11 +87,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       }
       form.reset();
     } catch (error) {
+      console.error('Waitlist submission error:', error);
       toast({
         title: "Error",
         description: "Failed to join waitlist. Please try again.",
         variant: "destructive",
       });
+
+      // Rollback optimistic update on error
+      await queryClient.invalidateQueries({ queryKey: ["waitlist"] });
     } finally {
       setIsSubmitting(false);
     }
