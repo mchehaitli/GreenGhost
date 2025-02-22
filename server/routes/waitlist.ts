@@ -42,6 +42,26 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
+    // Send verification email before database insertion
+    let emailSent = false;
+    try {
+      emailSent = await sendVerificationEmail(email.toLowerCase(), zipCode);
+      console.log('Verification email sent successfully');
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      return res.status(500).json({
+        error: 'Email verification failed',
+        details: 'Unable to send verification email. Please try again.'
+      });
+    }
+
+    if (!emailSent) {
+      return res.status(500).json({
+        error: 'Email verification failed',
+        details: 'Unable to send verification email. Please try again.'
+      });
+    }
+
     // Validate input using our Zod schema
     const parsedInput = insertWaitlistSchema.parse({
       email: email.toLowerCase(),
@@ -58,16 +78,6 @@ router.post('/api/waitlist', async (req, res) => {
       .returning();
 
     console.log('Successfully saved to waitlist:', result[0]);
-
-    // Send verification email
-    try {
-      await sendVerificationEmail(email.toLowerCase(), zipCode);
-      console.log('Verification email sent successfully');
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Continue with the response even if email fails
-      // We don't want to roll back the waitlist registration
-    }
 
     res.json({ 
       success: true, 
