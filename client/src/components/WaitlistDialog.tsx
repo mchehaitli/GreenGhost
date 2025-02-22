@@ -32,7 +32,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const initialForm = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -47,26 +47,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const onInitialSubmit = async (values: FormData) => {
+  const onSubmit = async (data: FormData) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
 
-      // Log form state for debugging
-      console.log('Form state before submission:', {
-        values,
-        errors: initialForm.formState.errors,
-        isDirty: initialForm.formState.isDirty,
-        isValid: initialForm.formState.isValid
-      });
-
+      // Ensure proper formatting of data
       const payload = {
-        email: values.email.trim(),
-        zip_code: values.zip_code.trim()
+        email: data.email.trim(),
+        zip_code: data.zip_code.trim(),
       };
 
-      console.log('Submitting payload:', payload);
+      console.log('Submitting form with payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -76,17 +69,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-      console.log('Server response:', data);
+      const responseData = await response.json();
+      console.log('Server response:', responseData);
 
       if (!response.ok) {
-        const errorMessage = data.error === 'Already registered' 
-          ? 'This email is already on our waitlist'
-          : data.details || data.error || "Failed to join waitlist";
-        throw new Error(errorMessage);
+        throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
       }
 
-      setPendingEmail(values.email);
+      setPendingEmail(data.email);
       setStep('verifying');
 
       toast({
@@ -133,7 +123,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       // Reset forms and close dialog
-      initialForm.reset();
+      form.reset();
       verificationForm.reset();
       setPendingEmail("");
       setStep('initial');
@@ -159,7 +149,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
 
     if (!newOpen) {
-      initialForm.reset();
+      form.reset();
       verificationForm.reset();
       setPendingEmail("");
       setStep('initial');
@@ -177,10 +167,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...initialForm}>
-            <form onSubmit={initialForm.handleSubmit(onInitialSubmit)} className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={initialForm.control}
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -196,7 +186,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 )}
               />
               <FormField
-                control={initialForm.control}
+                control={form.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
