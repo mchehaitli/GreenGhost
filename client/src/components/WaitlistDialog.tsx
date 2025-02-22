@@ -86,21 +86,14 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      if (data.status === 'pending_verification') {
-        setRegisteredEmail(values.email);
-        setShowVerificationInput(true);
-        form.reset();
-        return; // Exit early after setting verification state
-      }
-
-      // Only reached if not pending verification
+      setRegisteredEmail(values.email);
+      setShowVerificationInput(true);
+      form.reset();
+      
       toast({
-        title: "Success!",
-        description: "You've been added to the waitlist.",
+        title: "Check your email!",
+        description: "We've sent a verification code to your email.",
       });
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
     } catch (error) {
       toast({
         title: "Error",
