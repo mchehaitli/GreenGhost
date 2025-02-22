@@ -72,16 +72,11 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
-    // Validate input using our Zod schema
-    const parsedInput = insertWaitlistSchema.parse({
-      email: email.toLowerCase(),
-      zip_code: zipCode,
-    });
-
     // Insert into database as unverified
     const [newEntry] = await db.insert(waitlist)
       .values({
-        ...parsedInput,
+        email: email.toLowerCase(),
+        zip_code: zipCode,
         verified: false,
         created_at: new Date()
       })
@@ -107,7 +102,7 @@ router.post('/api/waitlist', async (req, res) => {
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
-    console.log('Verifying code for email:', email);
+    log('Verifying code for email:', email);
 
     if (!email || !code) {
       return res.status(400).json({
@@ -162,9 +157,9 @@ router.post('/api/waitlist/verify', async (req, res) => {
     // Send welcome email
     try {
       await sendWelcomeEmail(email.toLowerCase(), updatedEntry.zip_code);
-      console.log('Welcome email sent successfully');
+      log('Welcome email sent successfully');
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      log('Failed to send welcome email:', emailError);
       // Continue despite welcome email failure
     }
 
@@ -173,7 +168,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
       message: 'Email verified successfully! Welcome to GreenGhost Tech!'
     });
   } catch (error) {
-    console.error('Error in verification process:', error);
+    log('Error in verification process:', error);
     res.status(500).json({
       error: 'Verification failed',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -183,7 +178,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
 router.get('/api/waitlist', requireAuth, async (req, res) => {
   try {
-    console.log('Fetching waitlist entries...');
+    log('Fetching waitlist entries...');
     const entries = await db
       .select({
         id: waitlist.id,
@@ -195,10 +190,10 @@ router.get('/api/waitlist', requireAuth, async (req, res) => {
       .from(waitlist)
       .orderBy(sql`${waitlist.created_at} DESC`);
 
-    console.log(`Retrieved ${entries.length} entries`);
+    log(`Retrieved ${entries.length} entries`);
     res.json(entries);
   } catch (error) {
-    console.error('Error fetching waitlist:', error);
+    log('Error fetching waitlist:', error);
     res.status(500).json({ 
       error: 'Failed to fetch waitlist',
       details: error instanceof Error ? error.message : 'Unknown error'

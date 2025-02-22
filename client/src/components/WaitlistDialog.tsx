@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Form schemas
+// Form schemas remain unchanged
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zipCode: z.string().min(5, "ZIP code must be 5 digits").max(5, "ZIP code must be 5 digits"),
@@ -28,7 +28,6 @@ interface WaitlistDialogProps {
 }
 
 export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
-  // State management
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
@@ -56,7 +55,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-      console.log('Submitting initial form...');
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -68,22 +66,29 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Move to verification step
-      setPendingEmail(values.email);
-      setStep('verifying');
-
-      toast({
-        title: "Check your email",
-        description: "We've sent a 4-digit verification code to your email.",
-      });
+      // Only proceed to verification if the server indicates pending verification
+      if (data.status === 'pending_verification') {
+        setPendingEmail(values.email);
+        setStep('verifying');
+        toast({
+          title: "Check your email",
+          description: "We've sent a 4-digit verification code to your email.",
+        });
+      } else {
+        toast({
+          title: "Welcome!",
+          description: "You've successfully joined our waitlist.",
+        });
+        initialForm.reset();
+        setStep('initial');
+        onOpenChange(false);
+      }
     } catch (error) {
-      console.error('Initial submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -100,7 +105,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-      console.log('Submitting verification code...');
 
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
@@ -112,26 +116,24 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Success! Reset everything and close
+      // Only show success and close dialog after successful verification
       toast({
         title: "Welcome!",
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset all state
+      // Reset and close
       initialForm.reset();
       verificationForm.reset();
       setPendingEmail("");
       setStep('initial');
       onOpenChange(false);
     } catch (error) {
-      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "Please try again",
@@ -142,7 +144,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Handle numeric input only for verification code
+  // Handle numeric input for verification code
   const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4);
     verificationForm.setValue('code', value);
@@ -150,7 +152,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   // Dialog state management
   const handleOpenChange = (newOpen: boolean) => {
-    // Only allow closing if we're not in the verification step
+    // Prevent closing during verification
     if (!newOpen && step === 'verifying') {
       toast({
         title: "Please complete verification",
