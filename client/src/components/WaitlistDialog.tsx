@@ -137,12 +137,13 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to verify code');
       }
 
-      // Only show success message and close dialog after successful verification
+      // Success! Now we can show the success message and close
       toast({
         title: "Success!",
         description: "You've successfully joined our waitlist.",
       });
 
+      // Reset forms and close dialog
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
@@ -151,6 +152,9 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       if (onOpenChange) {
         onOpenChange(false);
       }
+
+      // Refresh waitlist data if needed
+      queryClient.invalidateQueries({ queryKey: ['/api/waitlist'] });
 
     } catch (error) {
       console.error('Verification error:', error);
@@ -272,7 +276,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
