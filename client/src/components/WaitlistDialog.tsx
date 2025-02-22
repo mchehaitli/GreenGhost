@@ -80,6 +80,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.details || 'Failed to join waitlist');
@@ -89,13 +90,16 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         setRegisteredEmail(values.email);
         setShowVerificationInput(true);
         form.reset();
+        return; // Exit early after setting verification state
+      }
 
-        toast({
-          title: "Check your email!",
-          description: "We've sent a 4-digit verification code to your email.",
-        });
-      } else {
-        throw new Error('Unexpected server response');
+      // Only reached if not pending verification
+      toast({
+        title: "Success!",
+        description: "You've been added to the waitlist.",
+      });
+      if (onOpenChange) {
+        onOpenChange(false);
       }
     } catch (error) {
       toast({
