@@ -83,6 +83,7 @@ router.post('/api/waitlist', async (req, res) => {
         created_at: new Date()
       });
 
+    // Ensure we send the correct status for the frontend to show verification
     res.json({ 
       status: 'pending_verification',
       message: 'Please check your email for a verification code.'
