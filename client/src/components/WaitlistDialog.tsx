@@ -47,36 +47,33 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const onSubmit = async (values: FormData) => {
+  const onSubmit = async (data: FormData) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
 
-      // Debug logging
+      // Log form state before submission
       console.log('Form submission started:', {
-        values,
+        formData: data,
         formState: form.formState,
+        rawFormData: form.getValues(),
       });
 
-      // Validate required fields client-side
-      if (!values.email || !values.zip_code) {
-        throw new Error('Email and ZIP code are required');
+      // Validate required fields
+      if (!data.email || !data.zip_code) {
+        const missing = [];
+        if (!data.email) missing.push('email');
+        if (!data.zip_code) missing.push('zip_code');
+        throw new Error(`Missing required fields: ${missing.join(', ')}`);
       }
 
-      // Log the exact data being sent
-      console.log('Form values before request:', {
-        email: values.email,
-        zip_code: values.zip_code,
-        rawForm: form.getValues()
-      });
-
       const requestData = {
-        email: values.email.trim().toLowerCase(),
-        zip_code: values.zip_code.trim(),
+        email: data.email.trim().toLowerCase(),
+        zip_code: data.zip_code.trim(),
       };
 
-      console.log('Request payload:', JSON.stringify(requestData));
+      console.log('Request payload:', JSON.stringify(requestData, null, 2));
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -84,26 +81,22 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
-        credentials: 'same-origin'
+        credentials: 'include',
       });
 
-      console.log('Server response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
+      console.log('Server response:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
 
-      let data;
-      try {
-        data = await response.json();
-        console.log('Response data:', data);
-      } catch (parseError) {
-        console.error('Failed to parse response:', parseError);
-        throw new Error('Invalid server response format');
-      }
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to join waitlist");
+        throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
       }
 
-      if (data.status === 'pending_verification') {
+      if (responseData.status === 'pending_verification') {
         setPendingEmail(requestData.email);
         setStep('verifying');
         toast({
@@ -111,7 +104,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
-        console.error('Unexpected server response:', data);
+        console.error('Unexpected server response:', responseData);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
@@ -131,14 +124,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-      console.log('Starting verification');
 
       const requestData = {
         email: pendingEmail,
         code: values.code,
       };
-
-      console.log('Sending verification:', requestData);
 
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
@@ -146,19 +136,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
-      }).catch(error => {
-        console.error('Network error:', error);
-        throw new Error('Network error occurred');
+        credentials: 'include',
       });
 
-      console.log('Verification response status:', response.status);
-
-      const data = await response.json().catch(error => {
-        console.error('JSON parse error:', error);
-        throw new Error('Invalid server response');
-      });
-
-      console.log('Verification data:', data);
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
@@ -189,28 +170,16 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && step === 'verifying') {
-      toast({
-        title: "Please complete verification",
-        description: "Enter the 4-digit code sent to your email to complete the process.",
-      });
-      return;
-    }
-
-    if (!newOpen) {
-      form.reset();
-      verificationForm.reset();
-      setPendingEmail("");
-      setStep('initial');
-      setIsSubmitting(false);
-    }
-
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) {
+        form.reset();
+        verificationForm.reset();
+        setPendingEmail("");
+        setStep('initial');
+      }
+      onOpenChange(newOpen);
+    }}>
       <DialogContent>
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
@@ -249,7 +218,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         field.onChange(value);
-                        console.log('ZIP code field change:', value); // Debug log
+                        console.log('ZIP code field change:', { value, fieldValue: field.value });
                       }}
                       disabled={isSubmitting}
                     />
