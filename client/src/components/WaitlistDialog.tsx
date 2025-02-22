@@ -8,7 +8,6 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Form schemas remain unchanged
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zipCode: z.string().min(5, "ZIP code must be 5 digits").max(5, "ZIP code must be 5 digits"),
@@ -33,7 +32,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  // Form initialization
   const initialForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,7 +47,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  // Initial form submission
   const onInitialSubmit = async (values: z.infer<typeof formSchema>) => {
     if (isSubmitting) return;
 
@@ -71,23 +68,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Only proceed to verification if the server indicates pending verification
-      if (data.status === 'pending_verification') {
-        setPendingEmail(values.email);
-        setStep('verifying');
-        toast({
-          title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email.",
-        });
-      } else {
-        toast({
-          title: "Welcome!",
-          description: "You've successfully joined our waitlist.",
-        });
-        initialForm.reset();
-        setStep('initial');
-        onOpenChange(false);
-      }
+      // Always move to verification step after successful initial submission
+      setPendingEmail(values.email);
+      setStep('verifying');
+      toast({
+        title: "Check your email",
+        description: "We've sent a 4-digit verification code to your email.",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -99,7 +86,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Verification code submission
   const onVerificationSubmit = async (values: z.infer<typeof verificationSchema>) => {
     if (!pendingEmail || isSubmitting) return;
 
@@ -121,10 +107,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success and close dialog after successful verification
+      // Only show success after successful verification
       toast({
-        title: "Welcome!",
-        description: "You've successfully joined our waitlist.",
+        title: "Success!",
+        description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
       });
 
       // Reset and close
@@ -144,13 +130,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Handle numeric input for verification code
   const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4);
     verificationForm.setValue('code', value);
   };
 
-  // Dialog state management
   const handleOpenChange = (newOpen: boolean) => {
     // Prevent closing during verification
     if (!newOpen && step === 'verifying') {

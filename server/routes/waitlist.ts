@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { waitlist, insertWaitlistSchema } from '../../db/schema';
+import { waitlist, insertWaitlistSchema, verificationSchema } from '../../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
@@ -21,11 +21,13 @@ router.post('/api/waitlist', async (req, res) => {
     log('Received waitlist submission:', req.body);
     const { email, zipCode } = req.body;
 
-    if (!email || !zipCode) {
-      log('Missing required fields:', { email, zipCode });
+    // Validate input
+    try {
+      const validated = insertWaitlistSchema.parse({ email, zipCode });
+    } catch (validationError) {
       return res.status(400).json({ 
-        error: 'Missing required fields',
-        details: 'Both email and zip code are required'
+        error: 'Invalid input',
+        details: validationError instanceof Error ? validationError.message : 'Validation failed'
       });
     }
 
@@ -36,7 +38,7 @@ router.post('/api/waitlist', async (req, res) => {
       .where(eq(waitlist.email, email.toLowerCase()));
 
     if (existingEntry?.verified) {
-      log('Found existing verified entry:', existingEntry);
+      log('Found existing verified entry');
       return res.status(400).json({
         error: 'Duplicate entry',
         details: 'This email is already on our waitlist'
@@ -45,14 +47,14 @@ router.post('/api/waitlist', async (req, res) => {
 
     // Delete any existing unverified entries for this email
     if (existingEntry && !existingEntry.verified) {
-      log('Removing existing unverified entry for:', email);
+      log('Removing existing unverified entry');
       await db
         .delete(waitlist)
         .where(eq(waitlist.id, existingEntry.id));
     }
 
     // Send verification email with code
-    log('Sending verification email to:', email);
+    log('Sending verification email');
     let emailSent = false;
     try {
       emailSent = await sendVerificationEmail(email.toLowerCase(), zipCode);
@@ -61,14 +63,14 @@ router.post('/api/waitlist', async (req, res) => {
       log('Failed to send verification email:', emailError);
       return res.status(500).json({
         error: 'Email verification failed',
-        details: emailError instanceof Error ? emailError.message : 'Unable to send verification code. Please try again.'
+        details: emailError instanceof Error ? emailError.message : 'Unable to send verification code'
       });
     }
 
     if (!emailSent) {
       return res.status(500).json({
         error: 'Email verification failed',
-        details: 'Unable to send verification code. Please try again.'
+        details: 'Unable to send verification code'
       });
     }
 
@@ -82,15 +84,15 @@ router.post('/api/waitlist', async (req, res) => {
       })
       .returning();
 
-    log('Created unverified waitlist entry:', newEntry);
+    log('Created unverified waitlist entry');
 
     // Return pending verification status
     res.json({ 
       status: 'pending_verification',
-      message: 'Please check your email for a verification code.'
+      message: 'Please check your email for a verification code'
     });
   } catch (error) {
-    log('Error saving to waitlist:', error);
+    log('Error in waitlist submission:', error);
     res.status(500).json({ 
       error: 'Failed to join waitlist',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -98,16 +100,18 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Verification endpoint
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
-    log('Verifying code for email:', email);
+    log('Verifying code');
 
-    if (!email || !code) {
+    // Validate input
+    try {
+      verificationSchema.parse({ email, code });
+    } catch (validationError) {
       return res.status(400).json({
-        error: 'Missing parameters',
-        details: 'Both email and verification code are required'
+        error: 'Invalid input',
+        details: validationError instanceof Error ? validationError.message : 'Invalid verification data'
       });
     }
 
@@ -178,7 +182,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
 router.get('/api/waitlist', requireAuth, async (req, res) => {
   try {
-    log('Fetching waitlist entries...');
+    log('Fetching waitlist entries');
     const entries = await db
       .select({
         id: waitlist.id,
