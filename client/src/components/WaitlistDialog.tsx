@@ -63,22 +63,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     },
   });
 
-  const resetForms = () => {
-    form.reset();
-    verificationForm.reset();
-    setShowVerificationInput(false);
-    setRegisteredEmail("");
-  };
-
-  const handleClose = () => {
-    if (!isSubmitting && onOpenChange) {
-      resetForms();
-      onOpenChange(false);
-    }
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (showVerificationInput || isSubmitting) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -153,7 +139,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         title: "Success!",
         description: "You've successfully joined our waitlist.",
       });
-      handleClose();
+
+      // Reset forms and close dialog only after successful verification
+      if (onOpenChange) {
+        form.reset();
+        verificationForm.reset();
+        setShowVerificationInput(false);
+        setRegisteredEmail("");
+        onOpenChange(false);
+      }
 
     } catch (error) {
       console.error('Verification error:', error);
@@ -168,7 +162,19 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        if (!newOpen && !isSubmitting && onOpenChange) {
+          // Only allow closing if not submitting
+          form.reset();
+          verificationForm.reset();
+          setShowVerificationInput(false);
+          setRegisteredEmail("");
+          onOpenChange(false);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[531px]">
         {!showVerificationInput ? (
           <>
@@ -236,7 +242,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
             <Mail className="mx-auto h-12 w-12 text-primary" />
             <DialogTitle className="text-2xl">Enter Verification Code</DialogTitle>
             <DialogDescription className="text-base max-w-[400px] mx-auto">
-              We've sent a 4-digit verification code to your email. Please enter it below to complete your registration.
+              We've sent a 4-digit verification code to {registeredEmail}. Please enter it below to complete your registration.
             </DialogDescription>
 
             <Form {...verificationForm}>
