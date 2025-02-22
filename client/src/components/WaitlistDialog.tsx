@@ -140,6 +140,13 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       if (onOpenChange) {
         onOpenChange(false);
       }
+
+      // Reset both forms and verification state
+      form.reset();
+      verificationForm.reset();
+      setShowVerificationInput(false);
+      setRegisteredEmail("");
+
     } catch (error) {
       console.error('Verification error:', error);
       toast({
@@ -152,8 +159,19 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
+  const handleClose = () => {
+    if (onOpenChange) {
+      // Reset all state when dialog is closed
+      form.reset();
+      verificationForm.reset();
+      setShowVerificationInput(false);
+      setRegisteredEmail("");
+      onOpenChange(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[531px]">
         {!showVerificationInput ? (
           <>
