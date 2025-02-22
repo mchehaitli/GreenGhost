@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -18,20 +17,32 @@ const verificationSchema = z.object({
   code: z.string().min(6).max(6),
 });
 
-export function WaitlistDialog({ open, onOpenChange }) {
+interface WaitlistDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      zipCode: "",
+    },
   });
 
   const verificationForm = useForm({
     resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
+    },
   });
 
-  const onSubmit = async (values) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -57,13 +68,13 @@ export function WaitlistDialog({ open, onOpenChange }) {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }
   };
 
-  const onVerify = async (values) => {
+  const onVerify = async (values: z.infer<typeof verificationSchema>) => {
     try {
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
@@ -91,7 +102,7 @@ export function WaitlistDialog({ open, onOpenChange }) {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }
@@ -133,3 +144,6 @@ export function WaitlistDialog({ open, onOpenChange }) {
     </Dialog>
   );
 }
+
+// Add default export while maintaining named export for backward compatibility
+export default WaitlistDialog;
