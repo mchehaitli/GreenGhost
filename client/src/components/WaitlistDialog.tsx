@@ -8,6 +8,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+// Match server schema exactly
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -46,19 +47,24 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (values: FormData) => {
     try {
       setIsSubmitting(true);
 
-      // Log form data for debugging
-      console.log('Form data before submission:', data);
+      // Log the entire form state for debugging
+      console.log('Form Submission Debug:', {
+        formValues: values,
+        formState: form.formState,
+        errors: form.formState.errors,
+      });
 
+      // Construct payload ensuring proper types
       const payload = {
-        email: data.email.trim(),
-        zip_code: data.zip_code.trim(), // Using correct field name zip_code
+        email: values.email.trim(),
+        zip_code: values.zip_code.trim(),
       };
 
-      console.log('Submitting payload:', payload);
+      console.log('Sending payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -66,15 +72,17 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
+        credentials: 'include',
       });
 
       const responseData = await response.json();
+      console.log('Server response:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
       }
 
-      setPendingEmail(data.email);
+      setPendingEmail(values.email);
       setStep('verifying');
 
       toast({
@@ -94,7 +102,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const onVerificationSubmit = async (values: VerificationData) => {
-    if (!pendingEmail || isSubmitting) return;
+    if (!pendingEmail) return;
 
     try {
       setIsSubmitting(true);
@@ -107,6 +115,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           email: pendingEmail,
           code: values.code,
         }),
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -120,7 +129,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
       });
 
-      // Reset forms and close dialog
       form.reset();
       verificationForm.reset();
       setPendingEmail("");
@@ -192,6 +200,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input 
                       placeholder="Enter your ZIP code"
                       maxLength={5}
+                      inputMode="numeric"
                       {...field}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
@@ -226,7 +235,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input
                       placeholder="Enter 4-digit code"
                       maxLength={4}
-                      pattern="[0-9]*"
                       inputMode="numeric"
                       {...field}
                       onChange={(e) => {
