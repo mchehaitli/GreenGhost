@@ -87,8 +87,6 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Important: Only handle pending_verification status here
-      // Do not close dialog or show success message yet
       if (data.status === 'pending_verification') {
         setRegisteredEmail(values.email);
         setIsVerifying(true);
@@ -96,6 +94,13 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           title: "Verification Required",
           description: "Please check your email for the verification code.",
         });
+      } else if (data.status === 'success') {
+        toast({
+          title: "Success!",
+          description: "You've been added to the waitlist!",
+        });
+        resetForms();
+        onOpenChange(false);
       } else {
         throw new Error("Unexpected response from server");
       }
