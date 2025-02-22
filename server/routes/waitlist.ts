@@ -4,6 +4,7 @@ import { waitlist, insertWaitlistSchema } from '../../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
+import { log } from '../vite';
 
 const router = Router();
 
@@ -17,11 +18,11 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
 router.post('/api/waitlist', async (req, res) => {
   try {
-    console.log('Received waitlist submission:', req.body);
+    log('Received waitlist submission:', req.body);
     const { email, zipCode } = req.body;
 
     if (!email || !zipCode) {
-      console.error('Missing required fields:', { email, zipCode });
+      log('Missing required fields:', { email, zipCode });
       return res.status(400).json({ 
         error: 'Missing required fields',
         details: 'Both email and zip code are required'
@@ -35,7 +36,7 @@ router.post('/api/waitlist', async (req, res) => {
       .where(eq(waitlist.email, email.toLowerCase()));
 
     if (existingEntry?.verified) {
-      console.log('Found existing verified entry:', existingEntry);
+      log('Found existing verified entry:', existingEntry);
       return res.status(400).json({
         error: 'Duplicate entry',
         details: 'This email is already on our waitlist'
@@ -44,23 +45,23 @@ router.post('/api/waitlist', async (req, res) => {
 
     // Delete any existing unverified entries for this email
     if (existingEntry && !existingEntry.verified) {
-      console.log('Removing existing unverified entry for:', email);
+      log('Removing existing unverified entry for:', email);
       await db
         .delete(waitlist)
         .where(eq(waitlist.id, existingEntry.id));
     }
 
     // Send verification email with code
-    console.log('Sending verification email to:', email);
+    log('Sending verification email to:', email);
     let emailSent = false;
     try {
       emailSent = await sendVerificationEmail(email.toLowerCase(), zipCode);
-      console.log('Verification email sent successfully');
+      log('Verification email sent successfully');
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      log('Failed to send verification email:', emailError);
       return res.status(500).json({
         error: 'Email verification failed',
-        details: 'Unable to send verification code. Please try again.'
+        details: emailError instanceof Error ? emailError.message : 'Unable to send verification code. Please try again.'
       });
     }
 
@@ -86,7 +87,7 @@ router.post('/api/waitlist', async (req, res) => {
       })
       .returning();
 
-    console.log('Created unverified waitlist entry:', newEntry);
+    log('Created unverified waitlist entry:', newEntry);
 
     // Return pending verification status
     res.json({ 
@@ -94,7 +95,7 @@ router.post('/api/waitlist', async (req, res) => {
       message: 'Please check your email for a verification code.'
     });
   } catch (error) {
-    console.error('Error saving to waitlist:', error);
+    log('Error saving to waitlist:', error);
     res.status(500).json({ 
       error: 'Failed to join waitlist',
       details: error instanceof Error ? error.message : 'Unknown error'
