@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { log } from '../vite';
 import { db } from '../db';
 import { verificationTokens } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 
 // Email transporter configuration with detailed logging
 const transporter = nodemailer.createTransport({
@@ -20,13 +20,7 @@ const transporter = nodemailer.createTransport({
 // Verify transporter configuration
 transporter.verify(function(error, success) {
   if (error) {
-    log('SMTP Configuration Error:', error);
-    log('SMTP Settings:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE,
-      user: process.env.SMTP_USER?.substring(0, 3) + '***',
-    });
+    log('SMTP Configuration Error: ' + error.message);
   } else {
     log('SMTP Server is ready to send emails');
   }
@@ -34,7 +28,17 @@ transporter.verify(function(error, success) {
 
 // Generate a 4-digit verification code
 async function generateVerificationCode(email: string): Promise<string> {
-  const code = Math.floor(1000 + Math.random() * 9000).toString(); // Generates a number between 1000-9999
+  // Delete any existing unused tokens for this email
+  await db
+    .delete(verificationTokens)
+    .where(
+      and(
+        eq(verificationTokens.email, email),
+        eq(verificationTokens.used, false)
+      )
+    );
+
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Code expires in 15 minutes
 
@@ -44,6 +48,7 @@ async function generateVerificationCode(email: string): Promise<string> {
     token: code,
     expires_at: expiresAt,
     created_at: new Date(),
+    used: false,
   });
 
   return code;
@@ -54,21 +59,23 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
   const [storedToken] = await db
     .select()
     .from(verificationTokens)
-    .where(eq(verificationTokens.email, email))
-    .where(eq(verificationTokens.token, code));
+    .where(
+      and(
+        eq(verificationTokens.email, email),
+        eq(verificationTokens.token, code),
+        eq(verificationTokens.used, false),
+        gt(verificationTokens.expires_at, new Date())
+      )
+    );
 
   if (!storedToken) {
     return false;
   }
 
-  // Check if code is expired
-  if (new Date() > storedToken.expires_at) {
-    return false;
-  }
-
-  // Delete the used code
+  // Mark token as used
   await db
-    .delete(verificationTokens)
+    .update(verificationTokens)
+    .set({ used: true })
     .where(eq(verificationTokens.id, storedToken.id));
 
   return true;
