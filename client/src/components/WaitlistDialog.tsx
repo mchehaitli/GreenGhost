@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,8 +63,22 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     },
   });
 
+  const resetForms = () => {
+    form.reset();
+    verificationForm.reset();
+    setShowVerificationInput(false);
+    setRegisteredEmail("");
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting && onOpenChange) {
+      resetForms();
+      onOpenChange(false);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (showVerificationInput) return; // Prevent double submission
+    if (showVerificationInput || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -115,6 +128,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   };
 
   const onVerifyCode = async (values: z.infer<typeof verificationSchema>) => {
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist/verify', {
@@ -134,17 +149,13 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to verify code');
       }
 
+      // Only show success and reset after successful verification
       toast({
         title: "Successfully verified!",
         description: "Welcome to GreenGhost Tech's waitlist!",
       });
 
-      // Reset forms and close dialog
-      form.reset();
-      verificationForm.reset();
-      setShowVerificationInput(false);
-      setRegisteredEmail("");
-
+      resetForms();
       if (onOpenChange) {
         onOpenChange(false);
       }
@@ -158,16 +169,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!isSubmitting && onOpenChange) {
-      form.reset();
-      verificationForm.reset();
-      setShowVerificationInput(false);
-      setRegisteredEmail("");
-      onOpenChange(false);
     }
   };
 

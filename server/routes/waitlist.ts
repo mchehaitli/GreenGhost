@@ -39,9 +39,15 @@ router.post('/api/waitlist', async (req, res) => {
     if (existingEntry.length > 0) {
       return res.status(400).json({
         error: 'Duplicate entry',
-        details: 'This email is already on the waitlist'
+        details: 'This email is already on our waitlist'
       });
     }
+
+    // Delete any existing unverified entries for this email
+    await db
+      .delete(waitlist)
+      .where(eq(waitlist.email, email.toLowerCase()))
+      .where(eq(waitlist.verified, false));
 
     // Send verification email with code
     let emailSent = false;
@@ -62,12 +68,6 @@ router.post('/api/waitlist', async (req, res) => {
         details: 'Unable to send verification code. Please try again.'
       });
     }
-
-    // Delete any existing unverified entries for this email
-    await db
-      .delete(waitlist)
-      .where(eq(waitlist.email, email.toLowerCase()))
-      .where(eq(waitlist.verified, false));
 
     // Validate input using our Zod schema
     const parsedInput = insertWaitlistSchema.parse({
@@ -100,6 +100,7 @@ router.post('/api/waitlist', async (req, res) => {
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
+    console.log('Verifying code for email:', email);
 
     if (!email || !code) {
       return res.status(400).json({
@@ -108,7 +109,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
       });
     }
 
-    const isValid = await verifyCode(email, code);
+    const isValid = await verifyCode(email.toLowerCase(), code);
 
     if (!isValid) {
       return res.status(400).json({
@@ -121,7 +122,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
     const [updatedEntry] = await db
       .update(waitlist)
       .set({ verified: true })
-      .where(eq(waitlist.email, email))
+      .where(eq(waitlist.email, email.toLowerCase()))
       .returning();
 
     if (!updatedEntry) {
@@ -133,7 +134,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
     // Send welcome email after verification
     try {
-      await sendWelcomeEmail(email, updatedEntry.zip_code);
+      await sendWelcomeEmail(email.toLowerCase(), updatedEntry.zip_code);
       console.log('Welcome email sent successfully');
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
