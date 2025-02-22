@@ -59,6 +59,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         formState: form.formState,
       });
 
+      // Validate required fields client-side
+      if (!values.email || !values.zip_code) {
+        throw new Error('Email and ZIP code are required');
+      }
+
       // Prepare the request
       const requestData = {
         email: values.email.trim().toLowerCase(),
@@ -74,6 +79,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
+        credentials: 'same-origin'
       });
 
       console.log('Server response status:', response.status);
@@ -214,7 +220,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <Input 
+                    <Input
                       placeholder="Enter your email"
                       type="email"
                       {...field}
@@ -230,7 +236,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
-                    <Input 
+                    <Input
                       placeholder="Enter your ZIP code"
                       maxLength={5}
                       inputMode="numeric"
@@ -245,7 +251,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   </FormItem>
                 )}
               />
-              <Button 
+              <Button
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}
@@ -281,7 +287,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   </FormItem>
                 )}
               />
-              <Button 
+              <Button
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}

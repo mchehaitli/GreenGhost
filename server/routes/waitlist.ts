@@ -27,28 +27,28 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    log('Request body:', JSON.stringify(req.body, null, 2));
+    log('Request headers:', JSON.stringify(req.headers, null, 2));
+    log('Raw request body:', JSON.stringify(req.body, null, 2));
 
-    const { email, zip_code } = req.body;
+    const { email, zip_code } = req.body || {};
+
+    // Enhanced validation logging
+    log('Extracted values:', { 
+      email: email || '(missing)',
+      zip_code: zip_code || '(missing)',
+      bodyType: typeof req.body,
+      hasBody: !!req.body
+    });
 
     if (!email || !zip_code) {
-      log('Missing required fields:', { email: !!email, zip_code: !!zip_code });
+      const missingFields = [];
+      if (!email) missingFields.push('email');
+      if (!zip_code) missingFields.push('zip_code');
+
+      log('Validation failed - missing fields:', missingFields);
       return res.status(400).json({
         error: 'Missing required fields',
-        details: 'Both email and zip_code are required'
-      });
-    }
-
-    // Validate input with Zod schema
-    try {
-      const validatedData = insertWaitlistSchema.parse({ email, zip_code });
-      log('Input validation passed:', JSON.stringify(validatedData, null, 2));
-    } catch (error) {
-      log('Input validation failed:', error);
-      const validationError = fromZodError(error);
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: validationError.message
+        details: `The following fields are required: ${missingFields.join(', ')}`
       });
     }
 
