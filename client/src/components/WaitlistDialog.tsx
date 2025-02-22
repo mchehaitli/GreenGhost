@@ -53,13 +53,25 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Ensure proper formatting of data
+      // Debug logging
+      console.log('Form submission - Current form state:', {
+        values: form.getValues(),
+        formState: form.formState,
+        rawData: data,
+      });
+
+      // Validate data presence
+      if (!data.email || !data.zip_code) {
+        console.error('Missing required fields:', { email: data.email, zip_code: data.zip_code });
+        throw new Error("Both email and ZIP code are required");
+      }
+
       const payload = {
         email: data.email.trim(),
         zip_code: data.zip_code.trim(),
       };
 
-      console.log('Submitting form with payload:', payload);
+      console.log('Sending payload to server:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -188,24 +200,32 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               <FormField
                 control={form.control}
                 name="zip_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP Code</FormLabel>
-                    <Input 
-                      placeholder="Enter your ZIP code"
-                      maxLength={5}
-                      pattern="[0-9]*"
-                      inputMode="numeric"
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                        field.onChange(value);
-                      }}
-                      disabled={isSubmitting}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  console.log('Rendering zip_code field with value:', field.value);
+                  return (
+                    <FormItem>
+                      <FormLabel>ZIP Code</FormLabel>
+                      <Input 
+                        placeholder="Enter your ZIP code"
+                        maxLength={5}
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          console.log('ZIP code onChange:', { rawValue: e.target.value, processedValue: value });
+                          field.onChange(value);
+                        }}
+                        onBlur={() => {
+                          console.log('ZIP code onBlur - current value:', field.value);
+                          field.onBlur();
+                        }}
+                        disabled={isSubmitting}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
               <Button 
                 type="submit"
