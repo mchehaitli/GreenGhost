@@ -71,6 +71,7 @@ async function startServer() {
 
       // Server configuration - use port 3001 for Replit
       const port = process.env.PORT || 3001;
+      const host = "0.0.0.0"; // Listen on all network interfaces
 
       server.listen(port, "0.0.0.0", () => {
         log(`Server running at http://0.0.0.0:${port}`);
