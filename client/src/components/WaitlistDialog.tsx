@@ -14,7 +14,7 @@ const formSchema = z.object({
 });
 
 const verificationSchema = z.object({
-  code: z.string().min(6, "Verification code must be 6 digits").max(6, "Verification code must be 6 digits"),
+  code: z.string().min(4, "Verification code must be 4 digits").max(4, "Verification code must be 4 digits"),
 });
 
 interface WaitlistDialogProps {
@@ -61,21 +61,22 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Set verification state before showing toast
-      if (data.status === 'pending_verification') {
-        console.log('Setting verification state...');
-        setRegisteredEmail(values.email);
-        setIsVerifying(true);
-        form.reset();
-
-        toast({
-          title: "Check your email",
-          description: "We've sent you a verification code.",
-        });
-      } else {
-        console.log('Unexpected server response status:', data.status);
+      // Explicitly check for pending_verification status
+      if (data.status !== 'pending_verification') {
+        console.error('Unexpected server response status:', data.status);
         throw new Error("Unexpected server response");
       }
+
+      // Set verification state and show toast
+      console.log('Setting verification state...');
+      setRegisteredEmail(values.email);
+      setIsVerifying(true);
+      form.reset();
+
+      toast({
+        title: "Check your email",
+        description: "We've sent you a verification code.",
+      });
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
@@ -83,15 +84,17 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
-      // Reset verification state on error
-      setIsVerifying(false);
-      setRegisteredEmail("");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const onVerify = async (values: z.infer<typeof verificationSchema>) => {
+    if (!registeredEmail) {
+      console.error('No registered email found');
+      return;
+    }
+
     try {
       console.log('Submitting verification code for:', registeredEmail);
       setIsSubmitting(true);
@@ -203,8 +206,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <Input
-                      placeholder="Enter 6-digit code"
-                      maxLength={6}
+                      placeholder="Enter 4-digit code"
+                      maxLength={4}
                       {...field}
                       disabled={isSubmitting}
                     />
