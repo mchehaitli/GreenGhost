@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-
 const waitlistSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zipCode: z.string().min(5, "ZIP code must be at least 5 characters"),
@@ -31,11 +30,20 @@ const verificationSchema = z.object({
   code: z.string().length(4, "Verification code must be 4 digits"),
 });
 
-export function WaitlistDialog({ open, onOpenChange }) {
+type WaitlistFormData = z.infer<typeof waitlistSchema>;
+type VerificationFormData = z.infer<typeof verificationSchema>;
+
+interface WaitlistDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [showVerificationInput, setShowVerificationInput] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const { toast } = useToast();
 
-  const form = useForm({
+  const form = useForm<WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
     defaultValues: {
       email: "",
@@ -43,14 +51,14 @@ export function WaitlistDialog({ open, onOpenChange }) {
     },
   });
 
-  const verificationForm = useForm({
+  const verificationForm = useForm<VerificationFormData>({
     resolver: zodResolver(verificationSchema),
     defaultValues: {
       code: "",
     },
   });
 
-  async function onSubmit(values) {
+  async function onSubmit(values: WaitlistFormData) {
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -63,7 +71,7 @@ export function WaitlistDialog({ open, onOpenChange }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to join waitlist");
+        throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
       setRegisteredEmail(values.email);
@@ -75,15 +83,16 @@ export function WaitlistDialog({ open, onOpenChange }) {
         description: "Please check your email for the verification code.",
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
   }
 
-  async function onVerifySubmit(values) {
+  async function onVerifySubmit(values: VerificationFormData) {
     try {
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
@@ -99,7 +108,7 @@ export function WaitlistDialog({ open, onOpenChange }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to verify code");
+        throw new Error(data.error || data.details || "Failed to verify code");
       }
 
       toast({
@@ -112,9 +121,10 @@ export function WaitlistDialog({ open, onOpenChange }) {
       verificationForm.reset();
       onOpenChange(false);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -176,7 +186,15 @@ export function WaitlistDialog({ open, onOpenChange }) {
                   <FormItem>
                     <FormLabel>Verification Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="1234" maxLength={4} {...field} />
+                      <Input 
+                        placeholder="1234" 
+                        maxLength={4} 
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          field.onChange(value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,3 +210,5 @@ export function WaitlistDialog({ open, onOpenChange }) {
     </Dialog>
   );
 }
+
+export default WaitlistDialog;
