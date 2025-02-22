@@ -93,7 +93,7 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         form.reset();
 
         toast({
-          title: "Verification email sent!",
+          title: "Verification Required",
           description: "Please check your email for the verification code.",
         });
       }
@@ -131,9 +131,10 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       toast({
         title: "Success!",
-        description: data.message || "You've been added to the waitlist.",
+        description: data.message || "You've been added to the waitlist!",
       });
 
+      // Only close after successful verification
       resetForms();
       onOpenChange(false);
     } catch (error) {
