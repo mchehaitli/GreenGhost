@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  zipCode: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 const verificationSchema = z.object({
@@ -35,7 +34,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      zipCode: "",
     },
   });
 
@@ -53,7 +51,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       setIsSubmitting(true);
       const requestData = {
         email: data.email.trim().toLowerCase(),
-        zip_code: data.zipCode,
       };
 
       const response = await fetch("/api/waitlist", {
@@ -167,27 +164,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       placeholder="Enter your email"
                       type="email"
                       {...field}
-                      disabled={isSubmitting}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zipCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP Code</FormLabel>
-                    <Input
-                      placeholder="Enter ZIP code"
-                      maxLength={5}
-                      inputMode="numeric"
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                        field.onChange(value);
-                      }}
                       disabled={isSubmitting}
                     />
                     <FormMessage />

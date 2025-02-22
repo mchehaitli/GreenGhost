@@ -12,10 +12,10 @@ const router = Router();
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    const { email, zip_code } = req.body;
+    const { email } = req.body;
 
     try {
-      insertWaitlistSchema.parse({ email, zip_code });
+      insertWaitlistSchema.parse({ email });
     } catch (error) {
       const validationError = fromZodError(error);
       return res.status(400).json({
@@ -43,13 +43,12 @@ router.post('/api/waitlist', async (req, res) => {
     try {
       if (existingEntry) {
         await db.update(waitlist)
-          .set({ zip_code, verified: false })
+          .set({ verified: false })
           .where(eq(waitlist.email, normalizedEmail));
         log(`Updated existing waitlist entry for ${normalizedEmail}`);
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
-          zip_code,
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
@@ -57,7 +56,7 @@ router.post('/api/waitlist', async (req, res) => {
 
       // Send verification email
       try {
-        await sendVerificationEmail(normalizedEmail, zip_code);
+        await sendVerificationEmail(normalizedEmail);
         log(`Verification email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Error sending verification email:', error);
@@ -129,7 +128,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
         .where(eq(waitlist.email, normalizedEmail));
 
       try {
-        await sendWelcomeEmail(normalizedEmail, entry.zip_code);
+        await sendWelcomeEmail(normalizedEmail);
       } catch (error) {
         log('Welcome email failed:', error);
         // Continue despite welcome email failure
