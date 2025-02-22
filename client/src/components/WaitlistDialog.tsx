@@ -149,16 +149,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to verify code');
       }
 
-      // Only show success and reset after successful verification
       toast({
-        title: "Successfully verified!",
-        description: "Welcome to GreenGhost Tech's waitlist!",
+        title: "Success!",
+        description: "You've successfully joined our waitlist.",
       });
-
-      resetForms();
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
+      handleClose();
 
     } catch (error) {
       console.error('Verification error:', error);
