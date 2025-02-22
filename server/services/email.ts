@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 import { log } from '../vite';
+import { db } from '../db';
+import { verificationTokens } from '../../db/schema';
+import { eq } from 'drizzle-orm';
 
 // Email transporter configuration with detailed logging
 const transporter = nodemailer.createTransport({
@@ -10,8 +13,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  debug: true, // Enable debug logs
-  logger: true  // Enable logger
+  debug: true,
+  logger: true
 });
 
 // Verify transporter configuration
@@ -22,48 +25,48 @@ transporter.verify(function(error, success) {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
       secure: process.env.SMTP_SECURE,
-      user: process.env.SMTP_USER?.substring(0, 3) + '***', // Log only first 3 chars of username
+      user: process.env.SMTP_USER?.substring(0, 3) + '***',
     });
   } else {
     log('SMTP Server is ready to send emails');
   }
 });
 
-// Generate a verification token
-async function generateVerificationToken(email: string): Promise<string> {
-  const token = crypto.randomBytes(32).toString('hex');
+// Generate a 4-digit verification code
+async function generateVerificationCode(email: string): Promise<string> {
+  const code = Math.floor(1000 + Math.random() * 9000).toString(); // Generates a number between 1000-9999
   const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24); // Token expires in 24 hours
+  expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Code expires in 15 minutes
 
-  // Store token in database
+  // Store code in database
   await db.insert(verificationTokens).values({
     email,
-    token,
+    token: code,
     expires_at: expiresAt,
     created_at: new Date(),
   });
 
-  return token;
+  return code;
 }
 
-// Verify a token
-export async function verifyToken(email: string, token: string): Promise<boolean> {
+// Verify a code
+export async function verifyCode(email: string, code: string): Promise<boolean> {
   const [storedToken] = await db
     .select()
     .from(verificationTokens)
     .where(eq(verificationTokens.email, email))
-    .where(eq(verificationTokens.token, token));
+    .where(eq(verificationTokens.token, code));
 
   if (!storedToken) {
     return false;
   }
 
-  // Check if token is expired
+  // Check if code is expired
   if (new Date() > storedToken.expires_at) {
     return false;
   }
 
-  // Delete the used token
+  // Delete the used code
   await db
     .delete(verificationTokens)
     .where(eq(verificationTokens.id, storedToken.id));
@@ -73,37 +76,37 @@ export async function verifyToken(email: string, token: string): Promise<boolean
 
 export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
   try {
-    const token = await generateVerificationToken(email);
-    const verificationLink = `${process.env.APP_URL || 'http://localhost:3000'}/verify?email=${encodeURIComponent(email)}&token=${token}`;
-
+    const code = await generateVerificationCode(email);
     log(`Sending verification email to ${email}`);
 
     const mailOptions = {
       from: `"GreenGhost Tech" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: "Verify your email for GreenGhost Tech's Waitlist",
+      subject: "Your GreenGhost Tech Verification Code",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email 🌿</h1>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for joining our waitlist! Please verify your email address to complete your registration.
+            Thank you for joining our waitlist! Please use the following code to verify your email address:
           </p>
 
           <div style="margin: 30px 0; text-align: center;">
-            <a href="${verificationLink}" 
-               style="background-color: #22c55e; 
-                      color: white; 
-                      padding: 12px 24px; 
-                      text-decoration: none; 
-                      border-radius: 6px;
-                      display: inline-block;">
-              Verify Email Address
-            </a>
+            <div style="
+              background-color: #f3f4f6;
+              padding: 20px;
+              border-radius: 8px;
+              font-size: 32px;
+              letter-spacing: 8px;
+              font-weight: bold;
+              color: #22c55e;
+            ">
+              ${code}
+            </div>
           </div>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            This verification link will expire in 24 hours. If you didn't request this verification, please ignore this email.
+            This verification code will expire in 15 minutes. If you didn't request this code, please ignore this email.
           </p>
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
@@ -175,7 +178,3 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     throw error;
   }
 }
-import crypto from 'crypto';
-import { db } from '../db';
-import { verificationTokens } from '../../db/schema';
-import { eq } from 'drizzle-orm';

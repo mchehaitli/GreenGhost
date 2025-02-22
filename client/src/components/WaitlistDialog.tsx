@@ -32,6 +32,11 @@ const formSchema = z.object({
     .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
 });
 
+const verificationSchema = z.object({
+  code: z.string()
+    .regex(/^\d{4}$/, "Please enter the 4-digit code")
+});
+
 interface WaitlistDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -39,14 +44,23 @@ interface WaitlistDialogProps {
 
 const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       zipCode: "",
+    },
+  });
+
+  const verificationForm = useForm<z.infer<typeof verificationSchema>>({
+    resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
     },
   });
 
@@ -78,10 +92,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      setShowVerificationMessage(true);
+      setRegisteredEmail(values.email);
+      setShowVerificationInput(true);
       toast({
         title: "Check your email!",
-        description: "Please check your inbox for a verification link to complete your registration.",
+        description: "We've sent a 4-digit verification code to your email.",
       });
 
       form.reset();
@@ -97,10 +112,50 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
+  const onVerifyCode = async (values: z.infer<typeof verificationSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/waitlist/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: registeredEmail,
+          code: values.code,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || 'Failed to verify code');
+      }
+
+      toast({
+        title: "Successfully verified!",
+        description: "Welcome to GreenGhost Tech's waitlist!",
+      });
+
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast({
+        title: "Verification failed",
+        description: error instanceof Error ? error.message : "Failed to verify code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[531px]">
-        {!showVerificationMessage ? (
+        {!showVerificationInput ? (
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">Join the Future of Landscaping</DialogTitle>
@@ -164,25 +219,46 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         ) : (
           <div className="py-6 text-center space-y-4">
             <Mail className="mx-auto h-12 w-12 text-primary" />
-            <DialogTitle className="text-2xl">Check Your Email</DialogTitle>
+            <DialogTitle className="text-2xl">Enter Verification Code</DialogTitle>
             <DialogDescription className="text-base max-w-[400px] mx-auto">
-              We've sent a verification link to your email address. Please click the link to complete your registration and secure your spot on our waitlist.
+              We've sent a 4-digit verification code to your email. Please enter it below to complete your registration.
             </DialogDescription>
+
+            <Form {...verificationForm}>
+              <form onSubmit={verificationForm.handleSubmit(onVerifyCode)} className="space-y-4 max-w-[200px] mx-auto">
+                <FormField
+                  control={verificationForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="0000"
+                          {...field}
+                          className="text-center text-2xl tracking-[0.5em] font-mono"
+                          maxLength={4}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Code"
+                  )}
+                </Button>
+              </form>
+            </Form>
+
             <p className="text-sm text-muted-foreground mt-4">
-              Don't see the email? Check your spam folder or try again.
+              Didn't receive the code? Check your spam folder or try again.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => {
-                setShowVerificationMessage(false);
-                if (onOpenChange) {
-                  onOpenChange(false);
-                }
-              }}
-            >
-              Close
-            </Button>
           </div>
         )}
       </DialogContent>

@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { db } from '../../db';
+import { db } from '../db';
 import { waitlist, insertWaitlistSchema } from '../../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { Request, Response, NextFunction } from 'express';
-import { sendVerificationEmail, sendWelcomeEmail, verifyToken } from '../services/email';
+import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 
 const router = Router();
 
@@ -42,7 +42,7 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
-    // Send verification email before database insertion
+    // Send verification email with code
     let emailSent = false;
     try {
       emailSent = await sendVerificationEmail(email.toLowerCase(), zipCode);
@@ -51,14 +51,14 @@ router.post('/api/waitlist', async (req, res) => {
       console.error('Failed to send verification email:', emailError);
       return res.status(500).json({
         error: 'Email verification failed',
-        details: 'Unable to send verification email. Please try again.'
+        details: 'Unable to send verification code. Please try again.'
       });
     }
 
     if (!emailSent) {
       return res.status(500).json({
         error: 'Email verification failed',
-        details: 'Unable to send verification email. Please try again.'
+        details: 'Unable to send verification code. Please try again.'
       });
     }
 
@@ -81,8 +81,7 @@ router.post('/api/waitlist', async (req, res) => {
 
     res.json({ 
       success: true, 
-      data: result[0],
-      message: 'Please check your email to verify your waitlist registration.'
+      message: 'Please check your email for a verification code.'
     });
   } catch (error) {
     console.error('Error saving to waitlist:', error);
@@ -93,24 +92,24 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Email verification endpoint
-router.get('/api/waitlist/verify', async (req, res) => {
+// Code verification endpoint
+router.post('/api/waitlist/verify', async (req, res) => {
   try {
-    const { email, token } = req.query;
+    const { email, code } = req.body;
 
-    if (!email || !token) {
+    if (!email || !code) {
       return res.status(400).json({
         error: 'Missing parameters',
-        details: 'Both email and token are required'
+        details: 'Both email and verification code are required'
       });
     }
 
-    const isValid = await verifyToken(email.toString(), token.toString());
+    const isValid = await verifyCode(email, code);
 
     if (!isValid) {
       return res.status(400).json({
-        error: 'Invalid or expired token',
-        details: 'Please request a new verification email'
+        error: 'Invalid or expired code',
+        details: 'Please check the code and try again'
       });
     }
 
@@ -118,7 +117,7 @@ router.get('/api/waitlist/verify', async (req, res) => {
     const [updatedEntry] = await db
       .update(waitlist)
       .set({ verified: true })
-      .where(eq(waitlist.email, email.toString()))
+      .where(eq(waitlist.email, email))
       .returning();
 
     if (!updatedEntry) {
@@ -130,7 +129,7 @@ router.get('/api/waitlist/verify', async (req, res) => {
 
     // Send welcome email after verification
     try {
-      await sendWelcomeEmail(email.toString(), updatedEntry.zip_code);
+      await sendWelcomeEmail(email, updatedEntry.zip_code);
       console.log('Welcome email sent successfully');
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
