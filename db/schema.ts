@@ -22,7 +22,7 @@ export type SelectUser = typeof users.$inferSelect;
 
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
-  email: text("email").unique().notNull(),
+  email: text("email").notNull(),  // Removed unique constraint temporarily
   zip_code: text("zip_code").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -56,7 +56,7 @@ export const verificationSchema = z.object({
   code: z.string().length(4, "Verification code must be exactly 4 digits").regex(/^\d+$/, "Verification code must be numeric"),
 });
 
-// Export existing schemas and types
+// Export schemas and types
 export const selectWaitlistSchema = createSelectSchema(waitlist);
 export type InsertWaitlist = typeof waitlist.$inferInsert;
 export type SelectWaitlist = typeof waitlist.$inferSelect;
