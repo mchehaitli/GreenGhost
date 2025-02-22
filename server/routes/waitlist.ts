@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -21,24 +22,13 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// Step 1: Initial waitlist signup - only creates unverified entry and sends verification code
+// Step 1: Initial waitlist signup - creates unverified entry and sends verification code
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    log('Request headers:', JSON.stringify(req.headers, null, 2));
-    log('Raw request body:', JSON.stringify(req.body, null, 2));
-
-    const { email } = req.body || {};
-
-    // Enhanced validation logging
-    log('Extracted values:', { 
-      email: email || '(missing)',
-      bodyType: typeof req.body,
-      hasBody: !!req.body
-    });
+    const { email } = req.body;
 
     if (!email) {
-      log('Validation failed - missing email');
       return res.status(400).json({
         error: 'Missing required fields',
         details: 'Email is required'
@@ -77,14 +67,11 @@ router.post('/api/waitlist', async (req, res) => {
 
       // Send verification email
       try {
-        const emailSent = await sendVerificationEmail(normalizedEmail);
-        if (!emailSent) {
-          throw new Error('Failed to send verification email');
-        }
+        await sendVerificationEmail(normalizedEmail);
         log(`Verification email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Error sending verification email:', error);
-        // Continue with response despite email error
+        throw new Error('Failed to send verification email');
       }
 
       return res.json({
@@ -111,14 +98,11 @@ router.post('/api/waitlist', async (req, res) => {
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
-    log(`Received verification request - Email: ${email}, Code: ${code}`);
 
     // Validate input
     try {
       verificationSchema.parse({ email, code });
-      log('Verification input validation passed');
     } catch (error) {
-      log('Verification input validation failed:', error);
       const validationError = fromZodError(error);
       return res.status(400).json({
         error: 'Validation failed',
@@ -134,25 +118,15 @@ router.post('/api/waitlist/verify', async (req, res) => {
     });
 
     if (!entry) {
-      log(`No waitlist entry found for email: ${normalizedEmail}`);
       return res.status(404).json({
         error: 'Not found',
         details: 'No waitlist entry found for this email'
       });
     }
 
-    if (entry.verified) {
-      log(`Email ${normalizedEmail} already verified`);
-      return res.status(400).json({
-        error: 'Already verified',
-        details: 'This email is already verified'
-      });
-    }
-
     // Verify the code
     const isValid = await verifyCode(normalizedEmail, code);
     if (!isValid) {
-      log(`Invalid verification code for ${normalizedEmail}`);
       return res.status(400).json({
         error: 'Invalid code',
         details: 'The verification code is incorrect or expired'
@@ -164,16 +138,6 @@ router.post('/api/waitlist/verify', async (req, res) => {
       await db.update(waitlist)
         .set({ verified: true })
         .where(eq(waitlist.email, normalizedEmail));
-      log(`Successfully verified email: ${normalizedEmail}`);
-
-      // Send welcome email
-      try {
-        await sendWelcomeEmail(normalizedEmail);
-        log(`Welcome email sent to ${normalizedEmail}`);
-      } catch (error) {
-        log('Welcome email failed:', error);
-        // Continue despite welcome email failure
-      }
 
       return res.json({
         success: true,
@@ -191,6 +155,81 @@ router.post('/api/waitlist/verify', async (req, res) => {
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to verify email'
+    });
+  }
+});
+
+// Step 3: Update ZIP code after verification
+router.post('/api/waitlist/update', async (req, res) => {
+  try {
+    const { email, zipCode } = req.body;
+
+    // Validate ZIP code
+    const zipCodeSchema = z.object({
+      zipCode: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric")
+    });
+
+    try {
+      zipCodeSchema.parse({ zipCode });
+    } catch (error) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationError.message
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if entry exists and is verified
+    const entry = await db.query.waitlist.findFirst({
+      where: eq(waitlist.email, normalizedEmail)
+    });
+
+    if (!entry) {
+      return res.status(404).json({
+        error: 'Not found',
+        details: 'No waitlist entry found for this email'
+      });
+    }
+
+    if (!entry.verified) {
+      return res.status(400).json({
+        error: 'Not verified',
+        details: 'Email must be verified before updating ZIP code'
+      });
+    }
+
+    // Update ZIP code
+    try {
+      await db.update(waitlist)
+        .set({ zip_code: zipCode })
+        .where(eq(waitlist.email, normalizedEmail));
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(normalizedEmail, zipCode);
+      } catch (error) {
+        log('Welcome email failed:', error);
+        // Continue despite welcome email failure
+      }
+
+      return res.json({
+        success: true,
+        message: 'ZIP code updated successfully'
+      });
+    } catch (error) {
+      log('Database error during ZIP code update:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        details: 'Failed to update ZIP code'
+      });
+    }
+  } catch (error) {
+    log('ZIP code update error:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      details: 'Failed to update ZIP code'
     });
   }
 });
