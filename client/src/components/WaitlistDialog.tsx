@@ -24,13 +24,11 @@ interface WaitlistDialogProps {
 }
 
 export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
-  // State
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  // Forms
   const initialForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,16 +51,26 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Log the values being sent
-      console.log('Submitting form with values:', values);
+      // Debug logs
+      console.log('Form values:', values);
+      console.log('Form state:', initialForm.formState);
+
+      // Ensure zip_code is included
+      const payload = {
+        email: values.email,
+        zip_code: values.zip_code,
+      };
+
+      console.log('Sending payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values), // Send the entire values object
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
@@ -76,6 +84,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "We've sent a 4-digit verification code to your email.",
       });
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -192,6 +201,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       pattern="[0-9]*"
                       inputMode="numeric"
                       {...field}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                        field.onChange(value);
+                      }}
                       disabled={isSubmitting}
                     />
                     <FormMessage />
