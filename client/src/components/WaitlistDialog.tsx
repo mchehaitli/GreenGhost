@@ -143,18 +143,15 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   // Reset state when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      // Only reset if we're not in the verification process
-      if (!isVerifying) {
-        setIsVerifying(false);
-        setRegisteredEmail("");
-        setIsSubmitting(false);
-        form.reset();
-        verificationForm.reset();
-        onOpenChange(false);
-      }
+    if (!newOpen && !isVerifying) {
+      setIsVerifying(false);
+      setRegisteredEmail("");
+      setIsSubmitting(false);
+      form.reset();
+      verificationForm.reset();
+      onOpenChange(false);
     } else {
-      onOpenChange(true);
+      onOpenChange(newOpen);
     }
   };
 
