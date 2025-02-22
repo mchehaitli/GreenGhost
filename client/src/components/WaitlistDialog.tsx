@@ -49,22 +49,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-
-      console.log('Form submission started:', {
-        formData: data,
-        formState: form.formState,
-        rawFormData: form.getValues(),
-      });
-
-      if (!data.email) {
-        throw new Error('Email is required');
-      }
-
       const requestData = {
         email: data.email.trim().toLowerCase(),
       };
-
-      console.log('Request payload:', JSON.stringify(requestData, null, 2));
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -75,13 +62,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         credentials: 'include',
       });
 
-      console.log('Server response:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
-
       const responseData = await response.json();
-      console.log('Response data:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
@@ -95,11 +76,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
-        console.error('Unexpected server response:', responseData);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
-      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -150,7 +129,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error("Verification unsuccessful");
       }
     } catch (error) {
-      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "Please try again",
