@@ -65,6 +65,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (showVerificationInput) return; // Prevent double submission
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist', {
@@ -99,7 +101,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
           title: "Check your email!",
           description: "We've sent a 4-digit verification code to your email.",
         });
-        form.reset();
       }
     } catch (error) {
       console.error('Waitlist submission error:', error);
@@ -138,15 +139,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: "Welcome to GreenGhost Tech's waitlist!",
       });
 
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
-
-      // Reset both forms and verification state
+      // Reset forms and close dialog
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
       setRegisteredEmail("");
+
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
 
     } catch (error) {
       console.error('Verification error:', error);
@@ -161,8 +162,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   };
 
   const handleClose = () => {
-    if (onOpenChange) {
-      // Reset all state when dialog is closed
+    if (!isSubmitting && onOpenChange) {
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
