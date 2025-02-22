@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,8 +66,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (isSubmitting) return;
 
-    setIsSubmitting(true);
     try {
+      setIsSubmitting(true);
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -86,24 +86,24 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       }
 
       if (data.status === 'pending_verification') {
+        // Update state for verification mode
         setRegisteredEmail(values.email);
         setShowVerificationInput(true);
-        setIsSubmitting(false);
 
         toast({
           title: "Check your email!",
           description: "We've sent a 4-digit verification code to your email.",
         });
-        return;
+      } else {
+        throw new Error('Unexpected server response');
       }
-
-      throw new Error('Unexpected server response');
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -111,8 +111,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onVerifyCode = async (values: z.infer<typeof verificationSchema>) => {
     if (isSubmitting) return;
 
-    setIsSubmitting(true);
     try {
+      setIsSubmitting(true);
       const response = await fetch('/api/waitlist/verify', {
         method: 'POST',
         headers: {
@@ -135,12 +135,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset everything
+      // Reset all state
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
       setRegisteredEmail("");
-      setIsSubmitting(false);
 
       // Refresh waitlist data if on admin page
       queryClient.invalidateQueries({ queryKey: ['/api/waitlist'] });
@@ -155,6 +154,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: error instanceof Error ? error.message : "Failed to verify code. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
