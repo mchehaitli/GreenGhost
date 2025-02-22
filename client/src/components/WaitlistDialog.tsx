@@ -8,7 +8,6 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Update schema to only require email
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
