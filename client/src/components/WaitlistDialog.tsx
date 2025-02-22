@@ -8,7 +8,6 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Form schemas - match exactly with server-side schema
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -48,18 +47,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (data: FormData) => {
-    if (isSubmitting) return;
-
     try {
       setIsSubmitting(true);
 
-      // Ensure proper formatting of data
+      // Log form data for debugging
+      console.log('Form data before submission:', data);
+
       const payload = {
         email: data.email.trim(),
-        zip_code: data.zipCode.trim(),
+        zip_code: data.zip_code.trim(), // Using correct field name zip_code
       };
 
-      console.log('Submitting form with payload:', payload);
+      console.log('Submitting payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -70,7 +69,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const responseData = await response.json();
-      console.log('Server response:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
@@ -194,8 +192,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input 
                       placeholder="Enter your ZIP code"
                       maxLength={5}
-                      pattern="[0-9]*"
-                      inputMode="numeric"
                       {...field}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
