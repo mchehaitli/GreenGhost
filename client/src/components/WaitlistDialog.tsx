@@ -45,7 +45,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log('Submitting waitlist form:', values);
       setIsSubmitting(true);
+
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,6 +55,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
@@ -60,17 +63,21 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       // Set verification state before showing toast
       if (data.status === 'pending_verification') {
+        console.log('Setting verification state...');
         setRegisteredEmail(values.email);
         setIsVerifying(true);
         form.reset();
+
         toast({
           title: "Check your email",
           description: "We've sent you a verification code.",
         });
       } else {
+        console.log('Unexpected server response status:', data.status);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -86,7 +93,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   const onVerify = async (values: z.infer<typeof verificationSchema>) => {
     try {
+      console.log('Submitting verification code for:', registeredEmail);
       setIsSubmitting(true);
+
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,6 +106,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
+      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
@@ -114,6 +124,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       setRegisteredEmail("");
       onOpenChange(false);
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
