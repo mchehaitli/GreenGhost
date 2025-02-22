@@ -11,12 +11,10 @@ const router = Router();
 
 // Middleware for admin routes
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  // For development, allow all requests
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV !== 'production') {
     return next();
   }
 
-  // Check if user is authenticated
   if (!req.session || !req.session.userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -72,7 +70,7 @@ router.post('/api/waitlist', async (req, res) => {
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
-          zip_code: '00000', // Temporary placeholder
+          zip_code: '00000', // Default placeholder
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
