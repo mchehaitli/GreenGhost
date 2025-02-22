@@ -148,7 +148,7 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
   }
 }
 
-export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
+export async function sendVerificationEmail(email: string): Promise<boolean> {
   try {
     const code = await generateVerificationCode(email);
     log(`Generated verification code for ${email}`);
@@ -200,7 +200,10 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     log('Verification email sent successfully:', info.messageId);
     if (process.env.NODE_ENV !== 'production') {
       // Log preview URL for test emails
-      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        log('Preview URL:', previewUrl);
+      }
     }
     return true;
   } catch (error) {
@@ -210,7 +213,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
   }
 }
 
-export async function sendWelcomeEmail(email: string, zipCode: string): Promise<boolean> {
+export async function sendWelcomeEmail(email: string): Promise<boolean> {
   try {
     const transport = await getTransporter();
     log(`Sending welcome email to ${email}`);
@@ -224,7 +227,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
           <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech! 🌿</h1>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
+            Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners.
           </p>
 
           <p style="color: #4b5563; line-height: 1.6;">
@@ -257,7 +260,10 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     log('Welcome email sent successfully:', info.messageId);
     if (process.env.NODE_ENV !== 'production') {
       // Log preview URL for test emails
-      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        log('Preview URL:', previewUrl);
+      }
     }
     return true;
   } catch (error) {
