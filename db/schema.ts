@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -26,8 +26,6 @@ export const waitlist = pgTable("waitlist", {
   zip_code: text("zip_code").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-  verification_attempts: integer("verification_attempts").default(0).notNull(),
-  last_verification_attempt: timestamp("last_verification_attempt"),
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
