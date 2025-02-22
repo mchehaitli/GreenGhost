@@ -1,11 +1,7 @@
 import nodemailer from 'nodemailer';
 import { log } from '../vite';
-import crypto from 'crypto';
-import { db } from '../db';
-import { verificationTokens } from '../../db/schema';
-import { eq } from 'drizzle-orm';
 
-// Email transporter configuration
+// Email transporter configuration with detailed logging
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
@@ -14,6 +10,23 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  debug: true, // Enable debug logs
+  logger: true  // Enable logger
+});
+
+// Verify transporter configuration
+transporter.verify(function(error, success) {
+  if (error) {
+    log('SMTP Configuration Error:', error);
+    log('SMTP Settings:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE,
+      user: process.env.SMTP_USER?.substring(0, 3) + '***', // Log only first 3 chars of username
+    });
+  } else {
+    log('SMTP Server is ready to send emails');
+  }
 });
 
 // Generate a verification token
@@ -162,3 +175,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     throw error;
   }
 }
+import crypto from 'crypto';
+import { db } from '../db';
+import { verificationTokens } from '../../db/schema';
+import { eq } from 'drizzle-orm';
