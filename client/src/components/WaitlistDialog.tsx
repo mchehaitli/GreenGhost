@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Form schemas
+// Form schemas - match exactly with server-side schema
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -17,6 +17,9 @@ const formSchema = z.object({
 const verificationSchema = z.object({
   code: z.string().length(4, "Code must be 4 digits").regex(/^\d+$/, "Code must contain only numbers"),
 });
+
+type FormData = z.infer<typeof formSchema>;
+type VerificationData = z.infer<typeof verificationSchema>;
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -29,7 +32,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const initialForm = useForm<z.infer<typeof formSchema>>({
+  const initialForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -37,30 +40,37 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const verificationForm = useForm<z.infer<typeof verificationSchema>>({
+  const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
     defaultValues: {
       code: "",
     },
   });
 
-  // Initial form submission
-  const onInitialSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onInitialSubmit = async (values: FormData) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
-      
+
+      // Construct payload with explicit typing
+      const payload = {
+        email: values.email.trim(),
+        zip_code: values.zip_code.trim(),
+      };
+
+      console.log('Submitting waitlist form with payload:', payload);
+
       const response = await fetch("/api/waitlist", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: values.email,
-          zip_code: values.zip_code,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         const errorMessage = data.error === 'Already registered' 
@@ -77,6 +87,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "We've sent a 4-digit verification code to your email.",
       });
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -87,15 +98,16 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Verification submission
-  const onVerificationSubmit = async (values: z.infer<typeof verificationSchema>) => {
+  const onVerificationSubmit = async (values: VerificationData) => {
     if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           email: pendingEmail,
           code: values.code,
@@ -130,13 +142,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Handle numeric input
-  const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-    verificationForm.setValue('code', value);
-  };
-
-  // Dialog state management
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && step === 'verifying') {
       toast({
@@ -229,7 +234,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       pattern="[0-9]*"
                       inputMode="numeric"
                       {...field}
-                      onChange={handleCodeInput}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        field.onChange(value);
+                      }}
                       disabled={isSubmitting}
                       className="text-center text-lg tracking-widest"
                     />
