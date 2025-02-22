@@ -94,13 +94,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       const data = await response.json();
       console.log('Server response:', data);
 
+      if (!response.ok) {
+        throw new Error(data.details || 'Failed to join waitlist');
+      }
+
       if (data.status === 'pending_verification') {
         setRegisteredEmail(values.email);
         setShowVerificationInput(true);
+        form.reset();
       }
-
-      if (!response.ok) {
-        throw new Error(data.details || 'Failed to join waitlist');
       }
 
       if (data.status === 'pending_verification') {
