@@ -88,9 +88,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
             description: "This email is already on our waitlist.",
             variant: "destructive",
           });
-          return;
+        } else {
+          throw new Error(data.details || 'Failed to join waitlist');
         }
-        throw new Error(data.details || 'Failed to join waitlist');
+        return;
       }
 
       if (data.status === 'pending_verification') {
@@ -143,17 +144,18 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset forms and close dialog
+      // Reset forms
       form.reset();
       verificationForm.reset();
+
+      // Update state and close dialog
       setShowVerificationInput(false);
       setRegisteredEmail("");
-
       if (onOpenChange) {
         onOpenChange(false);
       }
 
-      // Refresh waitlist data if needed
+      // Refresh waitlist data
       queryClient.invalidateQueries({ queryKey: ['/api/waitlist'] });
 
     } catch (error) {
@@ -168,18 +170,20 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
+  const handleDialogClose = (newOpen: boolean) => {
+    if (!newOpen && !isSubmitting && onOpenChange) {
+      form.reset();
+      verificationForm.reset();
+      setShowVerificationInput(false);
+      setRegisteredEmail("");
+      onOpenChange(false);
+    }
+  };
+
   return (
     <Dialog 
       open={open} 
-      onOpenChange={(newOpen) => {
-        if (!newOpen && !isSubmitting && onOpenChange) {
-          form.reset();
-          verificationForm.reset();
-          setShowVerificationInput(false);
-          setRegisteredEmail("");
-          onOpenChange(false);
-        }
-      }}
+      onOpenChange={handleDialogClose}
     >
       <DialogContent className="sm:max-w-[531px]">
         {showVerificationInput ? (
