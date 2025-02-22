@@ -5,26 +5,47 @@ import { verificationTokens } from '../../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 
 // Email transporter configuration with detailed logging
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  debug: true,
-  logger: true
-});
+const createTransporter = () => {
+  log('Creating SMTP transporter with config:', {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+    }
+  });
 
-// Verify transporter configuration
-transporter.verify(function(error, success) {
-  if (error) {
-    log('SMTP Configuration Error: ' + error.message);
-  } else {
-    log('SMTP Server is ready to send emails');
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    debug: true,
+    logger: true
+  });
+};
+
+let transporter: nodemailer.Transporter | null = null;
+
+// Initialize and verify transporter
+async function getTransporter(): Promise<nodemailer.Transporter> {
+  if (!transporter) {
+    transporter = createTransporter();
+    try {
+      log('Verifying SMTP connection...');
+      await transporter.verify();
+      log('SMTP connection verified successfully');
+    } catch (error) {
+      log('SMTP Verification Error:', error instanceof Error ? error.message : 'Unknown error');
+      transporter = null;
+      throw error;
+    }
   }
-});
+  return transporter;
+}
 
 // Generate a 4-digit verification code
 async function generateVerificationCode(email: string): Promise<string> {
@@ -56,34 +77,43 @@ async function generateVerificationCode(email: string): Promise<string> {
 
 // Verify a code
 export async function verifyCode(email: string, code: string): Promise<boolean> {
-  const [storedToken] = await db
-    .select()
-    .from(verificationTokens)
-    .where(
-      and(
-        eq(verificationTokens.email, email),
-        eq(verificationTokens.token, code),
-        eq(verificationTokens.used, false),
-        gt(verificationTokens.expires_at, new Date())
-      )
-    );
+  try {
+    const [storedToken] = await db
+      .select()
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.email, email),
+          eq(verificationTokens.token, code),
+          eq(verificationTokens.used, false),
+          gt(verificationTokens.expires_at, new Date())
+        )
+      );
 
-  if (!storedToken) {
+    if (!storedToken) {
+      log(`No valid token found for email: ${email}`);
+      return false;
+    }
+
+    // Mark token as used
+    await db
+      .update(verificationTokens)
+      .set({ used: true })
+      .where(eq(verificationTokens.id, storedToken.id));
+
+    return true;
+  } catch (error) {
+    log('Error verifying code:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
-
-  // Mark token as used
-  await db
-    .update(verificationTokens)
-    .set({ used: true })
-    .where(eq(verificationTokens.id, storedToken.id));
-
-  return true;
 }
 
 export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
   try {
     const code = await generateVerificationCode(email);
+    log(`Generated verification code for ${email}`);
+
+    const transport = await getTransporter();
     log(`Sending verification email to ${email}`);
 
     const mailOptions = {
@@ -126,17 +156,20 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    log('Verification email sent successfully');
+    const info = await transport.sendMail(mailOptions);
+    log('Verification email sent successfully:', info.messageId);
     return true;
   } catch (error) {
-    log(`Error sending verification email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
+    // Reset transporter on error to force re-verification
+    transporter = null;
     throw error;
   }
 }
 
 export async function sendWelcomeEmail(email: string, zipCode: string): Promise<boolean> {
   try {
+    const transport = await getTransporter();
     log(`Sending welcome email to ${email}`);
 
     const mailOptions = {
@@ -177,11 +210,13 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    log('Welcome email sent successfully');
+    const info = await transport.sendMail(mailOptions);
+    log('Welcome email sent successfully:', info.messageId);
     return true;
   } catch (error) {
-    log(`Error sending welcome email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    log('Error sending welcome email:', error instanceof Error ? error.message : 'Unknown error');
+    // Reset transporter on error to force re-verification
+    transporter = null;
     throw error;
   }
 }
