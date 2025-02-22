@@ -44,6 +44,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isVerifying) {
+      console.log('Already in verification state, ignoring submit');
+      return;
+    }
+
     try {
       console.log('Starting waitlist submission...');
       setIsSubmitting(true);
@@ -53,7 +58,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
-          zipCode: values.zipCode
+          zipCode: values.zipCode,
         }),
       });
 
@@ -69,7 +74,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error("Unexpected server response");
       }
 
-      // Set verification state and store email
+      // Set email and move to verification step
       setRegisteredEmail(values.email);
       setIsVerifying(true);
 
@@ -90,8 +95,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const onVerify = async (values: z.infer<typeof verificationSchema>) => {
-    if (!registeredEmail) {
-      console.error('Missing registered email for verification');
+    if (!registeredEmail || !isVerifying) {
+      console.error('Invalid state for verification', { registeredEmail, isVerifying });
       return;
     }
 
@@ -115,17 +120,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success after verified
+      // Success - only now show success message and close
       toast({
         title: "Welcome!",
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset all state and close dialog
+      // Reset state and close dialog
       form.reset();
       verificationForm.reset();
       setIsVerifying(false);
       setRegisteredEmail("");
+      setIsSubmitting(false);
       onOpenChange(false);
     } catch (error) {
       console.error('Verification error:', error);
@@ -140,13 +146,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    // Prevent closing during verification
+    // Prevent dialog from closing during verification
     if (!newOpen && isVerifying) {
       console.log('Preventing dialog close during verification');
       return;
     }
 
-    // Reset state only when explicitly closing
+    // Only reset state when explicitly closing
     if (!newOpen) {
       console.log('Resetting dialog state');
       setIsVerifying(false);
