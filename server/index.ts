@@ -69,12 +69,29 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      const port = process.env.PORT || 5000;
-      server.listen(port, () => {
-        log(`Server running at http://0.0.0.0:${port}`);
-        log('Environment:', process.env.NODE_ENV || 'development');
-        log('CORS:', 'enabled for all origins');
-      });
+      // Try different ports if 5000 is in use
+      const tryPort = async (port: number, maxAttempts = 3): Promise<number> => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            await new Promise((resolve, reject) => {
+              server.listen(port).once('listening', resolve).once('error', reject);
+            });
+            return port;
+          } catch (error) {
+            if (attempt === maxAttempts - 1) throw error;
+            port++;
+            log(`Port ${port - 1} in use, trying port ${port}...`);
+          }
+        }
+        throw new Error('Could not find available port');
+      };
+
+      const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+      const port = await tryPort(startPort);
+
+      log(`Server running at http://0.0.0.0:${port}`);
+      log('Environment:', process.env.NODE_ENV || 'development');
+      log('CORS:', 'enabled for all origins');
 
       // Handle server errors
       server.on('error', (error: NodeJS.ErrnoException) => {
