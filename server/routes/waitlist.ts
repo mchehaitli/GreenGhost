@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
+import { fromZodError } from 'zod-validation-error';
 
 const router = Router();
 
@@ -21,13 +22,18 @@ router.post('/api/waitlist', async (req, res) => {
   try {
     const { email, zip_code } = req.body;
 
+    log(`Received waitlist signup request - Email: ${email}, ZIP: ${zip_code}`);
+
     // Validate input with Zod schema
     try {
-      insertWaitlistSchema.parse({ email, zip_code });
+      const validatedData = insertWaitlistSchema.parse({ email, zip_code });
+      log('Input validation passed');
     } catch (error) {
+      log('Input validation failed:', error);
+      const validationError = fromZodError(error);
       return res.status(400).json({
         error: 'Validation failed',
-        details: error instanceof Error ? error.message : 'Invalid input data'
+        details: validationError.message
       });
     }
 
@@ -39,6 +45,7 @@ router.post('/api/waitlist', async (req, res) => {
     });
 
     if (existingEntry?.verified) {
+      log(`Email ${normalizedEmail} already verified on waitlist`);
       return res.status(400).json({
         error: 'Already registered',
         details: 'This email is already on our waitlist'
@@ -46,8 +53,14 @@ router.post('/api/waitlist', async (req, res) => {
     }
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
-    if (!emailSent) {
+    try {
+      const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
+      if (!emailSent) {
+        throw new Error('Failed to send verification email');
+      }
+      log(`Verification email sent to ${normalizedEmail}`);
+    } catch (error) {
+      log('Error sending verification email:', error);
       return res.status(500).json({
         error: 'Verification failed',
         details: 'Could not send verification email'
@@ -55,15 +68,25 @@ router.post('/api/waitlist', async (req, res) => {
     }
 
     // Create or update unverified entry
-    if (existingEntry) {
-      await db.update(waitlist)
-        .set({ zip_code, verified: false })
-        .where(eq(waitlist.email, normalizedEmail));
-    } else {
-      await db.insert(waitlist).values({
-        email: normalizedEmail,
-        zip_code,
-        verified: false
+    try {
+      if (existingEntry) {
+        await db.update(waitlist)
+          .set({ zip_code, verified: false })
+          .where(eq(waitlist.email, normalizedEmail));
+        log(`Updated existing waitlist entry for ${normalizedEmail}`);
+      } else {
+        await db.insert(waitlist).values({
+          email: normalizedEmail,
+          zip_code,
+          verified: false
+        });
+        log(`Created new waitlist entry for ${normalizedEmail}`);
+      }
+    } catch (error) {
+      log('Database error:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        details: 'Failed to update waitlist entry'
       });
     }
 
@@ -84,14 +107,18 @@ router.post('/api/waitlist', async (req, res) => {
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
+    log(`Received verification request - Email: ${email}, Code: ${code}`);
 
     // Validate input
     try {
       verificationSchema.parse({ email, code });
+      log('Verification input validation passed');
     } catch (error) {
+      log('Verification input validation failed:', error);
+      const validationError = fromZodError(error);
       return res.status(400).json({
         error: 'Validation failed',
-        details: error instanceof Error ? error.message : 'Invalid verification data'
+        details: validationError.message
       });
     }
 
@@ -103,6 +130,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
     });
 
     if (!entry) {
+      log(`No waitlist entry found for email: ${normalizedEmail}`);
       return res.status(404).json({
         error: 'Not found',
         details: 'No waitlist entry found for this email'
@@ -110,6 +138,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
     }
 
     if (entry.verified) {
+      log(`Email ${normalizedEmail} already verified`);
       return res.status(400).json({
         error: 'Already verified',
         details: 'This email is already verified'
@@ -119,6 +148,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
     // Verify the code
     const isValid = await verifyCode(normalizedEmail, code);
     if (!isValid) {
+      log(`Invalid verification code for ${normalizedEmail}`);
       return res.status(400).json({
         error: 'Invalid code',
         details: 'The verification code is incorrect or expired'
@@ -126,22 +156,32 @@ router.post('/api/waitlist/verify', async (req, res) => {
     }
 
     // Update verification status
-    await db.update(waitlist)
-      .set({ verified: true })
-      .where(eq(waitlist.email, normalizedEmail));
-
-    // Send welcome email
     try {
-      await sendWelcomeEmail(normalizedEmail, entry.zip_code);
-    } catch (error) {
-      log('Welcome email failed:', error);
-      // Continue despite welcome email failure
-    }
+      await db.update(waitlist)
+        .set({ verified: true })
+        .where(eq(waitlist.email, normalizedEmail));
+      log(`Successfully verified email: ${normalizedEmail}`);
 
-    return res.json({
-      success: true,
-      message: 'Email verified successfully'
-    });
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(normalizedEmail, entry.zip_code);
+        log(`Welcome email sent to ${normalizedEmail}`);
+      } catch (error) {
+        log('Welcome email failed:', error);
+        // Continue despite welcome email failure
+      }
+
+      return res.json({
+        success: true,
+        message: 'Email verified successfully'
+      });
+    } catch (error) {
+      log('Database error during verification:', error);
+      return res.status(500).json({
+        error: 'Database error',
+        details: 'Failed to update verification status'
+      });
+    }
   } catch (error) {
     log('Verification error:', error);
     return res.status(500).json({
@@ -155,7 +195,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 router.get('/api/waitlist', requireAuth, async (_req, res) => {
   try {
     const entries = await db.query.waitlist.findMany({
-      orderBy: [{ created_at: 'desc' }]
+      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
     });
     return res.json(entries);
   } catch (error) {

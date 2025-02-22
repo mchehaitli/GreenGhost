@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
-import { Form, FormField, FormItem, FormMessage } from "./ui/form";
+import { Form, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -53,13 +53,20 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Construct payload with explicit typing
+      // Log form state for debugging
+      console.log('Form state before submission:', {
+        values,
+        errors: initialForm.formState.errors,
+        isDirty: initialForm.formState.isDirty,
+        isValid: initialForm.formState.isValid
+      });
+
       const payload = {
         email: values.email.trim(),
-        zip_code: values.zip_code.trim(),
+        zip_code: values.zip_code.trim()
       };
 
-      console.log('Submitting waitlist form with payload:', payload);
+      console.log('Submitting payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -177,8 +184,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Email</FormLabel>
                     <Input 
-                      placeholder="Email"
+                      placeholder="Enter your email"
                       type="email"
                       {...field}
                       disabled={isSubmitting}
@@ -192,8 +200,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>ZIP Code</FormLabel>
                     <Input 
-                      placeholder="ZIP Code"
+                      placeholder="Enter your ZIP code"
                       maxLength={5}
                       pattern="[0-9]*"
                       inputMode="numeric"
