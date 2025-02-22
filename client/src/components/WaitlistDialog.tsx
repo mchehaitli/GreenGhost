@@ -1,16 +1,17 @@
-import { useState } from "react";
-import { toast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useState } from "react";
+import { Dialog, DialogContent } from "./ui/dialog";
+import { Form } from "./ui/form";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { useToast } from "./ui/use-toast";
 
 const formSchema = z.object({
   email: z.string().email(),
-  zipCode: z.string().min(5).max(10),
+  zipCode: z.string().min(5).max(5),
 });
 
 const verificationSchema = z.object({
@@ -20,6 +21,7 @@ const verificationSchema = z.object({
 export function WaitlistDialog({ open, onOpenChange }) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -31,7 +33,7 @@ export function WaitlistDialog({ open, onOpenChange }) {
 
   const onSubmit = async (values) => {
     try {
-      const response = await fetch("/api/waitlist/join", {
+      const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -40,17 +42,18 @@ export function WaitlistDialog({ open, onOpenChange }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to join waitlist");
+        throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      setRegisteredEmail(values.email);
-      setIsVerifying(true);
-      form.reset();
-
-      toast({
-        title: "Check your email",
-        description: "We've sent you a verification code.",
-      });
+      if (data.status === 'pending_verification') {
+        setRegisteredEmail(values.email);
+        setIsVerifying(true);
+        form.reset();
+        toast({
+          title: "Check your email",
+          description: "We've sent you a verification code.",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -74,17 +77,17 @@ export function WaitlistDialog({ open, onOpenChange }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to verify code");
+        throw new Error(data.error || data.details || "Verification failed");
       }
 
       toast({
         title: "Success!",
-        description: "You've been added to the waitlist!",
+        description: "You've been added to the waitlist.",
       });
-
-      setIsVerifying(false);
-      onOpenChange(false);
       verificationForm.reset();
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
     } catch (error) {
       toast({
         title: "Error",
