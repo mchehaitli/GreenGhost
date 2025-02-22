@@ -28,11 +28,12 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
-    // Check for existing email
+    // Check for existing email that is already verified
     const existingEntry = await db
       .select()
       .from(waitlist)
       .where(eq(waitlist.email, email.toLowerCase()))
+      .where(eq(waitlist.verified, true))
       .limit(1);
 
     if (existingEntry.length > 0) {
@@ -62,6 +63,12 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
+    // Delete any existing unverified entries for this email
+    await db
+      .delete(waitlist)
+      .where(eq(waitlist.email, email.toLowerCase()))
+      .where(eq(waitlist.verified, false));
+
     // Validate input using our Zod schema
     const parsedInput = insertWaitlistSchema.parse({
       email: email.toLowerCase(),
@@ -69,18 +76,15 @@ router.post('/api/waitlist', async (req, res) => {
     });
 
     // Insert into database with verification status
-    const result = await db.insert(waitlist)
+    await db.insert(waitlist)
       .values({
         ...parsedInput,
         verified: false,
         created_at: new Date()
-      })
-      .returning();
-
-    console.log('Successfully saved to waitlist:', result[0]);
+      });
 
     res.json({ 
-      success: true, 
+      status: 'pending_verification',
       message: 'Please check your email for a verification code.'
     });
   } catch (error) {

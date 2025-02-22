@@ -92,14 +92,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      setRegisteredEmail(values.email);
-      setShowVerificationInput(true);
-      toast({
-        title: "Check your email!",
-        description: "We've sent a 4-digit verification code to your email.",
-      });
-
-      form.reset();
+      if (data.status === 'pending_verification') {
+        setRegisteredEmail(values.email);
+        setShowVerificationInput(true);
+        toast({
+          title: "Check your email!",
+          description: "We've sent a 4-digit verification code to your email.",
+        });
+        form.reset();
+      }
     } catch (error) {
       console.error('Waitlist submission error:', error);
       toast({
@@ -250,7 +251,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input 
+                        <Input
                           placeholder="0000"
                           {...field}
                           className="text-center text-2xl tracking-[0.5em] font-mono"
