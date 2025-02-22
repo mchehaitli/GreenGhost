@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,16 +48,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('State changed:', {
-      isSubmitting,
-      showVerificationInput,
-      registeredEmail,
-      open
-    });
-  }, [isSubmitting, showVerificationInput, registeredEmail, open]);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,10 +66,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
-      console.log('Starting form submission...');
-      setIsSubmitting(true);
-
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -92,7 +80,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.details || 'Failed to join waitlist');
@@ -102,15 +89,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         setRegisteredEmail(values.email);
         setShowVerificationInput(true);
         form.reset();
-      }
-      }
-
-      if (data.status === 'pending_verification') {
-        console.log('Showing verification screen...');
-        // First update the email
-        setRegisteredEmail(values.email);
-        // Then show the verification screen
-        setShowVerificationInput(true);
 
         toast({
           title: "Check your email!",
@@ -120,7 +98,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error('Unexpected server response');
       }
     } catch (error) {
-      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
@@ -134,10 +111,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onVerifyCode = async (values: z.infer<typeof verificationSchema>) => {
     if (isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
-      console.log('Starting code verification...');
-      setIsSubmitting(true);
-
       const response = await fetch('/api/waitlist/verify', {
         method: 'POST',
         headers: {
@@ -150,7 +125,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.details || 'Failed to verify code');
@@ -161,7 +135,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset all state
+      // Reset forms and state
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
@@ -175,7 +149,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('Verification error:', error);
       toast({
         title: "Verification failed",
         description: error instanceof Error ? error.message : "Failed to verify code. Please try again.",
@@ -189,7 +162,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const handleDialogClose = (newOpen: boolean) => {
     // Prevent closing if in verification mode
     if (!newOpen && showVerificationInput) {
-      console.log('Preventing dialog close during verification');
       toast({
         title: "Please complete verification",
         description: "Enter the verification code sent to your email to complete the signup process.",
@@ -199,7 +171,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
     // Allow closing only if not submitting and not in verification mode
     if (!newOpen && !isSubmitting && !showVerificationInput && onOpenChange) {
-      console.log('Closing dialog and resetting state');
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
