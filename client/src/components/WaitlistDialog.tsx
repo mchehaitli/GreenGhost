@@ -49,16 +49,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-      const requestData = {
-        email: data.email.trim().toLowerCase(),
-      };
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({
+          email: data.email.trim().toLowerCase(),
+        }),
         credentials: 'include',
       });
 
@@ -69,7 +67,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (responseData.status === 'pending_verification') {
-        setPendingEmail(requestData.email);
+        setPendingEmail(data.email.trim().toLowerCase());
         setStep('verifying');
         toast({
           title: "Check your email",
