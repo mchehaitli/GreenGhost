@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ interface WaitlistDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
+function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [showVerificationInput, setShowVerificationInput] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const { toast } = useToast();
@@ -65,7 +65,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          email: values.email,
+          zipCode: values.zipCode,
+        }),
       });
 
       const data = await response.json();
@@ -74,14 +77,16 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      setRegisteredEmail(values.email);
-      setShowVerificationInput(true);
-      form.reset();
+      if (data.status === 'pending_verification') {
+        setRegisteredEmail(values.email);
+        setShowVerificationInput(true);
+        form.reset();
 
-      toast({
-        title: "Verification email sent!",
-        description: "Please check your email for the verification code.",
-      });
+        toast({
+          title: "Verification email sent!",
+          description: "Please check your email for the verification code.",
+        });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
