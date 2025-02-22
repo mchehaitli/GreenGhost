@@ -69,8 +69,8 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Server configuration - use port 3001 for Replit
-      const port = process.env.PORT || 3001;
+      // Server configuration - use port 3002 for Replit
+      const port = process.env.PORT || 3002;
       const host = "0.0.0.0"; // Listen on all network interfaces
 
       server.listen(port, "0.0.0.0", () => {
