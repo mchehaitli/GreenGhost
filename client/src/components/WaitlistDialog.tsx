@@ -48,39 +48,45 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (values: FormData) => {
+    if (isSubmitting) return;
+
     try {
       setIsSubmitting(true);
 
       // Debug logging
-      console.log('Starting form submission');
-      console.log('Form values:', values);
+      console.log('Form submission started:', {
+        values,
+        formState: form.formState,
+      });
 
+      // Prepare the request
       const requestData = {
         email: values.email.trim().toLowerCase(),
         zip_code: values.zip_code.trim(),
       };
 
-      console.log('Sending request:', requestData);
+      console.log('Sending request to server:', requestData);
 
+      // Make the request
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
-      }).catch(error => {
-        console.error('Network error:', error);
-        throw new Error('Network error occurred');
       });
 
-      console.log('Response received:', response.status);
+      console.log('Server response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
 
-      const data = await response.json().catch(error => {
-        console.error('JSON parse error:', error);
-        throw new Error('Invalid server response');
-      });
-
-      console.log('Response data:', data);
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error('Invalid server response format');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
@@ -94,7 +100,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
-        console.error('Unexpected response:', data);
+        console.error('Unexpected server response:', data);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
