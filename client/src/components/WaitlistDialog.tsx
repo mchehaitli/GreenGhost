@@ -64,13 +64,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Explicitly check for pending_verification status
+      // Check for pending_verification status
       if (data.status !== 'pending_verification') {
         console.error('Unexpected server response status:', data.status);
         throw new Error("Unexpected response from server");
       }
 
-      // Set verification state
+      // Move to verification state
       console.log('Moving to verification state');
       setRegisteredEmail(values.email);
       setIsVerifying(true);
@@ -117,13 +117,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success and close dialog after successful verification
+      // Close dialog and show success only after successful verification
       toast({
         title: "Success!",
         description: "You've been added to the waitlist.",
       });
 
-      // Reset forms and close dialog
+      // Reset state and close dialog
       verificationForm.reset();
       form.reset();
       setIsVerifying(false);
@@ -141,18 +141,25 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  // Reset state when dialog closes
+  // Prevent dialog from closing during verification
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && !isVerifying) {
+    // If trying to close and we're verifying, prevent closure
+    if (!newOpen && isVerifying) {
+      console.log('Preventing dialog close during verification');
+      return;
+    }
+
+    // If closing and not verifying, reset all state
+    if (!newOpen) {
+      console.log('Resetting dialog state');
       setIsVerifying(false);
       setRegisteredEmail("");
       setIsSubmitting(false);
       form.reset();
       verificationForm.reset();
-      onOpenChange(false);
-    } else {
-      onOpenChange(newOpen);
     }
+
+    onOpenChange(newOpen);
   };
 
   return (
