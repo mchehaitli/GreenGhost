@@ -48,48 +48,53 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (values: FormData) => {
-    if (isSubmitting) return;
-
     try {
       setIsSubmitting(true);
 
-      // Log form data for debugging
-      console.log('Form data:', {
-        values,
-        errors: form.formState.errors,
-      });
+      // Debug logging
+      console.log('Starting form submission');
+      console.log('Form values:', values);
+
+      const requestData = {
+        email: values.email.trim().toLowerCase(),
+        zip_code: values.zip_code.trim(),
+      };
+
+      console.log('Sending request:', requestData);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: values.email.trim().toLowerCase(),
-          zip_code: values.zip_code.trim(),
-        }),
+        body: JSON.stringify(requestData),
+      }).catch(error => {
+        console.error('Network error:', error);
+        throw new Error('Network error occurred');
       });
 
-      // Log raw response for debugging
-      console.log('Server response status:', response.status);
+      console.log('Response received:', response.status);
 
-      const data = await response.json();
-      console.log('Server response data:', data);
+      const data = await response.json().catch(error => {
+        console.error('JSON parse error:', error);
+        throw new Error('Invalid server response');
+      });
+
+      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Check response status
       if (data.status === 'pending_verification') {
-        setPendingEmail(values.email.toLowerCase());
+        setPendingEmail(requestData.email);
         setStep('verifying');
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
-        console.error('Unexpected server response:', data);
+        console.error('Unexpected response:', data);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
@@ -109,25 +114,39 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
+      console.log('Starting verification');
+
+      const requestData = {
+        email: pendingEmail,
+        code: values.code,
+      };
+
+      console.log('Sending verification:', requestData);
+
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: pendingEmail,
-          code: values.code,
-        }),
+        body: JSON.stringify(requestData),
+      }).catch(error => {
+        console.error('Network error:', error);
+        throw new Error('Network error occurred');
       });
 
-      const data = await response.json();
-      console.log('Verification response:', data);
+      console.log('Verification response status:', response.status);
+
+      const data = await response.json().catch(error => {
+        console.error('JSON parse error:', error);
+        throw new Error('Invalid server response');
+      });
+
+      console.log('Verification data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success after successful verification
       if (data.success) {
         toast({
           title: "Success!",
@@ -142,6 +161,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error("Verification unsuccessful");
       }
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
         description: error instanceof Error ? error.message : "Please try again",
