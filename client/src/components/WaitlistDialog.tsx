@@ -24,6 +24,7 @@ interface WaitlistDialogProps {
 
 export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const { toast } = useToast();
 
@@ -44,6 +45,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      setIsSubmitting(true);
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +58,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Only proceed to verification if status is pending_verification
+      // Set verification state before showing toast
       if (data.status === 'pending_verification') {
         setRegisteredEmail(values.email);
         setIsVerifying(true);
@@ -74,11 +76,17 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+      // Reset verification state on error
+      setIsVerifying(false);
+      setRegisteredEmail("");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const onVerify = async (values: z.infer<typeof verificationSchema>) => {
     try {
+      setIsSubmitting(true);
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,21 +107,20 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "You've been added to the waitlist.",
       });
 
-      // Reset both forms and states
+      // Reset forms and close dialog
       verificationForm.reset();
       form.reset();
       setIsVerifying(false);
       setRegisteredEmail("");
-
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
+      onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,6 +129,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     if (!newOpen) {
       setIsVerifying(false);
       setRegisteredEmail("");
+      setIsSubmitting(false);
       form.reset();
       verificationForm.reset();
     }
@@ -142,7 +150,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <Input placeholder="Email" {...field} />
+                    <Input 
+                      placeholder="Email" 
+                      {...field} 
+                      disabled={isSubmitting}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -152,13 +164,22 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 name="zipCode"
                 render={({ field }) => (
                   <FormItem>
-                    <Input placeholder="ZIP Code" maxLength={5} {...field} />
+                    <Input 
+                      placeholder="ZIP Code" 
+                      maxLength={5} 
+                      {...field} 
+                      disabled={isSubmitting}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Join Waitlist
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Join Waitlist"}
               </Button>
             </form>
           </Form>
@@ -174,13 +195,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       placeholder="Enter 6-digit code"
                       maxLength={6}
                       {...field}
+                      disabled={isSubmitting}
                     />
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Verify
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Verifying..." : "Verify"}
               </Button>
             </form>
           </Form>
