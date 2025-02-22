@@ -27,8 +27,6 @@ const formSchema = z.object({
   email: z.string()
     .email("Please enter a valid email address")
     .transform(val => val.toLowerCase()),
-  zipCode: z.string()
-    .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
 });
 
 const Waitlist = () => {
@@ -38,7 +36,6 @@ const Waitlist = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      zipCode: "",
     },
   });
 
@@ -52,7 +49,6 @@ const Waitlist = () => {
         },
         body: JSON.stringify({
           email: values.email,
-          zipCode: values.zipCode,
         }),
       });
 
@@ -71,8 +67,8 @@ const Waitlist = () => {
       }
 
       toast({
-        title: "Successfully joined waitlist!",
-        description: "You're now entered for a chance to win free maintenance for a year.",
+        title: "Success!",
+        description: "Please check your email for verification code.",
       });
 
       form.reset();
@@ -119,7 +115,7 @@ const Waitlist = () => {
               <CardHeader>
                 <CardTitle>Sign Up for Early Access</CardTitle>
                 <CardDescription>
-                  Join our waitlist and be notified when we launch in your area
+                  Join our waitlist and be notified when we launch
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -133,19 +129,6 @@ const Waitlist = () => {
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input placeholder="your@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ZIP Code</FormLabel>
-                          <FormControl>
-                            <Input placeholder="12345" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
