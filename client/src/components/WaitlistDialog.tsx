@@ -48,47 +48,46 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (values: FormData) => {
+    if (isSubmitting) return;
+
     try {
       setIsSubmitting(true);
-
-      // Log the entire form state for debugging
       console.log('Form Submission Debug:', {
         formValues: values,
         formState: form.formState,
         errors: form.formState.errors,
       });
 
-      // Construct payload ensuring proper types
-      const payload = {
-        email: values.email.trim(),
-        zip_code: values.zip_code.trim(),
-      };
-
-      console.log('Sending payload:', payload);
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          email: values.email.trim(),
+          zip_code: values.zip_code.trim()
+        }),
         credentials: 'include',
       });
 
-      const responseData = await response.json();
-      console.log('Server response:', responseData);
+      const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
-        throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
+        throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      setPendingEmail(values.email);
-      setStep('verifying');
-
-      toast({
-        title: "Check your email",
-        description: "We've sent a 4-digit verification code to your email.",
-      });
+      // Only proceed to verification step after successful initial submission
+      if (data.status === 'pending_verification') {
+        setPendingEmail(values.email);
+        setStep('verifying');
+        toast({
+          title: "Check your email",
+          description: "We've sent a 4-digit verification code to your email.",
+        });
+      } else {
+        throw new Error("Unexpected server response");
+      }
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
@@ -102,7 +101,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const onVerificationSubmit = async (values: VerificationData) => {
-    if (!pendingEmail) return;
+    if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -119,21 +118,26 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
+      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      toast({
-        title: "Success!",
-        description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
-      });
-
-      form.reset();
-      verificationForm.reset();
-      setPendingEmail("");
-      setStep('initial');
-      onOpenChange(false);
+      // Only show success after successful verification
+      if (data.success) {
+        toast({
+          title: "Success!",
+          description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
+        });
+        form.reset();
+        verificationForm.reset();
+        setPendingEmail("");
+        setStep('initial');
+        onOpenChange(false);
+      } else {
+        throw new Error("Verification unsuccessful");
+      }
     } catch (error) {
       toast({
         title: "Verification Failed",

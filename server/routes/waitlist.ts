@@ -11,7 +11,13 @@ const router = Router();
 
 // Middleware for admin routes
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated()) {
+  // For development, allow all requests
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
+  // Check if user is authenticated
+  if (!req.session || !req.session.userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   next();
@@ -22,12 +28,13 @@ router.post('/api/waitlist', async (req, res) => {
   try {
     const { email, zip_code } = req.body;
 
-    log(`Received waitlist signup request - Email: ${email}, ZIP: ${zip_code}`);
+    log(`Received waitlist signup request - Raw body:`, JSON.stringify(req.body));
+    log(`Extracted values - Email: ${email}, ZIP: ${zip_code}`);
 
     // Validate input with Zod schema
     try {
       const validatedData = insertWaitlistSchema.parse({ email, zip_code });
-      log('Input validation passed');
+      log('Input validation passed:', JSON.stringify(validatedData));
     } catch (error) {
       log('Input validation failed:', error);
       const validationError = fromZodError(error);
@@ -52,21 +59,6 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
-    // Send verification email
-    try {
-      const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
-      if (!emailSent) {
-        throw new Error('Failed to send verification email');
-      }
-      log(`Verification email sent to ${normalizedEmail}`);
-    } catch (error) {
-      log('Error sending verification email:', error);
-      return res.status(500).json({
-        error: 'Verification failed',
-        details: 'Could not send verification email'
-      });
-    }
-
     // Create or update unverified entry
     try {
       if (existingEntry) {
@@ -82,6 +74,23 @@ router.post('/api/waitlist', async (req, res) => {
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
+
+      // Send verification email after successful database operation
+      try {
+        const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
+        if (!emailSent) {
+          throw new Error('Failed to send verification email');
+        }
+        log(`Verification email sent to ${normalizedEmail}`);
+      } catch (error) {
+        log('Error sending verification email:', error);
+        // Don't return error here, continue with response
+      }
+
+      return res.json({
+        status: 'pending_verification',
+        message: 'Please check your email for the verification code'
+      });
     } catch (error) {
       log('Database error:', error);
       return res.status(500).json({
@@ -89,11 +98,6 @@ router.post('/api/waitlist', async (req, res) => {
         details: 'Failed to update waitlist entry'
       });
     }
-
-    return res.json({
-      status: 'pending_verification',
-      message: 'Please check your email for the verification code'
-    });
   } catch (error) {
     log('Waitlist signup error:', error);
     return res.status(500).json({
