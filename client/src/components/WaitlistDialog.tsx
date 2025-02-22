@@ -2,19 +2,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useState } from "react";
-import { Dialog, DialogContent } from "./ui/dialog";
-import { Form } from "./ui/form";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { Form, FormField, FormItem, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  email: z.string().email(),
-  zipCode: z.string().min(5).max(5),
+  email: z.string().email("Please enter a valid email address"),
+  zipCode: z.string().min(5, "ZIP code must be 5 digits").max(5, "ZIP code must be 5 digits"),
 });
 
 const verificationSchema = z.object({
-  code: z.string().min(6).max(6),
+  code: z.string().min(6, "Verification code must be 6 digits").max(6, "Verification code must be 6 digits"),
 });
 
 interface WaitlistDialogProps {
@@ -27,7 +27,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const { toast } = useToast();
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -35,7 +35,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const verificationForm = useForm({
+  const verificationForm = useForm<z.infer<typeof verificationSchema>>({
     resolver: zodResolver(verificationSchema),
     defaultValues: {
       code: "",
@@ -56,6 +56,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
+      // Only proceed to verification if status is pending_verification
       if (data.status === 'pending_verification') {
         setRegisteredEmail(values.email);
         setIsVerifying(true);
@@ -64,6 +65,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           title: "Check your email",
           description: "We've sent you a verification code.",
         });
+      } else {
+        throw new Error("Unexpected server response");
       }
     } catch (error) {
       toast({
@@ -95,7 +98,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         title: "Success!",
         description: "You've been added to the waitlist.",
       });
+
+      // Reset both forms and states
       verificationForm.reset();
+      form.reset();
+      setIsVerifying(false);
+      setRegisteredEmail("");
+
       if (onOpenChange) {
         onOpenChange(false);
       }
@@ -108,19 +117,45 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
+  // Reset state when dialog closes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setIsVerifying(false);
+      setRegisteredEmail("");
+      form.reset();
+      verificationForm.reset();
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
+        <DialogTitle>
+          {isVerifying ? "Enter Verification Code" : "Join Our Waitlist"}
+        </DialogTitle>
         {!isVerifying ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Input
-                placeholder="Email"
-                {...form.register("email")}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Input placeholder="Email" {...field} />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Input
-                placeholder="ZIP Code"
-                {...form.register("zipCode")}
+              <FormField
+                control={form.control}
+                name="zipCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <Input placeholder="ZIP Code" maxLength={5} {...field} />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <Button type="submit" className="w-full">
                 Join Waitlist
@@ -130,9 +165,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         ) : (
           <Form {...verificationForm}>
             <form onSubmit={verificationForm.handleSubmit(onVerify)} className="space-y-4">
-              <Input
-                placeholder="Enter 6-digit code"
-                {...verificationForm.register("code")}
+              <FormField
+                control={verificationForm.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <Input
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                      {...field}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <Button type="submit" className="w-full">
                 Verify
@@ -145,5 +190,4 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   );
 }
 
-// Add default export while maintaining named export for backward compatibility
 export default WaitlistDialog;
