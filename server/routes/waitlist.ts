@@ -30,25 +30,20 @@ router.post('/api/waitlist', async (req, res) => {
     log('Request headers:', JSON.stringify(req.headers, null, 2));
     log('Raw request body:', JSON.stringify(req.body, null, 2));
 
-    const { email, zip_code } = req.body || {};
+    const { email } = req.body || {};
 
     // Enhanced validation logging
     log('Extracted values:', { 
       email: email || '(missing)',
-      zip_code: zip_code || '(missing)',
       bodyType: typeof req.body,
       hasBody: !!req.body
     });
 
-    if (!email || !zip_code) {
-      const missingFields = [];
-      if (!email) missingFields.push('email');
-      if (!zip_code) missingFields.push('zip_code');
-
-      log('Validation failed - missing fields:', missingFields);
+    if (!email) {
+      log('Validation failed - missing email');
       return res.status(400).json({
         error: 'Missing required fields',
-        details: `The following fields are required: ${missingFields.join(', ')}`
+        details: 'Email is required'
       });
     }
 
@@ -71,21 +66,21 @@ router.post('/api/waitlist', async (req, res) => {
     try {
       if (existingEntry) {
         await db.update(waitlist)
-          .set({ zip_code, verified: false })
+          .set({ verified: false })
           .where(eq(waitlist.email, normalizedEmail));
         log(`Updated existing waitlist entry for ${normalizedEmail}`);
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
-          zip_code,
+          zip_code: '00000', // Temporary placeholder
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
 
-      // Send verification email after successful database operation
+      // Send verification email
       try {
-        const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
+        const emailSent = await sendVerificationEmail(normalizedEmail, '00000');
         if (!emailSent) {
           throw new Error('Failed to send verification email');
         }

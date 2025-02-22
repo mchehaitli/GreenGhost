@@ -8,10 +8,9 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Match server schema exactly
+// Update schema to only require email
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 const verificationSchema = z.object({
@@ -36,7 +35,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      zip_code: "",
     },
   });
 
@@ -53,24 +51,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Log form state before submission
       console.log('Form submission started:', {
         formData: data,
         formState: form.formState,
         rawFormData: form.getValues(),
       });
 
-      // Validate required fields
-      if (!data.email || !data.zip_code) {
-        const missing = [];
-        if (!data.email) missing.push('email');
-        if (!data.zip_code) missing.push('zip_code');
-        throw new Error(`Missing required fields: ${missing.join(', ')}`);
+      if (!data.email) {
+        throw new Error('Email is required');
       }
 
       const requestData = {
         email: data.email.trim().toLowerCase(),
-        zip_code: data.zip_code.trim(),
       };
 
       console.log('Request payload:', JSON.stringify(requestData, null, 2));
@@ -198,28 +190,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       placeholder="Enter your email"
                       type="email"
                       {...field}
-                      disabled={isSubmitting}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP Code</FormLabel>
-                    <Input
-                      placeholder="Enter your ZIP code"
-                      maxLength={5}
-                      inputMode="numeric"
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                        field.onChange(value);
-                        console.log('ZIP code field change:', { value, fieldValue: field.value });
-                      }}
                       disabled={isSubmitting}
                     />
                     <FormMessage />
