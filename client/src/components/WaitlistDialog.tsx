@@ -48,14 +48,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Monitor state changes
+  // Debug logging for state changes
   useEffect(() => {
-    console.log('State changed:', { 
+    console.log('WaitlistDialog state changed:', { 
       showVerificationInput, 
       registeredEmail, 
-      isSubmitting 
+      isSubmitting,
+      dialogOpen: open 
     });
-  }, [showVerificationInput, registeredEmail, isSubmitting]);
+  }, [showVerificationInput, registeredEmail, isSubmitting, open]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,13 +75,16 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log('Submitting waitlist form...', values);
+
     if (isSubmitting) {
-      console.log('Submission already in progress, returning...');
+      console.log('Submission already in progress');
       return;
     }
 
     setIsSubmitting(true);
+
     try {
+      console.log('Making API request to /api/waitlist');
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -93,39 +97,34 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
 
       const data = await response.json();
-      console.log('Waitlist submission response:', data);
+      console.log('API response:', data);
 
       if (!response.ok) {
-        if (data.error === 'Duplicate entry') {
-          toast({
-            title: "Already registered",
-            description: "This email is already on our waitlist.",
-            variant: "destructive",
-          });
-        } else {
-          throw new Error(data.details || 'Failed to join waitlist');
-        }
-        return;
+        throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      // Handle pending verification state
       if (data.status === 'pending_verification') {
-        console.log('Switching to verification mode...');
+        console.log('Received pending_verification status');
 
-        // Update state in a single batch
+        // Update state
         setRegisteredEmail(values.email);
         setShowVerificationInput(true);
 
-        // Show toast after state update
+        console.log('Updated state:', {
+          email: values.email,
+          showVerification: true
+        });
+
+        // Show toast notification
         toast({
           title: "Check your email!",
           description: "We've sent a 4-digit verification code to your email.",
         });
 
-        console.log('Verification mode activated');
         return;
       }
 
+      // If we reach here, something unexpected happened
       console.error('Unexpected server response:', data);
       throw new Error('Unexpected server response');
     } catch (error) {
@@ -135,10 +134,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      if (!showVerificationInput) {
-        setIsSubmitting(false);
-      }
+      setIsSubmitting(false);
     }
   };
 

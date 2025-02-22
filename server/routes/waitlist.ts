@@ -7,7 +7,7 @@ import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services
 
 const router = Router();
 
-// Middleware to check if user is authenticated
+// Auth middleware
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -17,8 +17,8 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
 router.post('/api/waitlist', async (req, res) => {
   try {
+    console.log('Received waitlist submission:', req.body);
     const { email, zipCode } = req.body;
-    console.log('Received waitlist submission:', { email, zipCode });
 
     if (!email || !zipCode) {
       console.error('Missing required fields:', { email, zipCode });
@@ -29,14 +29,13 @@ router.post('/api/waitlist', async (req, res) => {
     }
 
     // Check for existing email that is already verified
-    const existingEntry = await db
+    const [existingEntry] = await db
       .select()
       .from(waitlist)
-      .where(eq(waitlist.email, email.toLowerCase()))
-      .where(eq(waitlist.verified, true))
-      .limit(1);
+      .where(eq(waitlist.email, email.toLowerCase()));
 
-    if (existingEntry.length > 0) {
+    if (existingEntry?.verified) {
+      console.log('Found existing verified entry:', existingEntry);
       return res.status(400).json({
         error: 'Duplicate entry',
         details: 'This email is already on our waitlist'
@@ -44,12 +43,15 @@ router.post('/api/waitlist', async (req, res) => {
     }
 
     // Delete any existing unverified entries for this email
-    await db
-      .delete(waitlist)
-      .where(eq(waitlist.email, email.toLowerCase()))
-      .where(eq(waitlist.verified, false));
+    if (existingEntry && !existingEntry.verified) {
+      console.log('Removing existing unverified entry for:', email);
+      await db
+        .delete(waitlist)
+        .where(eq(waitlist.id, existingEntry.id));
+    }
 
     // Send verification email with code
+    console.log('Sending verification email to:', email);
     let emailSent = false;
     try {
       emailSent = await sendVerificationEmail(email.toLowerCase(), zipCode);
@@ -76,18 +78,23 @@ router.post('/api/waitlist', async (req, res) => {
     });
 
     // Insert into database with verification status
-    await db.insert(waitlist)
+    const [newEntry] = await db.insert(waitlist)
       .values({
         ...parsedInput,
         verified: false,
         created_at: new Date()
-      });
+      })
+      .returning();
 
-    // Ensure we send the correct status for the frontend to show verification
-    res.json({ 
+    console.log('Created waitlist entry:', newEntry);
+
+    // Send response with pending_verification status
+    const response = { 
       status: 'pending_verification',
       message: 'Please check your email for a verification code.'
-    });
+    };
+    console.log('Sending response:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error saving to waitlist:', error);
     res.status(500).json({ 
@@ -155,7 +162,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
   }
 });
 
-// Protect the GET endpoint with authentication middleware
+// Protected admin route
 router.get('/api/waitlist', requireAuth, async (req, res) => {
   try {
     console.log('Fetching waitlist entries...');
