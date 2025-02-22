@@ -50,30 +50,23 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-
-      // Debug logs
-      console.log('Form values:', values);
-      console.log('Form state:', initialForm.formState);
-
-      // Ensure zip_code is included
-      const payload = {
-        email: values.email,
-        zip_code: values.zip_code,
-      };
-
-      console.log('Sending payload:', payload);
-
+      
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          email: values.email,
+          zip_code: values.zip_code,
+        }),
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to join waitlist");
+        const errorMessage = data.error === 'Already registered' 
+          ? 'This email is already on our waitlist'
+          : data.details || data.error || "Failed to join waitlist";
+        throw new Error(errorMessage);
       }
 
       setPendingEmail(values.email);
@@ -84,7 +77,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "We've sent a 4-digit verification code to your email.",
       });
     } catch (error) {
-      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
