@@ -91,11 +91,8 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         setRegisteredEmail(values.email);
         setIsVerifying(true);
         form.reset();
-
-        toast({
-          title: "Verification Required",
-          description: "Please check your email for the verification code.",
-        });
+      } else {
+        throw new Error("Unexpected response from server");
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -134,7 +131,6 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: data.message || "You've been added to the waitlist!",
       });
 
-      // Only close after successful verification
       resetForms();
       onOpenChange(false);
     } catch (error) {

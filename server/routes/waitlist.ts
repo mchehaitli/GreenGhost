@@ -87,7 +87,7 @@ router.post('/api/waitlist', async (req, res) => {
       .returning();
 
     console.log('Created waitlist entry:', newEntry);
-    
+
     // Send response with pending_verification status
     const response = { 
       status: 'pending_verification',
