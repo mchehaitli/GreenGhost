@@ -87,7 +87,7 @@ router.post('/api/waitlist', async (req, res) => {
       .returning();
 
     console.log('Created waitlist entry:', newEntry);
-
+    
     // Send response with pending_verification status
     const response = { 
       status: 'pending_verification',
@@ -162,7 +162,6 @@ router.post('/api/waitlist/verify', async (req, res) => {
   }
 });
 
-// Protected admin route
 router.get('/api/waitlist', requireAuth, async (req, res) => {
   try {
     console.log('Fetching waitlist entries...');
