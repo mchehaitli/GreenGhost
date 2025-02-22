@@ -2,36 +2,25 @@ import { Router } from 'express';
 import { db } from '../db';
 import { waitlist, insertWaitlistSchema, verificationSchema } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
-import { z } from 'zod';
 
 const router = Router();
 
-// Middleware for admin routes
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (process.env.NODE_ENV !== 'production') {
-    return next();
-  }
-
-  if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  next();
-};
-
-// Step 1: Initial waitlist signup - creates unverified entry and sends verification code
+// Step 1: Initial waitlist signup
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    const { email } = req.body;
+    const { email, zip_code } = req.body;
 
-    if (!email) {
+    try {
+      insertWaitlistSchema.parse({ email, zip_code });
+    } catch (error) {
+      const validationError = fromZodError(error);
       return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Email is required'
+        error: 'Validation failed',
+        details: validationError.message
       });
     }
 
@@ -54,12 +43,13 @@ router.post('/api/waitlist', async (req, res) => {
     try {
       if (existingEntry) {
         await db.update(waitlist)
-          .set({ verified: false })
+          .set({ zip_code, verified: false })
           .where(eq(waitlist.email, normalizedEmail));
         log(`Updated existing waitlist entry for ${normalizedEmail}`);
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
+          zip_code,
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
@@ -67,7 +57,7 @@ router.post('/api/waitlist', async (req, res) => {
 
       // Send verification email
       try {
-        await sendVerificationEmail(normalizedEmail);
+        await sendVerificationEmail(normalizedEmail, zip_code);
         log(`Verification email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Error sending verification email:', error);
@@ -94,12 +84,11 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Step 2: Verify email with code
+// Step 2: Verify email
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
 
-    // Validate input
     try {
       verificationSchema.parse({ email, code });
     } catch (error) {
@@ -133,11 +122,18 @@ router.post('/api/waitlist/verify', async (req, res) => {
       });
     }
 
-    // Update verification status
+    // Update verification status and send welcome email
     try {
       await db.update(waitlist)
         .set({ verified: true })
         .where(eq(waitlist.email, normalizedEmail));
+
+      try {
+        await sendWelcomeEmail(normalizedEmail, entry.zip_code);
+      } catch (error) {
+        log('Welcome email failed:', error);
+        // Continue despite welcome email failure
+      }
 
       return res.json({
         success: true,
@@ -155,97 +151,6 @@ router.post('/api/waitlist/verify', async (req, res) => {
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to verify email'
-    });
-  }
-});
-
-// Step 3: Update ZIP code after verification
-router.post('/api/waitlist/update', async (req, res) => {
-  try {
-    const { email, zipCode } = req.body;
-
-    // Validate ZIP code
-    const zipCodeSchema = z.object({
-      zipCode: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric")
-    });
-
-    try {
-      zipCodeSchema.parse({ zipCode });
-    } catch (error) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: validationError.message
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase();
-
-    // Check if entry exists and is verified
-    const entry = await db.query.waitlist.findFirst({
-      where: eq(waitlist.email, normalizedEmail)
-    });
-
-    if (!entry) {
-      return res.status(404).json({
-        error: 'Not found',
-        details: 'No waitlist entry found for this email'
-      });
-    }
-
-    if (!entry.verified) {
-      return res.status(400).json({
-        error: 'Not verified',
-        details: 'Email must be verified before updating ZIP code'
-      });
-    }
-
-    // Update ZIP code
-    try {
-      await db.update(waitlist)
-        .set({ zip_code: zipCode })
-        .where(eq(waitlist.email, normalizedEmail));
-
-      // Send welcome email
-      try {
-        await sendWelcomeEmail(normalizedEmail, zipCode);
-      } catch (error) {
-        log('Welcome email failed:', error);
-        // Continue despite welcome email failure
-      }
-
-      return res.json({
-        success: true,
-        message: 'ZIP code updated successfully'
-      });
-    } catch (error) {
-      log('Database error during ZIP code update:', error);
-      return res.status(500).json({
-        error: 'Database error',
-        details: 'Failed to update ZIP code'
-      });
-    }
-  } catch (error) {
-    log('ZIP code update error:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to update ZIP code'
-    });
-  }
-});
-
-// Get all waitlist entries (admin only)
-router.get('/api/waitlist', requireAuth, async (_req, res) => {
-  try {
-    const entries = await db.query.waitlist.findMany({
-      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
-    });
-    return res.json(entries);
-  } catch (error) {
-    log('Error fetching waitlist entries:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch entries'
     });
   }
 });

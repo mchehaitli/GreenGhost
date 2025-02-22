@@ -8,21 +8,17 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const emailFormSchema = z.object({
+const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
+  zipCode: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 const verificationSchema = z.object({
   code: z.string().length(4, "Code must be 4 digits").regex(/^\d+$/, "Code must contain only numbers"),
 });
 
-const zipCodeSchema = z.object({
-  zipCode: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must contain only numbers"),
-});
-
-type EmailFormData = z.infer<typeof emailFormSchema>;
+type FormData = z.infer<typeof formSchema>;
 type VerificationData = z.infer<typeof verificationSchema>;
-type ZipCodeData = z.infer<typeof zipCodeSchema>;
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -30,33 +26,34 @@ interface WaitlistDialogProps {
 }
 
 export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
-  const [step, setStep] = useState<'email' | 'verification' | 'zipCode'>('email');
+  const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const emailForm = useForm<EmailFormData>({
-    resolver: zodResolver(emailFormSchema),
-    defaultValues: { email: "" },
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      zipCode: "",
+    },
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
-    defaultValues: { code: "" },
+    defaultValues: {
+      code: "",
+    },
   });
 
-  const zipCodeForm = useForm<ZipCodeData>({
-    resolver: zodResolver(zipCodeSchema),
-    defaultValues: { zipCode: "" },
-  });
-
-  const onEmailSubmit = async (data: EmailFormData) => {
+  const onSubmit = async (data: FormData) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
       const requestData = {
         email: data.email.trim().toLowerCase(),
+        zip_code: data.zipCode,
       };
 
       const response = await fetch("/api/waitlist", {
@@ -75,8 +72,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (responseData.status === 'pending_verification') {
-        setVerifiedEmail(requestData.email);
-        setStep('verification');
+        setPendingEmail(requestData.email);
+        setStep('verifying');
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email.",
@@ -96,7 +93,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const onVerificationSubmit = async (values: VerificationData) => {
-    if (!verifiedEmail || isSubmitting) return;
+    if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -106,7 +103,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: verifiedEmail,
+          email: pendingEmail,
           code: values.code,
         }),
         credentials: 'include',
@@ -119,11 +116,15 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (data.success) {
-        setStep('zipCode');
         toast({
-          title: "Email Verified",
-          description: "Please provide your ZIP code to complete signup.",
+          title: "Success!",
+          description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
+        form.reset();
+        verificationForm.reset();
+        setPendingEmail("");
+        setStep('initial');
+        onOpenChange(false);
       } else {
         throw new Error("Verification unsuccessful");
       }
@@ -138,75 +139,26 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  const onZipCodeSubmit = async (values: ZipCodeData) => {
-    if (!verifiedEmail || isSubmitting) return;
-
-    try {
-      setIsSubmitting(true);
-      const response = await fetch("/api/waitlist/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: verifiedEmail,
-          zipCode: values.zipCode,
-        }),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to update ZIP code");
-      }
-
-      toast({
-        title: "Success!",
-        description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
-      });
-      emailForm.reset();
-      verificationForm.reset();
-      zipCodeForm.reset();
-      setVerifiedEmail("");
-      setStep('email');
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update ZIP code",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDialogClose = (newOpen: boolean) => {
-    if (!newOpen) {
-      emailForm.reset();
-      verificationForm.reset();
-      zipCodeForm.reset();
-      setVerifiedEmail("");
-      setStep('email');
-    }
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) {
+        form.reset();
+        verificationForm.reset();
+        setPendingEmail("");
+        setStep('initial');
+      }
+      onOpenChange(newOpen);
+    }}>
       <DialogContent>
         <DialogTitle>
-          {step === 'email' && "Join Our Waitlist"}
-          {step === 'verification' && "Enter Verification Code"}
-          {step === 'zipCode' && "Enter Your ZIP Code"}
+          {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
         </DialogTitle>
 
-        {step === 'email' && (
-          <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+        {step === 'initial' ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={emailForm.control}
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -215,6 +167,27 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       placeholder="Enter your email"
                       type="email"
                       {...field}
+                      disabled={isSubmitting}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="zipCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP Code</FormLabel>
+                    <Input
+                      placeholder="Enter ZIP code"
+                      maxLength={5}
+                      inputMode="numeric"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                        field.onChange(value);
+                      }}
                       disabled={isSubmitting}
                     />
                     <FormMessage />
@@ -230,13 +203,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               </Button>
             </form>
           </Form>
-        )}
-
-        {step === 'verification' && (
+        ) : (
           <Form {...verificationForm}>
             <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{verifiedEmail}</span>
+                Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
               </p>
               <FormField
                 control={verificationForm.control}
@@ -265,41 +236,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Verifying..." : "Verify Code"}
-              </Button>
-            </form>
-          </Form>
-        )}
-
-        {step === 'zipCode' && (
-          <Form {...zipCodeForm}>
-            <form onSubmit={zipCodeForm.handleSubmit(onZipCodeSubmit)} className="space-y-4">
-              <FormField
-                control={zipCodeForm.control}
-                name="zipCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ZIP Code</FormLabel>
-                    <Input
-                      placeholder="Enter ZIP code"
-                      maxLength={5}
-                      inputMode="numeric"
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                        field.onChange(value);
-                      }}
-                      disabled={isSubmitting}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Completing..." : "Complete Signup"}
               </Button>
             </form>
           </Form>

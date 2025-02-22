@@ -7,7 +7,7 @@ import { z } from "zod";
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
-  zip_code: text("zip_code").default('00000'),
+  zip_code: text("zip_code").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
@@ -32,6 +32,7 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
 // Zod schemas for validation
 export const insertWaitlistSchema = z.object({
   email: z.string().email("Invalid email address"),
+  zip_code: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 export const verificationSchema = z.object({
