@@ -82,9 +82,21 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
+      }
+
+      if (data.status === 'pending_verification') {
+        setRegisteredEmail(values.email);
+        setIsVerifying(true);
+        form.reset();
+        toast({
+          title: "Check your email",
+          description: "We've sent you a verification code.",
+        });
+        return;
       }
 
       if (data.status === 'pending_verification') {
