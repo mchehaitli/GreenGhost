@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Form schemas
+// Form schemas - match exactly with server-side schema
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -38,7 +38,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       email: "",
       zip_code: "",
     },
-    mode: "onChange",
   });
 
   const verificationForm = useForm<VerificationData>({
@@ -49,15 +48,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   });
 
   const onSubmit = async (data: FormData) => {
+    if (isSubmitting) return;
+
     try {
       setIsSubmitting(true);
 
+      // Ensure proper formatting of data
       const payload = {
-        email: data.email,
-        zip_code: data.zip_code,
+        email: data.email.trim(),
+        zip_code: data.zipCode.trim(),
       };
 
-      console.log('Submitting waitlist form:', payload);
+      console.log('Submitting form with payload:', payload);
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -68,6 +70,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const responseData = await response.json();
+      console.log('Server response:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
@@ -119,6 +122,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
       });
 
+      // Reset forms and close dialog
       form.reset();
       verificationForm.reset();
       setPendingEmail("");
@@ -189,10 +193,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <FormLabel>ZIP Code</FormLabel>
                     <Input 
                       placeholder="Enter your ZIP code"
-                      type="text"
                       maxLength={5}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
                       {...field}
-                      value={field.value}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         field.onChange(value);
@@ -226,6 +230,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input
                       placeholder="Enter 4-digit code"
                       maxLength={4}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
                       {...field}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 4);
