@@ -64,15 +64,20 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error('Email and ZIP code are required');
       }
 
-      // Prepare the request
+      // Log the exact data being sent
+      console.log('Form values before request:', {
+        email: values.email,
+        zip_code: values.zip_code,
+        rawForm: form.getValues()
+      });
+
       const requestData = {
         email: values.email.trim().toLowerCase(),
         zip_code: values.zip_code.trim(),
       };
 
-      console.log('Sending request to server:', requestData);
+      console.log('Request payload:', JSON.stringify(requestData));
 
-      // Make the request
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
@@ -244,6 +249,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         field.onChange(value);
+                        console.log('ZIP code field change:', value); // Debug log
                       }}
                       disabled={isSubmitting}
                     />
