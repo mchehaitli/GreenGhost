@@ -22,7 +22,7 @@ export type SelectUser = typeof users.$inferSelect;
 
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   zip_code: text("zip_code").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
