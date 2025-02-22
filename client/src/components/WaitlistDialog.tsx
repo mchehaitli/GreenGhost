@@ -141,11 +141,12 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       });
 
       // Reset forms and close dialog only after successful verification
+      form.reset();
+      verificationForm.reset();
+      setShowVerificationInput(false);
+      setRegisteredEmail("");
+
       if (onOpenChange) {
-        form.reset();
-        verificationForm.reset();
-        setShowVerificationInput(false);
-        setRegisteredEmail("");
         onOpenChange(false);
       }
 
@@ -166,7 +167,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       open={open} 
       onOpenChange={(newOpen) => {
         if (!newOpen && !isSubmitting && onOpenChange) {
-          // Only allow closing if not submitting
           form.reset();
           verificationForm.reset();
           setShowVerificationInput(false);
@@ -176,7 +176,51 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       }}
     >
       <DialogContent className="sm:max-w-[531px]">
-        {!showVerificationInput ? (
+        {showVerificationInput ? (
+          <div className="py-6 text-center space-y-4">
+            <Mail className="mx-auto h-12 w-12 text-primary" />
+            <DialogTitle className="text-2xl">Enter Verification Code</DialogTitle>
+            <DialogDescription className="text-base max-w-[400px] mx-auto">
+              We've sent a 4-digit verification code to {registeredEmail}. Please enter it below to complete your registration.
+            </DialogDescription>
+
+            <Form {...verificationForm}>
+              <form onSubmit={verificationForm.handleSubmit(onVerifyCode)} className="space-y-4 max-w-[200px] mx-auto">
+                <FormField
+                  control={verificationForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="0000"
+                          {...field}
+                          className="text-center text-2xl tracking-[0.5em] font-mono"
+                          maxLength={4}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Code"
+                  )}
+                </Button>
+              </form>
+            </Form>
+
+            <p className="text-sm text-muted-foreground mt-4">
+              Didn't receive the code? Check your spam folder or try again.
+            </p>
+          </div>
+        ) : (
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">Join the Future of Landscaping</DialogTitle>
@@ -237,50 +281,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               </Form>
             </div>
           </>
-        ) : (
-          <div className="py-6 text-center space-y-4">
-            <Mail className="mx-auto h-12 w-12 text-primary" />
-            <DialogTitle className="text-2xl">Enter Verification Code</DialogTitle>
-            <DialogDescription className="text-base max-w-[400px] mx-auto">
-              We've sent a 4-digit verification code to {registeredEmail}. Please enter it below to complete your registration.
-            </DialogDescription>
-
-            <Form {...verificationForm}>
-              <form onSubmit={verificationForm.handleSubmit(onVerifyCode)} className="space-y-4 max-w-[200px] mx-auto">
-                <FormField
-                  control={verificationForm.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="0000"
-                          {...field}
-                          className="text-center text-2xl tracking-[0.5em] font-mono"
-                          maxLength={4}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify Code"
-                  )}
-                </Button>
-              </form>
-            </Form>
-
-            <p className="text-sm text-muted-foreground mt-4">
-              Didn't receive the code? Check your spam folder or try again.
-            </p>
-          </div>
         )}
       </DialogContent>
     </Dialog>
