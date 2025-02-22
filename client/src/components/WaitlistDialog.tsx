@@ -52,10 +52,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   // Initial form submission
   const onInitialSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (step !== 'initial' || isSubmitting) {
-      console.log('Invalid state for initial submission');
-      return;
-    }
+    if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -75,11 +72,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
-      }
-
-      if (data.status !== 'pending_verification') {
-        console.error('Invalid server response:', data);
-        throw new Error("Unexpected server response");
       }
 
       // Move to verification step
@@ -104,10 +96,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   // Verification code submission
   const onVerificationSubmit = async (values: z.infer<typeof verificationSchema>) => {
-    if (step !== 'verifying' || !pendingEmail || isSubmitting) {
-      console.error('Invalid state for verification', { step, pendingEmail });
-      return;
-    }
+    if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -161,9 +150,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   // Dialog state management
   const handleOpenChange = (newOpen: boolean) => {
-    // Prevent closing during verification
+    // Only allow closing if we're not in the verification step
     if (!newOpen && step === 'verifying') {
-      console.log('Preventing dialog close during verification');
       toast({
         title: "Please complete verification",
         description: "Enter the 4-digit code sent to your email to complete the process.",
@@ -173,7 +161,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     // Reset state when closing
     if (!newOpen) {
-      console.log('Resetting dialog state');
       initialForm.reset();
       verificationForm.reset();
       setPendingEmail("");
