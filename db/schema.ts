@@ -24,6 +24,15 @@ export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
   zip_code: text("zip_code").notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const verificationTokens = pgTable("verification_tokens", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  token: text("token").notNull(),
+  expires_at: timestamp("expires_at").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -44,6 +53,12 @@ export const insertWaitlistSchema = createInsertSchema(waitlist);
 export const selectWaitlistSchema = createSelectSchema(waitlist);
 export type InsertWaitlist = typeof waitlist.$inferInsert;
 export type SelectWaitlist = typeof waitlist.$inferSelect;
+
+// Verification token schemas
+export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
+export const selectVerificationTokenSchema = createSelectSchema(verificationTokens);
+export type InsertVerificationToken = typeof verificationTokens.$inferInsert;
+export type SelectVerificationToken = typeof verificationTokens.$inferSelect;
 
 // Quote request schemas
 export const insertQuoteSchema = createInsertSchema(quoteRequests);
