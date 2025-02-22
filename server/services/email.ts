@@ -4,80 +4,119 @@ import { db } from '../db';
 import { verificationTokens } from '../../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 
-// Email transporter configuration with detailed logging
-const createTransporter = () => {
-  log('Creating SMTP transporter with config:', {
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-    }
-  });
+// For development, use ethereal.email testing service
+async function createTestAccount() {
+  try {
+    log('Creating test email account...');
+    const testAccount = await nodemailer.createTestAccount();
+    log('Test account created successfully');
+    return testAccount;
+  } catch (error) {
+    log('Error creating test account:', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+}
 
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    debug: true,
-    logger: true
-  });
-};
+// Email transporter configuration with detailed logging
+async function createTransporter() {
+  try {
+    log('Setting up email transport...');
+
+    // Use test account in development
+    if (process.env.NODE_ENV !== 'production') {
+      const testAccount = await createTestAccount();
+      log('Using test SMTP account');
+      return nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+        debug: true,
+        logger: true
+      });
+    }
+
+    // Use configured SMTP in production
+    log('Using production SMTP settings');
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      debug: true,
+      logger: true
+    });
+  } catch (error) {
+    log('Error creating transport:', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+}
 
 let transporter: nodemailer.Transporter | null = null;
 
 // Initialize and verify transporter
 async function getTransporter(): Promise<nodemailer.Transporter> {
-  if (!transporter) {
-    transporter = createTransporter();
-    try {
+  try {
+    if (!transporter) {
+      transporter = await createTransporter();
       log('Verifying SMTP connection...');
       await transporter.verify();
       log('SMTP connection verified successfully');
-    } catch (error) {
-      log('SMTP Verification Error:', error instanceof Error ? error.message : 'Unknown error');
-      transporter = null;
-      throw error;
     }
+    return transporter;
+  } catch (error) {
+    log('SMTP Error:', error instanceof Error ? error.message : 'Unknown error');
+    transporter = null;
+    throw error;
   }
-  return transporter;
 }
 
 // Generate a 4-digit verification code
 async function generateVerificationCode(email: string): Promise<string> {
-  // Delete any existing unused tokens for this email
-  await db
-    .delete(verificationTokens)
-    .where(
-      and(
-        eq(verificationTokens.email, email),
-        eq(verificationTokens.used, false)
-      )
-    );
+  try {
+    log(`Generating verification code for ${email}`);
 
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
-  const expiresAt = new Date();
-  expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Code expires in 15 minutes
+    // Delete any existing unused tokens for this email
+    await db
+      .delete(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.email, email),
+          eq(verificationTokens.used, false)
+        )
+      );
 
-  // Store code in database
-  await db.insert(verificationTokens).values({
-    email,
-    token: code,
-    expires_at: expiresAt,
-    created_at: new Date(),
-    used: false,
-  });
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Code expires in 15 minutes
 
-  return code;
+    // Store code in database
+    await db.insert(verificationTokens).values({
+      email,
+      token: code,
+      expires_at: expiresAt,
+      created_at: new Date(),
+      used: false,
+    });
+
+    log(`Generated code stored successfully for ${email}`);
+    return code;
+  } catch (error) {
+    log('Error generating verification code:', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
 }
 
 // Verify a code
 export async function verifyCode(email: string, code: string): Promise<boolean> {
   try {
+    log(`Verifying code for email: ${email}`);
     const [storedToken] = await db
       .select()
       .from(verificationTokens)
@@ -101,6 +140,7 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
       .set({ used: true })
       .where(eq(verificationTokens.id, storedToken.id));
 
+    log(`Code verified successfully for ${email}`);
     return true;
   } catch (error) {
     log('Error verifying code:', error instanceof Error ? error.message : 'Unknown error');
@@ -158,10 +198,13 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
     const info = await transport.sendMail(mailOptions);
     log('Verification email sent successfully:', info.messageId);
+    if (process.env.NODE_ENV !== 'production') {
+      // Log preview URL for test emails
+      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
     return true;
   } catch (error) {
     log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
-    // Reset transporter on error to force re-verification
     transporter = null;
     throw error;
   }
@@ -212,10 +255,13 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const info = await transport.sendMail(mailOptions);
     log('Welcome email sent successfully:', info.messageId);
+    if (process.env.NODE_ENV !== 'production') {
+      // Log preview URL for test emails
+      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
     return true;
   } catch (error) {
     log('Error sending welcome email:', error instanceof Error ? error.message : 'Unknown error');
-    // Reset transporter on error to force re-verification
     transporter = null;
     throw error;
   }
