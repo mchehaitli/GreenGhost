@@ -131,7 +131,7 @@ function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       toast({
         title: "Success!",
-        description: "You've been added to the waitlist.",
+        description: data.message || "You've been added to the waitlist.",
       });
 
       resetForms();
