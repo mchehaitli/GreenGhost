@@ -100,6 +100,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
           title: "Check your email!",
           description: "We've sent a 4-digit verification code to your email.",
         });
+      } else {
+        throw new Error('Unexpected server response');
       }
     } catch (error) {
       console.error('Waitlist submission error:', error);
@@ -135,12 +137,12 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.details || 'Failed to verify code');
       }
 
+      // Only show success message and close dialog after successful verification
       toast({
         title: "Success!",
         description: "You've successfully joined our waitlist.",
       });
 
-      // Reset forms and close dialog only after successful verification
       form.reset();
       verificationForm.reset();
       setShowVerificationInput(false);
@@ -197,6 +199,9 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                           {...field}
                           className="text-center text-2xl tracking-[0.5em] font-mono"
                           maxLength={4}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                         />
                       </FormControl>
                       <FormMessage />
