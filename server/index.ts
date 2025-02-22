@@ -21,9 +21,7 @@ async function startServer() {
     // Configure CORS before other middleware
     log('Configuring CORS...');
     app.use(cors({
-      origin: process.env.NODE_ENV === 'production' 
-        ? process.env.CORS_ORIGIN || false
-        : true,
+      origin: true,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
@@ -37,17 +35,10 @@ async function startServer() {
       const start = Date.now();
       res.on("finish", () => {
         const duration = Date.now() - start;
-        if (req.path.startsWith("/api") || req.path === '/health') {
-          log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
-        }
+        log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
       });
       next();
     });
-
-    if (!process.env.SESSION_SECRET) {
-      log('SESSION_SECRET not found, using default development secret');
-      process.env.SESSION_SECRET = '0a0df83f14af11c0841035474b9e698664e5be1513c193db84a8b059ca9aef06';
-    }
 
     try {
       log('Setting up authentication...');
@@ -78,36 +69,33 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Server configuration
-      const PORT = Number(process.env.PORT) || 5000; // Changed default port to 5000 for Replit
-      const HOST = "0.0.0.0";
+      // Server configuration - explicitly use port 5000 for Replit
+      const port = 5000;
 
-      server.listen(PORT, HOST, () => {
-        log(`Server running at http://${HOST}:${PORT}`);
+      server.listen(port, "0.0.0.0", () => {
+        log(`Server running at http://0.0.0.0:${port}`);
         log('Environment:', process.env.NODE_ENV || 'development');
-        log('CORS:', process.env.NODE_ENV === 'production' ? process.env.CORS_ORIGIN || 'disabled' : 'all origins (development)');
+        log('CORS:', 'enabled for all origins');
       });
 
       // Handle server errors
-      server.on('error', async (error: NodeJS.ErrnoException) => {
+      server.on('error', (error: NodeJS.ErrnoException) => {
         if (error.syscall !== 'listen') {
           throw error;
         }
 
-        if (error.code === 'EADDRINUSE') {
-          console.error(`Port ${PORT} is already in use. Attempting to free it...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          server.close();
-          server.listen(PORT, HOST);
-          return;
+        switch (error.code) {
+          case 'EACCES':
+            console.error(`Port ${port} requires elevated privileges`);
+            process.exit(1);
+            break;
+          case 'EADDRINUSE':
+            console.error(`Port ${port} is already in use`);
+            process.exit(1);
+            break;
+          default:
+            throw error;
         }
-
-        if (error.code === 'EACCES') {
-          console.error(`Port ${PORT} requires elevated privileges`);
-          process.exit(1);
-        }
-
-        throw error;
       });
 
     } catch (error) {
