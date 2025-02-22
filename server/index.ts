@@ -69,11 +69,8 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Server configuration - use port 5000 for Replit
       const port = process.env.PORT || 5000;
-      const host = "0.0.0.0"; // Listen on all network interfaces
-
-      server.listen(port, "0.0.0.0", () => {
+      server.listen(port, () => {
         log(`Server running at http://0.0.0.0:${port}`);
         log('Environment:', process.env.NODE_ENV || 'development');
         log('CORS:', 'enabled for all origins');

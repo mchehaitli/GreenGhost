@@ -3,26 +3,10 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").unique().notNull(),
-  password: text("password").notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Create Zod schemas for users
-export const insertUserSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-export const selectUserSchema = createSelectSchema(users);
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-
+// Base tables
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull(),  // Removed unique constraint temporarily
+  email: text("email").notNull(),
   zip_code: text("zip_code").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -37,7 +21,7 @@ export const verificationTokens = pgTable("verification_tokens", {
   used: boolean("used").default(false).notNull(),
 });
 
-// Create a unique constraint on email and token combination
+// Relations
 export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
   waitlist: one(waitlist, {
     fields: [verificationTokens.email],
@@ -45,7 +29,7 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
   }),
 }));
 
-// Enhanced Zod schemas for waitlist
+// Zod schemas for validation
 export const insertWaitlistSchema = z.object({
   email: z.string().email("Invalid email address"),
   zip_code: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -56,7 +40,7 @@ export const verificationSchema = z.object({
   code: z.string().length(4, "Verification code must be exactly 4 digits").regex(/^\d+$/, "Verification code must be numeric"),
 });
 
-// Export schemas and types
+// Export types
 export const selectWaitlistSchema = createSelectSchema(waitlist);
 export type InsertWaitlist = typeof waitlist.$inferInsert;
 export type SelectWaitlist = typeof waitlist.$inferSelect;
@@ -65,21 +49,3 @@ export const insertVerificationTokenSchema = createInsertSchema(verificationToke
 export const selectVerificationTokenSchema = createSelectSchema(verificationTokens);
 export type InsertVerificationToken = typeof verificationTokens.$inferInsert;
 export type SelectVerificationToken = typeof verificationTokens.$inferSelect;
-
-// Keep the existing quote request related schemas
-export const quoteRequests = pgTable("quote_requests", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone").notNull(),
-  address: text("address").notNull(),
-  propertySize: text("property_size").notNull(),
-  serviceType: text("service_type").notNull(),
-  message: text("message"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertQuoteSchema = createInsertSchema(quoteRequests);
-export const selectQuoteSchema = createSelectSchema(quoteRequests);
-export type InsertQuote = typeof quoteRequests.$inferInsert;
-export type SelectQuote = typeof quoteRequests.$inferSelect;

@@ -8,17 +8,14 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+// Form schemas
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  zipCode: z.string().min(5, "ZIP code must be 5 digits").max(5, "ZIP code must be 5 digits"),
+  zip_code: z.string().length(5, "ZIP code must be 5 digits"),
 });
 
 const verificationSchema = z.object({
-  code: z
-    .string()
-    .min(4, "Code must be 4 digits")
-    .max(4, "Code must be 4 digits")
-    .regex(/^\d+$/, "Code must contain only numbers"),
+  code: z.string().length(4, "Code must be 4 digits").regex(/^\d+$/, "Code must contain only numbers"),
 });
 
 interface WaitlistDialogProps {
@@ -27,16 +24,18 @@ interface WaitlistDialogProps {
 }
 
 export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
+  // State
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
+  // Forms
   const initialForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      zipCode: "",
+      zip_code: "",
     },
   });
 
@@ -47,18 +46,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
+  // Initial form submission
   const onInitialSubmit = async (values: z.infer<typeof formSchema>) => {
     if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
-          zipCode: values.zipCode,
+          zip_code: values.zip_code,
         }),
       });
 
@@ -68,9 +67,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Always move to verification step after successful initial submission
       setPendingEmail(values.email);
       setStep('verifying');
+
       toast({
         title: "Check your email",
         description: "We've sent a 4-digit verification code to your email.",
@@ -86,12 +85,12 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
+  // Verification submission
   const onVerificationSubmit = async (values: z.infer<typeof verificationSchema>) => {
     if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
-
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,13 +106,12 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success after successful verification
       toast({
         title: "Success!",
         description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
       });
 
-      // Reset and close
+      // Reset forms and close dialog
       initialForm.reset();
       verificationForm.reset();
       setPendingEmail("");
@@ -130,13 +128,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
+  // Handle numeric input
   const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4);
     verificationForm.setValue('code', value);
   };
 
+  // Dialog state management
   const handleOpenChange = (newOpen: boolean) => {
-    // Prevent closing during verification
     if (!newOpen && step === 'verifying') {
       toast({
         title: "Please complete verification",
@@ -145,7 +144,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       return;
     }
 
-    // Reset state when closing
     if (!newOpen) {
       initialForm.reset();
       verificationForm.reset();
@@ -173,9 +171,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <Input 
-                      placeholder="Email" 
+                      placeholder="Email"
                       type="email"
-                      {...field} 
+                      {...field}
                       disabled={isSubmitting}
                     />
                     <FormMessage />
@@ -184,15 +182,15 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               />
               <FormField
                 control={initialForm.control}
-                name="zipCode"
+                name="zip_code"
                 render={({ field }) => (
                   <FormItem>
                     <Input 
-                      placeholder="ZIP Code" 
+                      placeholder="ZIP Code"
                       maxLength={5}
-                      type="text"
                       pattern="[0-9]*"
-                      {...field} 
+                      inputMode="numeric"
+                      {...field}
                       disabled={isSubmitting}
                     />
                     <FormMessage />
@@ -200,7 +198,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 )}
               />
               <Button 
-                type="submit" 
+                type="submit"
                 className="w-full"
                 disabled={isSubmitting}
               >
@@ -222,7 +220,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input
                       placeholder="Enter 4-digit code"
                       maxLength={4}
-                      type="text"
                       pattern="[0-9]*"
                       inputMode="numeric"
                       {...field}
@@ -235,7 +232,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 )}
               />
               <Button 
-                type="submit" 
+                type="submit"
                 className="w-full"
                 disabled={isSubmitting}
               >
