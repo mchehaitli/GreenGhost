@@ -51,7 +51,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          email: values.email,
+          zipCode: values.zipCode
+        }),
       });
 
       const data = await response.json();
@@ -64,14 +67,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       // Explicitly check for pending_verification status
       if (data.status !== 'pending_verification') {
         console.error('Unexpected server response status:', data.status);
-        throw new Error("Unexpected server response");
+        throw new Error("Unexpected response from server");
       }
 
-      // Set verification state and show toast
-      console.log('Setting verification state...');
+      // Set verification state
+      console.log('Moving to verification state');
       setRegisteredEmail(values.email);
       setIsVerifying(true);
-      form.reset();
 
       toast({
         title: "Check your email",
@@ -115,6 +117,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
+      // Only show success and close dialog after successful verification
       toast({
         title: "Success!",
         description: "You've been added to the waitlist.",
@@ -141,13 +144,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   // Reset state when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setIsVerifying(false);
-      setRegisteredEmail("");
-      setIsSubmitting(false);
-      form.reset();
-      verificationForm.reset();
+      // Only reset if we're not in the verification process
+      if (!isVerifying) {
+        setIsVerifying(false);
+        setRegisteredEmail("");
+        setIsSubmitting(false);
+        form.reset();
+        verificationForm.reset();
+        onOpenChange(false);
+      }
+    } else {
+      onOpenChange(true);
     }
-    onOpenChange(newOpen);
   };
 
   return (
