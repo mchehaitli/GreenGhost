@@ -15,7 +15,11 @@ const formSchema = z.object({
 });
 
 const verificationSchema = z.object({
-  code: z.string().min(4, "Verification code must be 4 digits").max(4, "Verification code must be 4 digits"),
+  code: z
+    .string()
+    .min(4, "Code must be 4 digits")
+    .max(4, "Code must be 4 digits")
+    .regex(/^\d+$/, "Code must contain only numbers"),
 });
 
 interface WaitlistDialogProps {
@@ -83,8 +87,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       setStep('verifying');
 
       toast({
-        title: "Verification Required",
-        description: "Please check your email for the verification code.",
+        title: "Check your email",
+        description: "We've sent a 4-digit verification code to your email.",
       });
     } catch (error) {
       console.error('Initial submission error:', error);
@@ -140,13 +144,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     } catch (error) {
       console.error('Verification error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle numeric input only for verification code
+  const handleCodeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    verificationForm.setValue('code', value);
   };
 
   // Dialog state management
@@ -156,7 +166,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.log('Preventing dialog close during verification');
       toast({
         title: "Please complete verification",
-        description: "Enter the verification code sent to your email to complete the process.",
+        description: "Enter the 4-digit code sent to your email to complete the process.",
       });
       return;
     }
@@ -191,6 +201,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   <FormItem>
                     <Input 
                       placeholder="Email" 
+                      type="email"
                       {...field} 
                       disabled={isSubmitting}
                     />
@@ -205,7 +216,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   <FormItem>
                     <Input 
                       placeholder="ZIP Code" 
-                      maxLength={5} 
+                      maxLength={5}
+                      type="text"
+                      pattern="[0-9]*"
                       {...field} 
                       disabled={isSubmitting}
                     />
@@ -225,6 +238,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         ) : (
           <Form {...verificationForm}>
             <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
+              </p>
               <FormField
                 control={verificationForm.control}
                 name="code"
@@ -233,8 +249,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input
                       placeholder="Enter 4-digit code"
                       maxLength={4}
+                      type="text"
+                      pattern="[0-9]*"
+                      inputMode="numeric"
                       {...field}
+                      onChange={handleCodeInput}
                       disabled={isSubmitting}
+                      className="text-center text-lg tracking-widest"
                     />
                     <FormMessage />
                   </FormItem>

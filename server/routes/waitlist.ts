@@ -77,7 +77,7 @@ router.post('/api/waitlist', async (req, res) => {
       zip_code: zipCode,
     });
 
-    // Insert into database with verification status
+    // Insert into database as unverified
     const [newEntry] = await db.insert(waitlist)
       .values({
         ...parsedInput,
@@ -86,15 +86,13 @@ router.post('/api/waitlist', async (req, res) => {
       })
       .returning();
 
-    console.log('Created waitlist entry:', newEntry);
+    console.log('Created unverified waitlist entry:', newEntry);
 
-    // Send response with pending_verification status
-    const response = { 
+    // Return pending verification status
+    res.json({ 
       status: 'pending_verification',
       message: 'Please check your email for a verification code.'
-    };
-    console.log('Sending response:', response);
-    res.json(response);
+    });
   } catch (error) {
     console.error('Error saving to waitlist:', error);
     res.status(500).json({ 
@@ -104,7 +102,7 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Code verification endpoint
+// Verification endpoint
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -117,16 +115,36 @@ router.post('/api/waitlist/verify', async (req, res) => {
       });
     }
 
-    const isValid = await verifyCode(email.toLowerCase(), code);
+    // Check if entry exists and is unverified
+    const [existingEntry] = await db
+      .select()
+      .from(waitlist)
+      .where(eq(waitlist.email, email.toLowerCase()));
 
-    if (!isValid) {
-      return res.status(400).json({
-        error: 'Invalid or expired code',
-        details: 'Please check the code and try again'
+    if (!existingEntry) {
+      return res.status(404).json({
+        error: 'Entry not found',
+        details: 'Please submit your email and zip code first'
       });
     }
 
-    // Update waitlist entry to verified
+    if (existingEntry.verified) {
+      return res.status(400).json({
+        error: 'Already verified',
+        details: 'This email is already verified and on our waitlist'
+      });
+    }
+
+    // Verify the code
+    const isValid = await verifyCode(email.toLowerCase(), code);
+    if (!isValid) {
+      return res.status(400).json({
+        error: 'Invalid code',
+        details: 'The verification code is incorrect or has expired'
+      });
+    }
+
+    // Update verification status
     const [updatedEntry] = await db
       .update(waitlist)
       .set({ verified: true })
@@ -134,19 +152,19 @@ router.post('/api/waitlist/verify', async (req, res) => {
       .returning();
 
     if (!updatedEntry) {
-      return res.status(404).json({
-        error: 'Entry not found',
-        details: 'Could not find waitlist entry for this email'
+      return res.status(500).json({
+        error: 'Update failed',
+        details: 'Failed to update verification status'
       });
     }
 
-    // Send welcome email after verification
+    // Send welcome email
     try {
       await sendWelcomeEmail(email.toLowerCase(), updatedEntry.zip_code);
       console.log('Welcome email sent successfully');
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
-      // Continue with the response even if welcome email fails
+      // Continue despite welcome email failure
     }
 
     res.json({
@@ -154,7 +172,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
       message: 'Email verified successfully! Welcome to GreenGhost Tech!'
     });
   } catch (error) {
-    console.error('Error verifying email:', error);
+    console.error('Error in verification process:', error);
     res.status(500).json({
       error: 'Verification failed',
       details: error instanceof Error ? error.message : 'Unknown error'
