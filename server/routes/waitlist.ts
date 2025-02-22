@@ -70,7 +70,6 @@ router.post('/api/waitlist', async (req, res) => {
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
-          zip_code: '00000', // Default placeholder
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
@@ -78,7 +77,7 @@ router.post('/api/waitlist', async (req, res) => {
 
       // Send verification email
       try {
-        const emailSent = await sendVerificationEmail(normalizedEmail, '00000');
+        const emailSent = await sendVerificationEmail(normalizedEmail);
         if (!emailSent) {
           throw new Error('Failed to send verification email');
         }
@@ -169,7 +168,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
       // Send welcome email
       try {
-        await sendWelcomeEmail(normalizedEmail, entry.zip_code);
+        await sendWelcomeEmail(normalizedEmail);
         log(`Welcome email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Welcome email failed:', error);
