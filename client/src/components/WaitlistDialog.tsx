@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 // Form schemas
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  zip_code: z.string().length(5, "ZIP code must be 5 digits"),
+  zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 const verificationSchema = z.object({
@@ -52,13 +52,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
+
+      // Log the values being sent
+      console.log('Submitting form with values:', values);
+
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: values.email,
-          zip_code: values.zip_code,
-        }),
+        body: JSON.stringify(values), // Send the entire values object
       });
 
       const data = await response.json();
