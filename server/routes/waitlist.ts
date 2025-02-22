@@ -26,15 +26,23 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 // Step 1: Initial waitlist signup - only creates unverified entry and sends verification code
 router.post('/api/waitlist', async (req, res) => {
   try {
+    log('Received waitlist signup request');
+    log('Request body:', JSON.stringify(req.body, null, 2));
+
     const { email, zip_code } = req.body;
 
-    log(`Received waitlist signup request - Raw body:`, JSON.stringify(req.body));
-    log(`Extracted values - Email: ${email}, ZIP: ${zip_code}`);
+    if (!email || !zip_code) {
+      log('Missing required fields:', { email: !!email, zip_code: !!zip_code });
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Both email and zip_code are required'
+      });
+    }
 
     // Validate input with Zod schema
     try {
       const validatedData = insertWaitlistSchema.parse({ email, zip_code });
-      log('Input validation passed:', JSON.stringify(validatedData));
+      log('Input validation passed:', JSON.stringify(validatedData, null, 2));
     } catch (error) {
       log('Input validation failed:', error);
       const validationError = fromZodError(error);
@@ -59,7 +67,7 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
 
-    // Create or update unverified entry
+    // Create or update unverified entry and send verification email
     try {
       if (existingEntry) {
         await db.update(waitlist)
@@ -84,7 +92,7 @@ router.post('/api/waitlist', async (req, res) => {
         log(`Verification email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Error sending verification email:', error);
-        // Don't return error here, continue with response
+        // Continue with response despite email error
       }
 
       return res.json({
@@ -195,7 +203,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
   }
 });
 
-// Admin route to get all entries
+// Get all waitlist entries (admin only)
 router.get('/api/waitlist', requireAuth, async (_req, res) => {
   try {
     const entries = await db.query.waitlist.findMany({
@@ -203,7 +211,7 @@ router.get('/api/waitlist', requireAuth, async (_req, res) => {
     });
     return res.json(entries);
   } catch (error) {
-    log('Fetch entries error:', error);
+    log('Error fetching waitlist entries:', error);
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to fetch entries'

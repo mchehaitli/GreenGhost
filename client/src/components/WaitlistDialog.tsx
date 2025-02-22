@@ -52,9 +52,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
-      console.log('Form Submission Debug:', {
-        formValues: values,
-        formState: form.formState,
+
+      // Log form data for debugging
+      console.log('Form data:', {
+        values,
         errors: form.formState.errors,
       });
 
@@ -64,28 +65,31 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: values.email.trim(),
-          zip_code: values.zip_code.trim()
+          email: values.email.trim().toLowerCase(),
+          zip_code: values.zip_code.trim(),
         }),
-        credentials: 'include',
       });
 
+      // Log raw response for debugging
+      console.log('Server response status:', response.status);
+
       const data = await response.json();
-      console.log('Server response:', data);
+      console.log('Server response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      // Only proceed to verification step after successful initial submission
+      // Check response status
       if (data.status === 'pending_verification') {
-        setPendingEmail(values.email);
+        setPendingEmail(values.email.toLowerCase());
         setStep('verifying');
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
+        console.error('Unexpected server response:', data);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
@@ -114,7 +118,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           email: pendingEmail,
           code: values.code,
         }),
-        credentials: 'include',
       });
 
       const data = await response.json();
