@@ -69,8 +69,8 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Server configuration - explicitly use port 5000 for Replit
-      const port = 5000;
+      // Server configuration - use port 3000 for Replit
+      const port = 3000;
 
       server.listen(port, "0.0.0.0", () => {
         log(`Server running at http://0.0.0.0:${port}`);
