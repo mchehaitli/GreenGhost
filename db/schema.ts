@@ -38,7 +38,7 @@ export const insertWaitlistSchema = z.object({
 
 export const verificationSchema = z.object({
   email: z.string().email("Invalid email address"),
-  code: z.string().length(4, "Verification code must be exactly 4 digits").regex(/^\d+$/, "Verification code must be numeric"),
+  code: z.string(),
 });
 
 // Export types

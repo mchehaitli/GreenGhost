@@ -135,7 +135,7 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Step 2: Verify email with code
+// Verification route
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     log(`Received verification request`);
@@ -193,7 +193,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
       log(`Invalid verification code for ${normalizedEmail}`);
       return res.status(400).json({
         error: 'Invalid code',
-        details: 'The verification code is incorrect or expired'
+        details: 'The verification code is incorrect'
       });
     }
 
