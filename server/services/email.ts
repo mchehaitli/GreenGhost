@@ -17,8 +17,8 @@ async function generateVerificationCode(email: string): Promise<string> {
   await db.delete(verificationTokens)
     .where(eq(verificationTokens.email, email));
 
-  // Generate a 4-digit code
-  const code = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0');
+  // Generate a 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + (90 * 1000)); // 90 seconds expiration
 
   await db.insert(verificationTokens).values({
@@ -82,7 +82,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
           <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email 🌿</h1>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for joining our waitlist! Please use the following code to verify your email address:
+            Thank you for joining our waitlist! Please use the following 6-digit code to verify your email address:
           </p>
 
           <div style="margin: 30px 0; text-align: center;">
@@ -116,7 +116,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     log(`Verification email sent successfully to ${email}`);
     return true;
   } catch (error) {
-    log('Failed to send verification email:', error);
+    log('Failed to send verification email:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
 }
@@ -166,7 +166,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     log(`Welcome email sent successfully to ${email}`);
     return true;
   } catch (error) {
-    log('Failed to send welcome email:', error);
+    log('Failed to send welcome email:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
 }

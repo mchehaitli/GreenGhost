@@ -17,7 +17,7 @@ const formSchema = z.object({
 });
 
 const verificationSchema = z.object({
-  code: z.string().length(4, "Please enter the 4-digit code").regex(/^\d+$/, "Please enter only numbers"),
+  code: z.string().length(6, "Please enter the 6-digit code").regex(/^\d+$/, "Please enter only numbers"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -60,10 +60,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/waitlist", {
-        method: "POST",
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
       });
@@ -71,7 +71,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to join waitlist");
+        throw new Error(data.error || data.details || 'Failed to join waitlist');
       }
 
       if (data.status === 'pending_verification') {
@@ -79,7 +79,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         setStep('verifying');
         toast({
           title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
+          description: "We've sent a 6-digit verification code to your email. The code will expire in 90 seconds.",
         });
       } else {
         throw new Error("Unexpected server response");
@@ -164,7 +164,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="your@email.com"
                         autoComplete="email"
                         disabled={isSubmitting}
                         {...field}
@@ -184,15 +184,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                     <FormControl>
                       <Input
                         type="text"
-                        placeholder="Enter ZIP code"
+                        placeholder="12345"
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
                         {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                          field.onChange(value);
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -220,7 +216,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
           <Form {...verificationForm}>
             <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
+                Enter the 6-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
               </p>
 
               <FormField
@@ -231,14 +227,14 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                     <FormControl>
                       <Input
                         type="text"
-                        placeholder="0000"
-                        maxLength={4}
+                        placeholder="000000"
+                        maxLength={6}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
                         {...field}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                           field.onChange(value);
                         }}
                         className="text-center text-2xl tracking-[0.5em] font-mono"
