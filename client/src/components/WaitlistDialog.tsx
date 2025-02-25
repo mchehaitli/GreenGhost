@@ -51,14 +51,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     mode: "onSubmit"
   });
 
-  const handleReset = () => {
-    form.reset();
-    verificationForm.reset();
-    setPendingEmail("");
-    setStep('initial');
-    setIsSubmitting(false);
-  };
-
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
@@ -138,6 +130,19 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleReset = () => {
+    form.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
+    setPendingEmail("");
+    setStep('initial');
+    setIsSubmitting(false);
   };
 
   return (

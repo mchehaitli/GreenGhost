@@ -61,8 +61,13 @@ const Waitlist = () => {
   });
 
   const handleReset = () => {
-    form.reset();
-    verificationForm.reset();
+    form.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -222,7 +227,6 @@ const Waitlist = () => {
                                 inputMode="numeric"
                                 disabled={isSubmitting}
                                 {...field}
-                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
@@ -269,7 +273,6 @@ const Waitlist = () => {
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
                                 {...field}
-                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
