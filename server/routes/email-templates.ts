@@ -87,9 +87,9 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid template ID' });
     }
 
-    const { emails } = req.body;
-    if (!Array.isArray(emails)) {
-      return res.status(400).json({ error: 'emails must be an array' });
+    const { zip_codes } = req.body;
+    if (!Array.isArray(zip_codes)) {
+      return res.status(400).json({ error: 'zip_codes must be an array' });
     }
 
     // Get template
@@ -98,20 +98,25 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
+    // Get recipients
+    const recipients = await db.select().from(waitlist)
+      .where(zip_codes.length > 0 ? inArray(waitlist.zip_code, zip_codes) : undefined);
+
     // Send emails
     let successCount = 0;
-    for (const email of emails) {
+    for (const recipient of recipients) {
       try {
-        await emailService.sendCustomEmail(email, template.subject, template.html_content);
+        await emailService.sendCustomEmail(recipient.email, template.subject, template.html_content);
         successCount++;
       } catch (error) {
-        log(`Failed to send email to ${email}:`, error instanceof Error ? error.message : 'Unknown error');
+        log(`Failed to send email to ${recipient.email}:`, error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
     // Record segment
     const [segment] = await db.insert(emailSegments).values({
       template_id: templateId,
+      zip_codes: zip_codes,
       total_recipients: successCount,
     }).returning();
 
@@ -123,38 +128,6 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
   } catch (error) {
     log('Error sending emails:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(500).json({ error: 'Failed to send emails' });
-  }
-});
-
-// Send test email
-router.post('/api/email-templates/:id/test', requireAuth, async (req, res) => {
-  try {
-    const templateId = parseInt(req.params.id);
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: 'Invalid template ID' });
-    }
-
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email address is required' });
-    }
-
-    // Get template
-    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, templateId));
-    if (!template) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-
-    // Send test email
-    const success = await emailService.sendCustomEmail(email, template.subject, template.html_content);
-    if (!success) {
-      throw new Error('Failed to send test email');
-    }
-
-    return res.json({ success: true });
-  } catch (error) {
-    log('Error sending test email:', error instanceof Error ? error.message : 'Unknown error');
-    return res.status(500).json({ error: 'Failed to send test email' });
   }
 });
 

@@ -1,49 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Pencil, Trash2, Users, Mail } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Schema definitions
-const editFormSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  name: z.string().optional(),
-  phone_number: z.string().optional(),
-  address: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-const emailTemplateSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  subject: z.string().min(1, "Subject is required"),
-  html_content: z.string().min(1, "Email content is required"),
-});
-
-// Types
-type EditFormData = z.infer<typeof editFormSchema>;
-type EmailTemplateFormData = z.infer<typeof emailTemplateSchema>;
-type SelectEmailTemplate = {
-  id: number;
-  name: string;
-  subject: string;
-  html_content: string;
-};
 
 type WaitlistEntry = {
   id: number;
@@ -56,21 +32,179 @@ type WaitlistEntry = {
   created_at: string;
 };
 
-// Email Template Management Component
-function EmailTemplateTab() {
-  const queryClient = useQueryClient();
+const editFormSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  name: z.string().optional(),
+  phone_number: z.string().optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type EditFormData = z.infer<typeof editFormSchema>;
+
+const EmailPreviewTab = () => {
+  const [previewType, setPreviewType] = useState<'verification' | 'welcome'>('verification');
+  const [previewHtml, setPreviewHtml] = useState('');
   const { toast } = useToast();
+
+  const emailPreviewForm = useForm({
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const generatePreview = async (values: { email: string }) => {
+    try {
+      const response = await fetch(`/api/email/preview/${previewType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: values.email || 'test@example.com' }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate preview');
+
+      const data = await response.json();
+      setPreviewHtml(data.html);
+    } catch (error) {
+      toast({
+        title: "Preview generation failed",
+        description: error instanceof Error ? error.message : "Failed to generate preview",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendTestEmail = async (values: { email: string }) => {
+    if (!values.email) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address for testing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/email/test/${previewType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: values.email }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send test email');
+
+      toast({
+        title: "Test email sent",
+        description: `${previewType} email sent to ${values.email}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to send test email",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Email Template Preview</h2>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Template Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <Button
+              variant={previewType === 'verification' ? 'default' : 'outline'}
+              onClick={() => setPreviewType('verification')}
+            >
+              Verification Email
+            </Button>
+            <Button
+              variant={previewType === 'welcome' ? 'default' : 'outline'}
+              onClick={() => setPreviewType('welcome')}
+            >
+              Welcome Email
+            </Button>
+          </div>
+
+          <Form {...emailPreviewForm}>
+            <form onSubmit={emailPreviewForm.handleSubmit(generatePreview)} className="space-y-4">
+              <FormField
+                control={emailPreviewForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Test Email Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter test email address"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-4">
+                <Button type="submit">
+                  Generate Preview
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => emailPreviewForm.handleSubmit(sendTestEmail)()}
+                >
+                  Send Test Email
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Preview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            className="border rounded-lg p-4 bg-white"
+            dangerouslySetInnerHTML={{ __html: previewHtml }}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const emailTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  subject: z.string().min(1, "Subject is required"),
+  html_content: z.string().min(1, "Email content is required"),
+});
+
+type EmailTemplateFormData = z.infer<typeof emailTemplateSchema>;
+type SelectEmailTemplate = {
+  id: number;
+  name: string;
+  subject: string;
+  html_content: string;
+};
+
+const EmailTemplateTab = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<SelectEmailTemplate | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-
-  const templateForm = useForm<EmailTemplateFormData>({
-    resolver: zodResolver(emailTemplateSchema),
-    defaultValues: {
-      name: "",
-      subject: "",
-      html_content: "",
-    }
-  });
+  const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
     queryKey: ["/api/email-templates"],
@@ -81,6 +215,12 @@ function EmailTemplateTab() {
       if (!response.ok) throw new Error("Failed to fetch templates");
       return response.json();
     },
+  });
+
+  const queryClient = useQueryClient();
+
+  const templateForm = useForm<EmailTemplateFormData>({
+    resolver: zodResolver(emailTemplateSchema),
   });
 
   const createTemplateMutation = useMutation({
@@ -101,7 +241,6 @@ function EmailTemplateTab() {
         title: "Success",
         description: "Email template created successfully",
       });
-      templateForm.reset();
     },
     onError: (error) => {
       toast({
@@ -132,7 +271,6 @@ function EmailTemplateTab() {
         title: "Success",
         description: "Email template updated successfully",
       });
-      templateForm.reset();
     },
     onError: (error) => {
       toast({
@@ -167,29 +305,31 @@ function EmailTemplateTab() {
     },
   });
 
-  const sendTestEmail = async (templateId: number, email: string) => {
-    try {
-      const response = await fetch(`/api/email-templates/${templateId}/test`, {
+  const sendEmailsMutation = useMutation({
+    mutationFn: async ({ templateId, zipCodes }: { templateId: number; zipCodes: string[] }) => {
+      const response = await fetch(`/api/email-templates/${templateId}/send`, {
         method: "POST",
         credentials: 'include',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ zip_codes: zipCodes }),
       });
-
-      if (!response.ok) throw new Error("Failed to send test email");
-
+      if (!response.ok) throw new Error("Failed to send emails");
+      return response.json();
+    },
+    onSuccess: (data) => {
       toast({
         title: "Success",
-        description: "Test email sent successfully",
+        description: `Sent email to ${data.total_sent} recipients`,
       });
-    } catch (error) {
+    },
+    onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send test email",
+        description: error instanceof Error ? error.message : "Failed to send emails",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   const handleEdit = (template: SelectEmailTemplate) => {
     setSelectedTemplate(template);
@@ -221,7 +361,11 @@ function EmailTemplateTab() {
         <h2 className="text-2xl font-bold">Email Templates</h2>
         <Button onClick={() => {
           setSelectedTemplate(null);
-          templateForm.reset();
+          templateForm.reset({
+            name: "",
+            subject: "",
+            html_content: "",
+          });
           setShowTemplateDialog(true);
         }}>
           Create Template
@@ -257,19 +401,24 @@ function EmailTemplateTab() {
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2">
                 <p className="font-medium">Subject: {template.subject}</p>
-                <div className="flex gap-2">
+                <div className="mt-4">
                   <Button
                     onClick={() => {
-                      const email = prompt("Enter email address for test:");
-                      if (email) {
-                        sendTestEmail(template.id, email);
+                      const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all):");
+                      if (zipCodes !== null) {
+                        const zipCodeArray = zipCodes.split(",")
+                          .map(zip => zip.trim())
+                          .filter(zip => zip.length === 5);
+                        sendEmailsMutation.mutate({
+                          templateId: template.id,
+                          zipCodes: zipCodeArray,
+                        });
                       }
                     }}
-                    variant="outline"
                   >
-                    Send Test Email
+                    Send Email
                   </Button>
                 </div>
               </CardContent>
@@ -338,13 +487,11 @@ function EmailTemplateTab() {
       </Dialog>
     </div>
   );
-}
+};
 
-// Main Waitlist Page Component
 export default function WaitlistPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
 
   const editForm = useForm<EditFormData>({
@@ -370,6 +517,41 @@ export default function WaitlistPage() {
     refetchInterval: 30000,
     gcTime: Infinity,
   });
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const oneDayAgo = subDays(now, 1);
+    const oneWeekAgo = startOfWeek(now);
+    const oneMonthAgo = startOfMonth(now);
+
+    const dailySignups = entries.filter(entry =>
+      new Date(entry.created_at) > oneDayAgo
+    ).length;
+
+    const weeklySignups = entries.filter(entry =>
+      new Date(entry.created_at) > oneWeekAgo
+    ).length;
+
+    const monthlySignups = entries.filter(entry =>
+      new Date(entry.created_at) > oneMonthAgo
+    ).length;
+
+    const zipCodeStats = entries.reduce((acc, entry) => {
+      acc[entry.zip_code] = (acc[entry.zip_code] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sortedZipCodes = Object.entries(zipCodeStats)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5);
+
+    return {
+      daily: dailySignups,
+      weekly: weeklySignups,
+      monthly: monthlySignups,
+      zipCodes: sortedZipCodes,
+    };
+  }, [entries]);
 
   const deleteEntryMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -566,9 +748,74 @@ export default function WaitlistPage() {
             <Mail className="h-4 w-4" />
             Email Templates
           </TabsTrigger>
+          <TabsTrigger value="preview" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Preview Templates
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="entries">
+        <TabsContent value="entries" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Daily Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.daily}</div>
+                <p className="text-xs text-muted-foreground">
+                  Last 24 hours
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Weekly Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.weekly}</div>
+                <p className="text-xs text-muted-foreground">
+                  This week
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Monthly Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.monthly}</div>
+                <p className="text-xs text-muted-foreground">
+                  This month
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Top ZIP Codes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {stats.zipCodes.map(([zipCode, count]) => (
+                  <div key={zipCode} className="flex items-center justify-between">
+                    <span className="font-medium">{zipCode}</span>
+                    <span className="text-muted-foreground">{count} signups</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Waitlist Entries</h2>
@@ -587,6 +834,9 @@ export default function WaitlistPage() {
 
         <TabsContent value="templates">
           <EmailTemplateTab />
+        </TabsContent>
+        <TabsContent value="preview">
+          <EmailPreviewTab />
         </TabsContent>
       </Tabs>
 
@@ -664,7 +914,19 @@ export default function WaitlistPage() {
                 )}
               />
               <DialogFooter>
-                <Button type="submit">Save Changes</Button>
+                <Button
+                  type="submit"
+                  disabled={updateEntryMutation.isPending}
+                >
+                  {updateEntryMutation.isPending ? (
+                    <>
+                      <LoadingSpinner className="mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
