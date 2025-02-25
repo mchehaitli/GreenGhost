@@ -44,18 +44,23 @@ type EditFormData = z.infer<typeof editFormSchema>;
 
 const EmailPreviewTab = () => {
   const [previewType, setPreviewType] = useState<'verification' | 'welcome'>('verification');
-  const [testEmail, setTestEmail] = useState('');
   const [previewHtml, setPreviewHtml] = useState('');
   const { toast } = useToast();
 
-  const generatePreview = async () => {
+  const emailPreviewForm = useForm({
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const generatePreview = async (values: { email: string }) => {
     try {
       const response = await fetch(`/api/email/preview/${previewType}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: testEmail || 'test@example.com' }),
+        body: JSON.stringify({ email: values.email || 'test@example.com' }),
       });
 
       if (!response.ok) throw new Error('Failed to generate preview');
@@ -71,8 +76,8 @@ const EmailPreviewTab = () => {
     }
   };
 
-  const sendTestEmail = async () => {
-    if (!testEmail) {
+  const sendTestEmail = async (values: { email: string }) => {
+    if (!values.email) {
       toast({
         title: "Email required",
         description: "Please enter an email address for testing",
@@ -87,14 +92,14 @@ const EmailPreviewTab = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: testEmail }),
+        body: JSON.stringify({ email: values.email }),
       });
 
       if (!response.ok) throw new Error('Failed to send test email');
 
       toast({
         title: "Test email sent",
-        description: `${previewType} email sent to ${testEmail}`,
+        description: `${previewType} email sent to ${values.email}`,
       });
     } catch (error) {
       toast({
@@ -131,28 +136,39 @@ const EmailPreviewTab = () => {
             </Button>
           </div>
 
-          <div className="grid gap-4">
-            <FormItem>
-              <FormLabel>Test Email Address</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="Enter test email address"
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
-                />
-              </FormControl>
-            </FormItem>
+          <Form {...emailPreviewForm}>
+            <form onSubmit={emailPreviewForm.handleSubmit(generatePreview)} className="space-y-4">
+              <FormField
+                control={emailPreviewForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Test Email Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter test email address"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex gap-4">
-              <Button onClick={generatePreview}>
-                Generate Preview
-              </Button>
-              <Button onClick={sendTestEmail} variant="outline">
-                Send Test Email
-              </Button>
-            </div>
-          </div>
+              <div className="flex gap-4">
+                <Button type="submit">
+                  Generate Preview
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => emailPreviewForm.handleSubmit(sendTestEmail)()}
+                >
+                  Send Test Email
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
