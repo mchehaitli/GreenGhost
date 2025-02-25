@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Download, LogOut, Pencil, Trash2 } from "lucide-react";
+import { Download, LogOut, Pencil, Trash2, Users } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -12,11 +12,12 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type WaitlistEntry = {
   id: number;
@@ -67,6 +68,44 @@ export default function WaitlistPage() {
     refetchInterval: 30000,
     gcTime: Infinity,
   });
+
+  // Calculate signup statistics
+  const stats = useMemo(() => {
+    const now = new Date();
+    const oneDayAgo = subDays(now, 1);
+    const oneWeekAgo = startOfWeek(now);
+    const oneMonthAgo = startOfMonth(now);
+
+    const dailySignups = entries.filter(entry => 
+      new Date(entry.created_at) > oneDayAgo
+    ).length;
+
+    const weeklySignups = entries.filter(entry =>
+      new Date(entry.created_at) > oneWeekAgo
+    ).length;
+
+    const monthlySignups = entries.filter(entry =>
+      new Date(entry.created_at) > oneMonthAgo
+    ).length;
+
+    // Count signups by ZIP code
+    const zipCodeStats = entries.reduce((acc, entry) => {
+      acc[entry.zip_code] = (acc[entry.zip_code] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Sort ZIP codes by number of signups
+    const sortedZipCodes = Object.entries(zipCodeStats)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5); // Get top 5 ZIP codes
+
+    return {
+      daily: dailySignups,
+      weekly: weeklySignups,
+      monthly: monthlySignups,
+      zipCodes: sortedZipCodes,
+    };
+  }, [entries]);
 
   const deleteEntryMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -252,6 +291,69 @@ export default function WaitlistPage() {
           Logout
         </Button>
       </div>
+
+      {/* Signup Statistics */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Daily Signups
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.daily}</div>
+            <p className="text-xs text-muted-foreground">
+              Last 24 hours
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Weekly Signups
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.weekly}</div>
+            <p className="text-xs text-muted-foreground">
+              This week
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Monthly Signups
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.monthly}</div>
+            <p className="text-xs text-muted-foreground">
+              This month
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ZIP Code Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Top ZIP Codes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {stats.zipCodes.map(([zipCode, count]) => (
+              <div key={zipCode} className="flex items-center justify-between">
+                <span className="font-medium">{zipCode}</span>
+                <span className="text-muted-foreground">{count} signups</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div>
         <div className="flex justify-between items-center mb-6">
