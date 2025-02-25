@@ -23,23 +23,42 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const formSchema = z.object({
+const emailSchema = z.object({
   email: z.string()
     .email("Please enter a valid email address")
     .transform(val => val.toLowerCase()),
 });
 
+const verificationSchema = z.object({
+  code: z.string()
+    .length(4, "Code must be 4 digits")
+    .regex(/^\d+$/, "Code must contain only numbers"),
+});
+
+type EmailFormData = z.infer<typeof emailSchema>;
+type VerificationFormData = z.infer<typeof verificationSchema>;
+
 const Waitlist = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<'initial' | 'verifying'>('initial');
+  const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+
+  const emailForm = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
     defaultValues: {
       email: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const verificationForm = useForm<VerificationFormData>({
+    resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
+    },
+  });
+
+  const onEmailSubmit = async (values: EmailFormData) => {
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist', {
@@ -55,7 +74,7 @@ const Waitlist = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.error === 'Duplicate entry') {
+        if (data.error === 'Already registered') {
           toast({
             title: "Already registered",
             description: "This email is already on our waitlist.",
@@ -66,16 +85,60 @@ const Waitlist = () => {
         throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      toast({
-        title: "Success!",
-        description: "Please check your email for verification code.",
-      });
-
-      form.reset();
+      if (data.status === 'pending_verification') {
+        setPendingEmail(values.email);
+        setStep('verifying');
+        toast({
+          title: "Check your email",
+          description: "We've sent a 4-digit verification code to your email.",
+        });
+      } else {
+        throw new Error("Unexpected server response");
+      }
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onVerificationSubmit = async (values: VerificationFormData) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/waitlist/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: pendingEmail,
+          code: values.code,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || 'Verification failed');
+      }
+
+      toast({
+        title: "Success!",
+        description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
+      });
+
+      emailForm.reset();
+      verificationForm.reset();
+      setPendingEmail("");
+      setStep('initial');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Verification failed. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -113,39 +176,80 @@ const Waitlist = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle>Sign Up for Early Access</CardTitle>
+                <CardTitle>{step === 'initial' ? 'Sign Up for Early Access' : 'Verify Your Email'}</CardTitle>
                 <CardDescription>
-                  Join our waitlist and be notified when we launch
+                  {step === 'initial' 
+                    ? 'Join our waitlist and be notified when we launch'
+                    : `Enter the verification code sent to ${pendingEmail}`
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Joining...
-                        </>
-                      ) : (
-                        "Join Waitlist"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
+                {step === 'initial' ? (
+                  <Form {...emailForm}>
+                    <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                      <FormField
+                        control={emailForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="your@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Joining...
+                          </>
+                        ) : (
+                          "Join Waitlist"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                ) : (
+                  <Form {...verificationForm}>
+                    <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
+                      <FormField
+                        control={verificationForm.control}
+                        name="code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Verification Code</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter 4-digit code"
+                                maxLength={4}
+                                {...field}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                  field.onChange(value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (
+                          "Verify Code"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                )}
               </CardContent>
             </Card>
           </motion.div>
