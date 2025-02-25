@@ -63,11 +63,22 @@ const Waitlist = () => {
     },
   });
 
+  const handleReset = () => {
+    form.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
+    setPendingEmail("");
+    setStep('initial');
+    setIsSubmitting(false);
+  };
+
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log('Submitting form:', values);
-
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -80,7 +91,6 @@ const Waitlist = () => {
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
 
       if (!response.ok) {
         if (data.error === 'Duplicate entry') {
@@ -95,10 +105,6 @@ const Waitlist = () => {
       }
 
       if (data.status === 'pending_verification') {
-        // Complete form reset
-        form.reset();
-        verificationForm.reset();
-        verificationForm.setValue('code', '');
         setPendingEmail(values.email);
         setStep('verifying');
         toast({
@@ -136,7 +142,6 @@ const Waitlist = () => {
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
@@ -147,10 +152,7 @@ const Waitlist = () => {
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
-        form.reset();
-        verificationForm.reset();
-        setPendingEmail("");
-        setStep('initial');
+        handleReset();
       } else {
         throw new Error("Verification unsuccessful");
       }
@@ -213,7 +215,13 @@ const Waitlist = () => {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="your@email.com" type="email" {...field} />
+                              <Input 
+                                placeholder="your@email.com" 
+                                type="email"
+                                autoComplete="email"
+                                {...field}
+                                disabled={isSubmitting}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -227,15 +235,16 @@ const Waitlist = () => {
                             <FormLabel>ZIP Code</FormLabel>
                             <FormControl>
                               <Input
+                                type="text"
                                 placeholder="12345"
                                 maxLength={5}
-                                type="text"
                                 inputMode="numeric"
-                                {...field}
+                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
                                 }}
+                                disabled={isSubmitting}
                               />
                             </FormControl>
                             <FormMessage />
@@ -245,7 +254,7 @@ const Waitlist = () => {
                       <Button
                         type="submit"
                         className="w-full bg-primary/10 text-primary hover:bg-primary/20"
-                        disabled={isSubmitting || !form.formState.isValid}
+                        disabled={isSubmitting}
                       >
                         {isSubmitting ? (
                           <>
@@ -271,15 +280,18 @@ const Waitlist = () => {
                           <FormItem>
                             <FormControl>
                               <Input
-                                placeholder="Enter 4-digit code"
+                                type="text"
+                                placeholder="0000"
                                 maxLength={4}
-                                {...field}
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
                                 }}
+                                className="text-center text-2xl tracking-[0.5em] font-mono"
                                 disabled={isSubmitting}
-                                className="text-center text-lg tracking-widest"
                               />
                             </FormControl>
                             <FormMessage />
@@ -293,16 +305,12 @@ const Waitlist = () => {
                             description: "The verification period has expired. Please sign up again.",
                             variant: "destructive",
                           });
-                          // Reset forms and return to initial state
-                          form.reset();
-                          verificationForm.reset();
-                          setPendingEmail("");
-                          setStep('initial');
+                          handleReset();
                         }} 
                       />
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? (

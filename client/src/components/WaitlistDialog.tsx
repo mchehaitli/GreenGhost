@@ -7,6 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import VerificationCountdown from "./VerificationCountdown";
 
 // Form schemas
@@ -48,6 +49,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
+  const handleReset = () => {
+    form.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
+    setPendingEmail("");
+    setStep('initial');
+    setIsSubmitting(false);
+  };
+
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
@@ -57,8 +71,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: values.email.trim(),
-          zip_code: values.zip_code.trim(),
+          email: values.email,
+          zip_code: values.zip_code,
         }),
       });
 
@@ -72,7 +86,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (data.status === 'pending_verification') {
-        setPendingEmail(values.email.trim());
+        setPendingEmail(values.email);
         setStep('verifying');
         toast({
           title: "Check your email",
@@ -135,28 +149,13 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
-  const handleReset = () => {
-    form.reset({
-      email: "",
-      zip_code: "",
-    });
-    verificationForm.reset({
-      code: "",
-    });
-    setPendingEmail("");
-    setStep('initial');
-    setIsSubmitting(false);
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      handleReset();
-    }
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!newOpen) {
+        handleReset();
+      }
+      onOpenChange(newOpen);
+    }}>
       <DialogContent>
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
@@ -196,7 +195,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         placeholder="Enter ZIP code"
                         maxLength={5}
                         inputMode="numeric"
-                        {...field}
                         value={field.value}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
@@ -214,7 +212,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Join Waitlist"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Join Waitlist"
+                )}
               </Button>
             </form>
           </Form>
@@ -264,7 +269,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Verifying..." : "Verify Code"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify Code"
+                )}
               </Button>
             </form>
           </Form>
