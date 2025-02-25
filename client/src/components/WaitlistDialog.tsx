@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
@@ -30,6 +30,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
+  useEffect(() => {
+    console.log('Current step:', step);
+    console.log('Pending email:', pendingEmail);
+  }, [step, pendingEmail]);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,6 +54,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
+      console.log('Submitting email:', data.email);
+
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
@@ -61,6 +68,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const responseData = await response.json();
+      console.log('Server response:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
@@ -92,6 +100,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
     try {
       setIsSubmitting(true);
+      console.log('Submitting verification code for:', pendingEmail);
+
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: {
@@ -105,6 +115,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
+      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
@@ -135,15 +146,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!newOpen) {
-        form.reset();
-        verificationForm.reset();
-        setPendingEmail("");
-        setStep('initial');
-      }
-      onOpenChange(newOpen);
-    }}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        console.log('Dialog open state changing to:', newOpen);
+        if (!newOpen) {
+          form.reset();
+          verificationForm.reset();
+          setPendingEmail("");
+          setStep('initial');
+        }
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogContent>
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
