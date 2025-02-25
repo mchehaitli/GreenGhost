@@ -48,12 +48,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (values: FormData) => {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-
       console.log('Form submission:', {
-        data,
+        data: values,
         rawFormState: form.getValues(),
         validationState: form.formState,
       });
@@ -64,8 +63,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: data.email.trim(),
-          zip_code: data.zip_code.trim(),
+          email: values.email.trim(),
+          zip_code: values.zip_code.trim(),
         }),
       });
 
@@ -87,7 +86,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         verificationForm.clearErrors();
         // Set default values explicitly
         verificationForm.setValue('code', '');
-        setPendingEmail(data.email.trim());
+        setPendingEmail(values.email.trim());
         setStep('verifying');
 
         const message = process.env.NODE_ENV !== 'production' && responseData.previewUrl
@@ -133,7 +132,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.log('Verification response:', data);
 
       if (!response.ok) {
-          throw new Error(data.error || data.details || "Verification failed");
+        throw new Error(data.error || data.details || "Verification failed");
       }
 
       if (data.success) {
@@ -228,7 +227,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               />
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                 disabled={isSubmitting || !form.formState.isValid}
               >
                 {isSubmitting ? "Submitting..." : "Join Waitlist"}

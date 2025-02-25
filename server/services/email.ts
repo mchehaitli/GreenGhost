@@ -9,10 +9,7 @@ async function createTestAccount() {
   try {
     log('Creating test email account...');
     const testAccount = await nodemailer.createTestAccount();
-    log('Test account created with credentials:', {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    });
+    log('Test account created with credentials:', testAccount.user);
     return testAccount;
   } catch (error) {
     log('Error creating test account:', error instanceof Error ? error.message : 'Unknown error');
@@ -268,7 +265,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
   } catch (error) {
     log('Error sending welcome email:', error instanceof Error ? error.message : 'Unknown error');
     transporter = null;
-    throw error;
+    return false;
   }
 }
 
