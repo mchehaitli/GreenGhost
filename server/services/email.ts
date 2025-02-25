@@ -4,24 +4,13 @@ import { db } from '../db';
 import { verificationTokens } from '../../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 
-let transporter: nodemailer.Transporter | null = null;
-
-async function initializeTransporter() {
-  if (!transporter) {
-    const testAccount = await nodemailer.createTestAccount();
-
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
   }
-  return transporter;
-}
+});
 
 async function generateVerificationCode(email: string): Promise<string> {
   // Delete any existing unused tokens for this email
@@ -70,10 +59,10 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
 export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
   try {
     const code = await generateVerificationCode(email);
-    const transport = await initializeTransporter();
+    log(`Sending verification email to ${email}`);
 
-    await transport.sendMail({
-      from: '"GreenGhost Tech" <noreply@greenghosttech.com>',
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
       to: email,
       subject: "Your GreenGhost Tech Verification Code",
       html: `
@@ -112,6 +101,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
       `,
     });
 
+    log(`Verification email sent successfully to ${email}`);
     return true;
   } catch (error) {
     log('Failed to send verification email:', error);
@@ -121,10 +111,10 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
 export async function sendWelcomeEmail(email: string, zipCode: string): Promise<boolean> {
   try {
-    const transport = await initializeTransporter();
+    log(`Sending welcome email to ${email}`);
 
-    await transport.sendMail({
-      from: '"GreenGhost Tech" <noreply@greenghosttech.com>',
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
       to: email,
       subject: "Welcome to GreenGhost Tech's Waitlist! 🌿",
       html: `
@@ -161,6 +151,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
       `,
     });
 
+    log(`Welcome email sent successfully to ${email}`);
     return true;
   } catch (error) {
     log('Failed to send welcome email:', error);
