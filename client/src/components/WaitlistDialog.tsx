@@ -3,10 +3,11 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "./ui/form";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import VerificationCountdown from "./VerificationCountdown";
 
 // Form schemas
 const formSchema = z.object({
@@ -127,20 +128,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.log('Verification response:', data);
 
       if (!response.ok) {
-        if (data.error === 'Verification expired') {
-          toast({
-            title: "Verification Expired",
-            description: "The verification period has expired. Please sign up again.",
-            variant: "destructive",
-          });
-          // Reset forms and return to initial state
-          form.reset();
-          verificationForm.reset();
-          setPendingEmail("");
-          setStep('initial');
-          return;
-        }
-        throw new Error(data.error || data.details || "Verification failed");
+          throw new Error(data.error || data.details || "Verification failed");
       }
 
       if (data.success) {
@@ -249,20 +237,35 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <Input
-                      placeholder="Enter 4-digit code"
-                      maxLength={4}
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        field.onChange(value);
-                      }}
-                      disabled={isSubmitting}
-                      className="text-center text-lg tracking-widest"
-                    />
+                    <FormControl>
+                      <Input
+                        placeholder="Enter 4-digit code"
+                        maxLength={4}
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          field.onChange(value);
+                        }}
+                        disabled={isSubmitting}
+                        className="text-center text-lg tracking-widest"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+              <VerificationCountdown 
+                onExpire={() => {
+                  toast({
+                    title: "Verification Expired",
+                    description: "The verification period has expired. Please sign up again.",
+                    variant: "destructive",
+                  });
+                  form.reset();
+                  verificationForm.reset();
+                  setPendingEmail("");
+                  setStep('initial');
+                }} 
               />
               <Button
                 type="submit"

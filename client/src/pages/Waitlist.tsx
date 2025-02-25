@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import VerificationCountdown from "@/components/VerificationCountdown";
 
 // Form schemas
 const formSchema = z.object({
@@ -284,6 +285,20 @@ const Waitlist = () => {
                             <FormMessage />
                           </FormItem>
                         )}
+                      />
+                      <VerificationCountdown 
+                        onExpire={() => {
+                          toast({
+                            title: "Verification Expired",
+                            description: "The verification period has expired. Please sign up again.",
+                            variant: "destructive",
+                          });
+                          // Reset forms and return to initial state
+                          form.reset();
+                          verificationForm.reset();
+                          setPendingEmail("");
+                          setStep('initial');
+                        }} 
                       />
                       <Button
                         type="submit"

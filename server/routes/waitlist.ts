@@ -22,7 +22,7 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Cleanup expired entries
-const VERIFICATION_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+const VERIFICATION_TIMEOUT = 90 * 1000; // 90 seconds in milliseconds
 
 const cleanupExpiredEntries = async () => {
   try {
@@ -92,8 +92,8 @@ router.post('/api/waitlist', async (req, res) => {
       // Create or update unverified entry
       if (existingEntry) {
         await db.update(waitlist)
-          .set({ 
-            zip_code, 
+          .set({
+            zip_code,
             verified: false,
             expires_at: expiresAt
           })
@@ -203,7 +203,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
     try {
       await db.update(waitlist)
-        .set({ 
+        .set({
           verified: true,
           expires_at: null // Clear expiration once verified
         })
