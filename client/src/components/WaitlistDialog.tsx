@@ -72,11 +72,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (data.status === 'pending_verification') {
-        form.reset();
-        verificationForm.reset();
         setPendingEmail(values.email.trim());
         setStep('verifying');
-
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
@@ -172,6 +169,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       <Input
                         type="email"
                         placeholder="Enter your email"
+                        autoComplete="email"
                         {...field}
                         disabled={isSubmitting}
                       />
@@ -189,7 +187,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <FormControl>
                       <Input
                         type="text"
-                        placeholder="Enter your ZIP code"
+                        placeholder="Enter ZIP code"
                         maxLength={5}
                         inputMode="numeric"
                         {...field}
@@ -207,7 +205,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               <Button
                 type="submit"
                 className="w-full bg-primary/10 text-primary hover:bg-primary/20"
-                disabled={isSubmitting || !form.formState.isValid}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? "Submitting..." : "Join Waitlist"}
               </Button>
@@ -226,16 +224,18 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   <FormItem>
                     <FormControl>
                       <Input
-                        placeholder="Enter 4-digit code"
+                        type="text"
+                        placeholder="0000"
                         maxLength={4}
                         inputMode="numeric"
-                        {...field}
+                        autoComplete="one-time-code"
+                        value={field.value}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                           field.onChange(value);
                         }}
+                        className="text-center text-2xl tracking-[0.5em] font-mono"
                         disabled={isSubmitting}
-                        className="text-center text-lg tracking-widest"
                       />
                     </FormControl>
                     <FormMessage />
