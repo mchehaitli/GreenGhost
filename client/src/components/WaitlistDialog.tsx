@@ -153,14 +153,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && step === 'verifying') {
-      toast({
-        title: "Please complete verification",
-        description: "Enter the 4-digit code sent to your email to complete the process.",
-      });
-      return;
-    }
-
     if (!newOpen) {
       // Reset all forms and state when dialog is closed
       form.reset();
