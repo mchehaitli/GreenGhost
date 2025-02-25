@@ -91,7 +91,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         setStep('verifying');
         toast({
           title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email. The code will expire in 15 minutes.",
+          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
         });
       } else {
         throw new Error("Unexpected server response");
@@ -186,12 +186,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        {...field}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -202,17 +204,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
-                    <Input
-                      type="text"
-                      placeholder="Enter your ZIP code"
-                      maxLength={5}
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                        field.onChange(value);
-                      }}
-                      disabled={isSubmitting}
-                    />
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter your ZIP code"
+                        maxLength={5}
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          field.onChange(value);
+                        }}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
