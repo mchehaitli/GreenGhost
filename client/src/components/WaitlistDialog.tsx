@@ -119,10 +119,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
-        form.reset();
-        verificationForm.reset();
-        setPendingEmail("");
-        setStep('initial');
+        handleReset();
         onOpenChange(false);
       } else {
         throw new Error("Verification unsuccessful");
@@ -138,13 +135,22 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
   };
 
+  const handleReset = () => {
+    form.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
+    setPendingEmail("");
+    setStep('initial');
+    setIsSubmitting(false);
+  };
+
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      form.reset();
-      verificationForm.reset();
-      setPendingEmail("");
-      setStep('initial');
-      setIsSubmitting(false);
+      handleReset();
     }
     onOpenChange(newOpen);
   };
@@ -191,6 +197,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         maxLength={5}
                         inputMode="numeric"
                         {...field}
+                        value={field.value}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                           field.onChange(value);
@@ -249,10 +256,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     description: "The verification period has expired. Please sign up again.",
                     variant: "destructive",
                   });
-                  form.reset();
-                  verificationForm.reset();
-                  setPendingEmail("");
-                  setStep('initial');
+                  handleReset();
                 }} 
               />
               <Button
