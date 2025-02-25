@@ -79,7 +79,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
       subject: "Your GreenGhost Tech Verification Code",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email 🌿</h1>
+          <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email</h1>
 
           <p style="color: #4b5563; line-height: 1.6;">
             Thank you for joining our waitlist! Please use the following 6-digit code to verify your email address:
@@ -128,10 +128,10 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
-      subject: "Welcome to GreenGhost Tech's Waitlist! 🌿",
+      subject: "Welcome to GreenGhost Tech's Waitlist!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech! 🌿</h1>
+          <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech!</h1>
 
           <p style="color: #4b5563; line-height: 1.6;">
             Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
