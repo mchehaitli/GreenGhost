@@ -34,7 +34,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  // Separate form instances
+  // Separate form instances with explicit default values
   const emailForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,8 +51,13 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   });
 
   const resetForms = () => {
-    emailForm.reset();
-    codeForm.reset();
+    emailForm.reset({
+      email: "",
+      zip_code: "",
+    });
+    codeForm.reset({
+      code: "",
+    });
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -101,7 +106,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
     try {
       setIsSubmitting(true);
-      console.log("Submitting verification code:", values.code); // Debug log
 
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
@@ -141,16 +145,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
+  const handleDialogClose = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForms();
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog 
-      open={open} 
-      onOpenChange={(newOpen) => {
-        if (!newOpen) {
-          resetForms();
-        }
-        onOpenChange(newOpen);
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent>
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
@@ -192,11 +195,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                          field.onChange(value);
-                        }}
-                        value={field.value}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -241,11 +240,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
                         {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                          field.onChange(value);
-                        }}
-                        className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
                     <FormMessage />
