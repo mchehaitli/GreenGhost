@@ -34,31 +34,19 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const initialForm = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      zip_code: "",
-    },
     mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
-    defaultValues: {
-      code: "",
-    },
     mode: "onSubmit"
   });
 
   const resetForms = () => {
-    initialForm.reset({
-      email: "",
-      zip_code: "",
-    });
-    verificationForm.reset({
-      code: "",
-    });
+    form.reset();
+    verificationForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -161,18 +149,18 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...initialForm}>
-            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={initialForm.control}
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your email"
                         type="email"
+                        placeholder="Enter your email"
                         autoComplete="email"
                         disabled={isSubmitting}
                         {...field}
@@ -184,19 +172,18 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               />
 
               <FormField
-                control={initialForm.control}
+                control={form.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter ZIP code"
                         type="text"
+                        placeholder="Enter ZIP code"
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
-                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                           field.onChange(value);
@@ -238,13 +225,12 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                   <FormItem>
                     <FormControl>
                       <Input
-                        placeholder="0000"
                         type="text"
+                        placeholder="0000"
                         maxLength={4}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
-                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                           field.onChange(value);

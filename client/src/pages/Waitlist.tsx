@@ -45,29 +45,17 @@ const Waitlist = () => {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      zip_code: "",
-    },
     mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
-    defaultValues: {
-      code: "",
-    },
     mode: "onSubmit"
   });
 
-  const handleReset = () => {
-    form.reset({
-      email: "",
-      zip_code: "",
-    });
-    verificationForm.reset({
-      code: "",
-    });
+  const resetForms = () => {
+    form.reset();
+    verificationForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -138,7 +126,7 @@ const Waitlist = () => {
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
-        handleReset();
+        resetForms();
       } else {
         throw new Error("Verification unsuccessful");
       }
@@ -226,7 +214,6 @@ const Waitlist = () => {
                                 maxLength={5}
                                 inputMode="numeric"
                                 disabled={isSubmitting}
-                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
@@ -272,7 +259,6 @@ const Waitlist = () => {
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
-                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
@@ -291,7 +277,7 @@ const Waitlist = () => {
                             description: "The verification period has expired. Please sign up again.",
                             variant: "destructive",
                           });
-                          handleReset();
+                          resetForms();
                         }}
                       />
                       <Button
