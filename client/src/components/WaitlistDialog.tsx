@@ -72,11 +72,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (data.status === 'pending_verification') {
-        // Complete form reset
         form.reset();
         verificationForm.reset();
-        verificationForm.clearErrors();
-        verificationForm.setValue('code', '');
         setPendingEmail(values.email.trim());
         setStep('verifying');
 
@@ -115,7 +112,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Verification failed");
@@ -126,7 +122,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
-        // Reset all forms and state
         form.reset();
         verificationForm.reset();
         setPendingEmail("");
@@ -148,15 +143,12 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Reset all forms and state when dialog is closed
       form.reset();
       verificationForm.reset();
-      verificationForm.clearErrors();
       setPendingEmail("");
       setStep('initial');
       setIsSubmitting(false);
     }
-
     onOpenChange(newOpen);
   };
 
@@ -199,6 +191,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         type="text"
                         placeholder="Enter your ZIP code"
                         maxLength={5}
+                        inputMode="numeric"
                         {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
@@ -235,6 +228,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       <Input
                         placeholder="Enter 4-digit code"
                         maxLength={4}
+                        inputMode="numeric"
                         {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
@@ -263,7 +257,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               />
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Verifying..." : "Verify Code"}
