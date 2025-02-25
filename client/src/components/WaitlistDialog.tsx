@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import VerificationCountdown from "./VerificationCountdown";
+import WelcomeAnimation from "./WelcomeAnimation";
 
 // Initial form schema
 const initialFormSchema = z.object({
@@ -24,7 +25,7 @@ interface WaitlistDialogProps {
 }
 
 const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
-  const [step, setStep] = useState<'initial' | 'verifying'>('initial');
+  const [step, setStep] = useState<'initial' | 'verifying' | 'welcome'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
@@ -114,12 +115,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
       }
 
       if (data.success) {
-        toast({
-          title: "Success!",
-          description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
-        });
-        resetForms();
-        onOpenChange(false);
+        setStep('welcome');
       } else {
         throw new Error("Verification unsuccessful");
       }
@@ -140,6 +136,20 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
     onOpenChange(newOpen);
   };
+
+  if (step === 'welcome') {
+    return (
+      <Dialog open={open} onOpenChange={handleDialogClose}>
+        <WelcomeAnimation 
+          email={pendingEmail} 
+          onComplete={() => {
+            resetForms();
+            onOpenChange(false);
+          }} 
+        />
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
@@ -184,11 +194,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                          field.onChange(value);
-                        }}
-                        value={field.value}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />

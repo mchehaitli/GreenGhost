@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import VerificationCountdown from "@/components/VerificationCountdown";
+import WelcomeAnimation from "@/components/WelcomeAnimation";
 
 // Form schemas
 const initialFormSchema = z.object({
@@ -33,7 +34,7 @@ const initialFormSchema = z.object({
 type InitialFormData = z.infer<typeof initialFormSchema>;
 
 const Waitlist = () => {
-  const [step, setStep] = useState<'initial' | 'verifying'>('initial');
+  const [step, setStep] = useState<'initial' | 'verifying' | 'welcome'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
@@ -123,11 +124,7 @@ const Waitlist = () => {
       }
 
       if (data.success) {
-        toast({
-          title: "Success!",
-          description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
-        });
-        resetForms();
+        setStep('welcome');
       } else {
         throw new Error("Verification unsuccessful");
       }
@@ -141,6 +138,18 @@ const Waitlist = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (step === 'welcome') {
+    return (
+      <WelcomeAnimation 
+        email={pendingEmail}
+        onComplete={() => {
+          resetForms();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-background to-primary/5">
@@ -216,11 +225,7 @@ const Waitlist = () => {
                                 maxLength={5}
                                 inputMode="numeric"
                                 disabled={isSubmitting}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                                  field.onChange(value);
-                                }}
-                                value={field.value}
+                                {...field}
                               />
                             </FormControl>
                             <FormMessage />
