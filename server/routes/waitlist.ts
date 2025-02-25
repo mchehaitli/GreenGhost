@@ -6,20 +6,9 @@ import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
+import { requireAuth } from '../auth';
 
 const router = Router();
-
-// Middleware for admin routes
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (process.env.NODE_ENV === 'development') {
-    return next();
-  }
-
-  if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  next();
-};
 
 // Cleanup expired entries
 const VERIFICATION_TIMEOUT = 90 * 1000; // 90 seconds in milliseconds

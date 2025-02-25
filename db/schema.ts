@@ -4,13 +4,20 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Base tables
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
   zip_code: text("zip_code").default("").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-  expires_at: timestamp("expires_at"), // New column for verification expiration
+  expires_at: timestamp("expires_at"),
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
@@ -31,6 +38,11 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
 }));
 
 // Zod schemas for validation
+export const insertUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 export const insertWaitlistSchema = z.object({
   email: z.string().email("Invalid email address"),
   zip_code: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -42,11 +54,14 @@ export const verificationSchema = z.object({
 });
 
 // Export types
+export const selectUserSchema = createSelectSchema(users);
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+
 export const selectWaitlistSchema = createSelectSchema(waitlist);
 export type InsertWaitlist = typeof waitlist.$inferInsert;
 export type SelectWaitlist = typeof waitlist.$inferSelect;
 
-export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
 export const selectVerificationTokenSchema = createSelectSchema(verificationTokens);
 export type InsertVerificationToken = typeof verificationTokens.$inferInsert;
 export type SelectVerificationToken = typeof verificationTokens.$inferSelect;
