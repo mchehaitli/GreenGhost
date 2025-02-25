@@ -13,7 +13,6 @@ import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
 import AdminWaitlist from "@/pages/admin/Waitlist";
 import ThemeCustomization from "@/pages/ThemeCustomization";
-import EmailTemplatePreview from "@/pages/EmailTemplatePreview";
 import HowItWorks from "@/pages/HowItWorks";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
@@ -30,7 +29,6 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
-      <Route path="/email-preview" component={() => <ProtectedRoute component={EmailTemplatePreview} />} />
       <Route path="/login" component={Login} />
       <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
       <Route component={NotFound} />

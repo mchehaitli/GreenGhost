@@ -3,7 +3,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { format, subDays, startOfWeek, startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Download, LogOut, Pencil, Trash2, Users } from "lucide-react";
+import { Download, LogOut, Pencil, Trash2, Users, Mail } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type WaitlistEntry = {
   id: number;
@@ -39,6 +40,135 @@ const editFormSchema = z.object({
 });
 
 type EditFormData = z.infer<typeof editFormSchema>;
+
+const EmailPreviewTab = () => {
+  const [previewType, setPreviewType] = useState<'verification' | 'welcome'>('verification');
+  const [testEmail, setTestEmail] = useState('');
+  const [previewHtml, setPreviewHtml] = useState('');
+  const { toast } = useToast();//this line was missing in the original edited code
+
+  const generatePreview = async () => {
+    try {
+      const response = await fetch(`/api/email/preview/${previewType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: testEmail || 'test@example.com' }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate preview');
+
+      const data = await response.json();
+      setPreviewHtml(data.html);
+    } catch (error) {
+      toast({
+        title: "Preview generation failed",
+        description: error instanceof Error ? error.message : "Failed to generate preview",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendTestEmail = async () => {
+    if (!testEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address for testing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/email/test/${previewType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: testEmail }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send test email');
+
+      toast({
+        title: "Test email sent",
+        description: `${previewType} email sent to ${testEmail}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to send test email",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Email Template Preview</h2>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Template Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <Button
+              variant={previewType === 'verification' ? 'default' : 'outline'}
+              onClick={() => setPreviewType('verification')}
+            >
+              Verification Email
+            </Button>
+            <Button
+              variant={previewType === 'welcome' ? 'default' : 'outline'}
+              onClick={() => setPreviewType('welcome')}
+            >
+              Welcome Email
+            </Button>
+          </div>
+
+          <div className="grid gap-4">
+            <FormItem>
+              <FormLabel>Test Email Address</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="Enter test email address"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                />
+              </FormControl>
+            </FormItem>
+
+            <div className="flex gap-4">
+              <Button onClick={generatePreview}>
+                Generate Preview
+              </Button>
+              <Button onClick={sendTestEmail} variant="outline">
+                Send Test Email
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Preview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            className="border rounded-lg p-4 bg-white"
+            dangerouslySetInnerHTML={{ __html: previewHtml }}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default function WaitlistPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
@@ -69,7 +199,6 @@ export default function WaitlistPage() {
     gcTime: Infinity,
   });
 
-  // Calculate signup statistics
   const stats = useMemo(() => {
     const now = new Date();
     const oneDayAgo = subDays(now, 1);
@@ -88,16 +217,14 @@ export default function WaitlistPage() {
       new Date(entry.created_at) > oneMonthAgo
     ).length;
 
-    // Count signups by ZIP code
     const zipCodeStats = entries.reduce((acc, entry) => {
       acc[entry.zip_code] = (acc[entry.zip_code] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Sort ZIP codes by number of signups
     const sortedZipCodes = Object.entries(zipCodeStats)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 5); // Get top 5 ZIP codes
+      .slice(0, 5); 
 
     return {
       daily: dailySignups,
@@ -279,7 +406,7 @@ export default function WaitlistPage() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Waitlist Management</h1>
           <p className="text-muted-foreground">
-            Manage and track waitlist signups
+            Manage waitlist signups and email templates
           </p>
         </div>
         <Button 
@@ -292,83 +419,100 @@ export default function WaitlistPage() {
         </Button>
       </div>
 
-      {/* Signup Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Daily Signups
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.daily}</div>
-            <p className="text-xs text-muted-foreground">
-              Last 24 hours
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Weekly Signups
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.weekly}</div>
-            <p className="text-xs text-muted-foreground">
-              This week
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Monthly Signups
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.monthly}</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="entries">
+        <TabsList>
+          <TabsTrigger value="entries" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Waitlist Entries
+          </TabsTrigger>
+          <TabsTrigger value="emails" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Email Templates
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ZIP Code Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Top ZIP Codes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {stats.zipCodes.map(([zipCode, count]) => (
-              <div key={zipCode} className="flex items-center justify-between">
-                <span className="font-medium">{zipCode}</span>
-                <span className="text-muted-foreground">{count} signups</span>
-              </div>
-            ))}
+        <TabsContent value="entries" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Daily Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.daily}</div>
+                <p className="text-xs text-muted-foreground">
+                  Last 24 hours
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Weekly Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.weekly}</div>
+                <p className="text-xs text-muted-foreground">
+                  This week
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Monthly Signups
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.monthly}</div>
+                <p className="text-xs text-muted-foreground">
+                  This month
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      <div>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Waitlist Entries</h2>
-          <Button 
-            onClick={exportToExcel}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export to Excel
-          </Button>
-        </div>
-        <DataTable columns={columns} data={entries} />
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Top ZIP Codes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {stats.zipCodes.map(([zipCode, count]) => (
+                  <div key={zipCode} className="flex items-center justify-between">
+                    <span className="font-medium">{zipCode}</span>
+                    <span className="text-muted-foreground">{count} signups</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Waitlist Entries</h2>
+              <Button 
+                onClick={exportToExcel}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Excel
+              </Button>
+            </div>
+            <DataTable columns={columns} data={entries} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="emails">
+          <EmailPreviewTab />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
         <DialogContent>
