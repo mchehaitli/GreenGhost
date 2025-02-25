@@ -26,9 +26,6 @@ const Footer = () => {
                   <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
                 </div>
               </Link>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Premium automated landscaping solutions for residential estates and commercial properties
-              </p>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
