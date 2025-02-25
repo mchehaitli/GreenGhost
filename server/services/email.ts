@@ -186,6 +186,25 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
   }
 }
 
+export async function sendCustomEmail(to: string, subject: string, htmlContent: string): Promise<boolean> {
+  try {
+    log(`Sending custom email to ${to}`);
+
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to,
+      subject,
+      html: htmlContent,
+    });
+
+    log(`Custom email sent successfully to ${to}`);
+    return true;
+  } catch (error) {
+    log('Failed to send custom email:', error instanceof Error ? error.message : 'Unknown error');
+    return false;
+  }
+}
+
 export async function previewEmailTemplate(templateType: 'verification' | 'welcome', email: string): Promise<string> {
   if (templateType === 'verification') {
     return renderVerificationEmail(email, '123456');
@@ -199,4 +218,5 @@ export default {
   sendWelcomeEmail,
   verifyCode,
   previewEmailTemplate,
+  sendCustomEmail,
 };
