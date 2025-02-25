@@ -72,6 +72,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.log('Server response:', { status: response.status, data: responseData });
 
       if (!response.ok) {
+        if (responseData.error === 'Already registered') {
+          throw new Error('This email is already on our waitlist');
+        }
         throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
       }
 
@@ -87,7 +90,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         setStep('verifying');
         toast({
           title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email.",
+          description: "We've sent a 4-digit verification code to your email. The code will expire in 15 minutes.",
         });
       } else {
         throw new Error("Unexpected server response");
@@ -124,6 +127,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.log('Verification response:', data);
 
       if (!response.ok) {
+        if (data.error === 'Verification expired') {
+          toast({
+            title: "Verification Expired",
+            description: "The verification period has expired. Please sign up again.",
+            variant: "destructive",
+          });
+          // Reset forms and return to initial state
+          form.reset();
+          verificationForm.reset();
+          setPendingEmail("");
+          setStep('initial');
+          return;
+        }
         throw new Error(data.error || data.details || "Verification failed");
       }
 

@@ -7,9 +7,10 @@ import { z } from "zod";
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
-  zip_code: text("zip_code").default("").notNull(), // Adding default value
+  zip_code: text("zip_code").default("").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
+  expires_at: timestamp("expires_at"), // New column for verification expiration
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
