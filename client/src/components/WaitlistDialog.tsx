@@ -89,9 +89,14 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         verificationForm.setValue('code', '');
         setPendingEmail(data.email.trim());
         setStep('verifying');
+
+        const message = process.env.NODE_ENV !== 'production' && responseData.previewUrl
+          ? `We've sent a verification code to your email. Since this is a test environment, you can view the email at: ${responseData.previewUrl}`
+          : "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.";
+
         toast({
           title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
+          description: message,
         });
       } else {
         throw new Error("Unexpected server response");

@@ -109,20 +109,32 @@ router.post('/api/waitlist', async (req, res) => {
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
 
+      let emailPreviewUrl = null;
       try {
-        const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
-        if (!emailSent) {
+        const { success, previewUrl } = await sendVerificationEmail(normalizedEmail, zip_code);
+        if (!success) {
           throw new Error('Failed to send verification email');
         }
+        emailPreviewUrl = previewUrl;
         log(`Verification email sent to ${normalizedEmail}`);
+        if (previewUrl) {
+          log('Email preview URL:', previewUrl);
+        }
       } catch (error) {
         log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
       }
 
-      return res.json({
+      const response = {
         status: 'pending_verification',
         message: 'Please check your email for the verification code'
-      });
+      };
+
+      // Add preview URL in development
+      if (process.env.NODE_ENV !== 'production' && emailPreviewUrl) {
+        response['previewUrl'] = emailPreviewUrl;
+      }
+
+      return res.json(response);
     } catch (error) {
       log('Database error:', error instanceof Error ? error.message : 'Unknown error');
       return res.status(500).json({

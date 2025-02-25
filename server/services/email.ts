@@ -146,7 +146,7 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
   }
 }
 
-export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
+export async function sendVerificationEmail(email: string, zipCode: string): Promise<{ success: boolean; previewUrl?: string }> {
   try {
     const code = await generateVerificationCode(email);
     log(`Generated verification code for ${email}`);
@@ -197,18 +197,19 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     const info = await transport.sendMail(mailOptions);
     log('Verification email sent successfully:', info.messageId);
 
+    let previewUrl;
     if (process.env.NODE_ENV !== 'production') {
-      // Log preview URL for test emails
-      const previewUrl = nodemailer.getTestMessageUrl(info);
+      // Get preview URL for test emails
+      previewUrl = nodemailer.getTestMessageUrl(info);
       log('📧 Test Email Preview URL:', previewUrl);
       console.log('📧 View test email at:', previewUrl);
     }
 
-    return true;
+    return { success: true, previewUrl };
   } catch (error) {
     log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
     transporter = null;
-    throw error;
+    return { success: false };
   }
 }
 
@@ -270,3 +271,9 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     throw error;
   }
 }
+
+export default {
+  sendVerificationEmail,
+  sendWelcomeEmail,
+  verifyCode,
+};
