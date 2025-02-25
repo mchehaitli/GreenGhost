@@ -54,7 +54,7 @@ const WelcomeAnimation = ({ email, onComplete }: WelcomeAnimationProps) => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <h2 className="text-2xl font-bold">Welcome to GreenGhost Tech! 🌿</h2>
+            <h2 className="text-2xl font-bold">Welcome to GreenGhost Tech!</h2>
             <p className="text-muted-foreground">
               Thank you for joining our waitlist, <span className="text-primary font-medium">{email}</span>!
             </p>
