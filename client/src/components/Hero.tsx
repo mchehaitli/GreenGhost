@@ -7,7 +7,9 @@ const Hero = () => {
     <div className="relative flex items-center justify-center min-h-[80vh] bg-background mb-16">
       <div className="container mx-auto px-8">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
-          <GhostMascot size="lg" className="mb-8" />
+          <div className="pt-8">
+            <GhostMascot size="lg" className="mb-8" />
+          </div>
           <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-foreground via-foreground/90 to-foreground bg-clip-text text-transparent">
             Welcome to the Future of{" "}
             <span className="text-primary bg-gradient-to-r from-primary via-primary/80 to-primary/70 bg-clip-text">{" "}Automated</span>{" "}

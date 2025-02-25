@@ -31,33 +31,35 @@ export const GhostMascot = ({
   }
 
   return (
-    <motion.div
-      className={cn("cursor-pointer text-primary", sizes[size], className)}
-      animate={isWaving ? {
-        rotate: [0, -20, 20, -20, 20, 0],
-        transition: {
-          duration: 1,
-          ease: "easeInOut"
-        }
-      } : {
-        y: [0, -10, 0],
-        transition: {
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }
-      }}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={() => {
-        if (!isWaving) {
-          setIsWaving(true);
-          setTimeout(() => setIsWaving(false), 1000);
-        }
-      }}
-    >
-      <Ghost className="w-full h-full" />
-    </motion.div>
+    <div className="pt-8"> {/* Added div with padding-top */}
+      <motion.div
+        className={cn("cursor-pointer text-primary", sizes[size], className)}
+        animate={isWaving ? {
+          rotate: [0, -20, 20, -20, 20, 0],
+          transition: {
+            duration: 1,
+            ease: "easeInOut"
+          }
+        } : {
+          y: [0, -8, 0], 
+          transition: {
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          if (!isWaving) {
+            setIsWaving(true);
+            setTimeout(() => setIsWaving(false), 1000);
+          }
+        }}
+      >
+        <Ghost className="w-full h-full" />
+      </motion.div>
+    </div>
   );
 };
 
