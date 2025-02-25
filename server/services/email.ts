@@ -6,20 +6,10 @@ import { eq, and, gt } from 'drizzle-orm';
 
 let transporter: nodemailer.Transporter | null = null;
 
-// Create a new test account for development
 async function createTestAccount() {
   try {
     log('Creating test email account...');
     const testAccount = await nodemailer.createTestAccount();
-    log('Test account created:', {
-      user: testAccount.user,
-      pass: testAccount.pass,
-      smtp: {
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false
-      }
-    });
     return testAccount;
   } catch (error) {
     log('Error creating test account:', error instanceof Error ? error.message : 'Unknown error');
@@ -27,7 +17,6 @@ async function createTestAccount() {
   }
 }
 
-// Initialize and verify transporter
 async function getTransporter(): Promise<nodemailer.Transporter> {
   if (!transporter) {
     log('Creating new transporter...');
@@ -68,12 +57,10 @@ async function getTransporter(): Promise<nodemailer.Transporter> {
   return transporter;
 }
 
-// Generate a 4-digit verification code
 async function generateVerificationCode(email: string): Promise<string> {
   try {
     log(`Generating verification code for ${email}`);
 
-    // Delete any existing unused tokens for this email
     await db.delete(verificationTokens)
       .where(
         and(
@@ -85,7 +72,6 @@ async function generateVerificationCode(email: string): Promise<string> {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     const expiresAt = new Date(Date.now() + (90 * 1000)); // 90 seconds expiration
 
-    // Store code in database
     await db.insert(verificationTokens).values({
       email,
       token: code,
@@ -122,7 +108,6 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
       return false;
     }
 
-    // Mark token as used
     await db
       .update(verificationTokens)
       .set({ used: true })
@@ -136,7 +121,7 @@ export async function verifyCode(email: string, code: string): Promise<boolean> 
   }
 }
 
-export async function sendVerificationEmail(email: string, zipCode: string): Promise<{ success: boolean; previewUrl?: string }> {
+export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
   try {
     const code = await generateVerificationCode(email);
     log(`Generated verification code for ${email}`);
@@ -186,19 +171,11 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
     const info = await transport.sendMail(mailOptions);
     log('Verification email sent successfully:', info.messageId);
-
-    let previewUrl;
-    if (process.env.NODE_ENV !== 'production') {
-      previewUrl = nodemailer.getTestMessageUrl(info);
-      log('📧 Preview URL:', previewUrl);
-      console.log('📧 View test email at:', previewUrl);
-    }
-
-    return { success: true, previewUrl };
+    return true;
   } catch (error) {
     log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
     transporter = null; // Reset transporter on error
-    return { success: false };
+    return false;
   }
 }
 
@@ -247,12 +224,6 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const info = await transport.sendMail(mailOptions);
     log('Welcome email sent successfully:', info.messageId);
-
-    if (process.env.NODE_ENV !== 'production') {
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      log('📧 Preview URL:', previewUrl);
-    }
-
     return true;
   } catch (error) {
     log('Error sending welcome email:', error instanceof Error ? error.message : 'Unknown error');

@@ -46,12 +46,12 @@ setInterval(cleanupExpiredEntries, 60 * 1000);
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    log('Request body:', JSON.stringify(req.body, null, 2));
+    log('Request body:', req.body);
 
     const { email, zip_code } = req.body;
 
     if (!email || !zip_code) {
-      log('Missing required fields:', { email: !!email, zip_code: !!zip_code });
+      log('Missing required fields');
       return res.status(400).json({
         error: 'Missing required fields',
         details: 'Both email and zip_code are required'
@@ -60,7 +60,7 @@ router.post('/api/waitlist', async (req, res) => {
 
     try {
       const validatedData = insertWaitlistSchema.parse({ email, zip_code });
-      log('Input validation passed:', JSON.stringify(validatedData, null, 2));
+      log('Input validation passed:', validatedData);
     } catch (error) {
       log('Input validation failed:', error);
       const validationError = fromZodError(error);
@@ -109,29 +109,16 @@ router.post('/api/waitlist', async (req, res) => {
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
 
-      let emailPreviewUrl = null;
-      try {
-        const { success, previewUrl } = await sendVerificationEmail(normalizedEmail, zip_code);
-        if (!success) {
-          throw new Error('Failed to send verification email');
-        }
-        emailPreviewUrl = previewUrl;
-        log(`Verification email sent to ${normalizedEmail}`);
-        if (previewUrl) {
-          log('📧 Email preview URL:', previewUrl);
-          console.log('📧 View test email at:', previewUrl);
-        }
-      } catch (error) {
-        log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
+      const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
+      if (!emailSent) {
+        throw new Error('Failed to send verification email');
       }
+      log(`Verification email sent to ${normalizedEmail}`);
 
-      const response = {
+      return res.json({
         status: 'pending_verification',
-        message: 'Please check your email for the verification code',
-        previewUrl: emailPreviewUrl // Always include the preview URL
-      };
-
-      return res.json(response);
+        message: 'Please check your email for the verification code'
+      });
     } catch (error) {
       log('Database error:', error instanceof Error ? error.message : 'Unknown error');
       return res.status(500).json({

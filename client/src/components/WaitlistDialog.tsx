@@ -31,7 +31,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -52,12 +51,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log('Form submission:', {
-        data: values,
-        rawFormState: form.getValues(),
-        validationState: form.formState,
-      });
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
@@ -69,59 +62,32 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         }),
       });
 
-      const responseData = await response.json();
-      console.log('Server response:', { status: response.status, data: responseData });
+      const data = await response.json();
 
       if (!response.ok) {
-        if (responseData.error === 'Already registered') {
+        if (data.error === 'Already registered') {
           throw new Error('This email is already on our waitlist');
         }
-        throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
+        throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      if (responseData.status === 'pending_verification') {
+      if (data.status === 'pending_verification') {
         // Complete form reset
         form.reset();
         verificationForm.reset();
         verificationForm.clearErrors();
         verificationForm.setValue('code', '');
         setPendingEmail(values.email.trim());
-        setPreviewUrl(responseData.previewUrl);
         setStep('verifying');
 
-        // Show verification instructions
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
         });
-
-        // If we have a preview URL, show it in a separate toast
-        if (responseData.previewUrl) {
-          setTimeout(() => {
-            toast({
-              title: "Test Environment Email",
-              description: (
-                <div className="mt-2">
-                  <p className="mb-2">Since this is a test environment, you can view the email at:</p>
-                  <a
-                    href={responseData.previewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline break-all"
-                  >
-                    View Test Email
-                  </a>
-                </div>
-              ),
-              duration: 10000, // Show for 10 seconds
-            });
-          }, 1000);
-        }
       } else {
         throw new Error("Unexpected server response");
       }
     } catch (error) {
-      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to join waitlist",
