@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { db } from '../db';
 import { waitlist, insertWaitlistSchema, verificationSchema } from '../../db/schema';
 import { eq, and, lt } from 'drizzle-orm';
-import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
@@ -30,6 +29,49 @@ const cleanupExpiredEntries = async () => {
 
 // Run cleanup every minute
 setInterval(cleanupExpiredEntries, 60 * 1000);
+
+// Delete waitlist entry (admin only)
+router.delete('/api/waitlist/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    await db.delete(waitlist).where(eq(waitlist.id, id));
+    return res.sendStatus(200);
+  } catch (error) {
+    log('Error deleting waitlist entry:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to delete entry' });
+  }
+});
+
+// Update waitlist entry (admin only)
+router.patch('/api/waitlist/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    const { email, name, phone_number, address, notes } = req.body;
+
+    await db.update(waitlist)
+      .set({
+        email,
+        name,
+        phone_number,
+        address,
+        notes,
+      })
+      .where(eq(waitlist.id, id));
+
+    return res.sendStatus(200);
+  } catch (error) {
+    log('Error updating waitlist entry:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to update entry' });
+  }
+});
 
 // Step 1: Initial waitlist signup
 router.post('/api/waitlist', async (req, res) => {

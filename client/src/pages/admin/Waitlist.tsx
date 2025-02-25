@@ -1,42 +1,52 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import WaitlistAnalytics from "@/components/WaitlistAnalytics";
 import { Button } from "@/components/ui/button";
-import { Download, LogOut } from "lucide-react";
+import { Download, LogOut, Pencil, Trash2 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type WaitlistEntry = {
   id: number;
   email: string;
+  name: string | null;
+  phone_number: string | null;
+  address: string | null;
+  notes: string | null;
   zip_code: string;
   created_at: string;
 };
 
-const columns: ColumnDef<WaitlistEntry>[] = [
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "zip_code",
-    header: "Zip Code",
-  },
-  {
-    accessorKey: "created_at",
-    header: "Created At",
-    cell: ({ row }) => {
-      return format(new Date(row.original.created_at), "MMM dd, yyyy HH:mm:ss");
-    },
-  },
-];
+const editFormSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  name: z.string().optional(),
+  phone_number: z.string().optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type EditFormData = z.infer<typeof editFormSchema>;
 
 export default function WaitlistPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
+
+  const editForm = useForm<EditFormData>({
+    resolver: zodResolver(editFormSchema),
+  });
 
   const { data: entries = [], isLoading: dataLoading } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -58,6 +68,130 @@ export default function WaitlistPage() {
     gcTime: Infinity,
   });
 
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/waitlist/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to delete entry');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+      toast({
+        title: "Entry deleted",
+        description: "The waitlist entry has been removed successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateEntryMutation = useMutation({
+    mutationFn: async (data: EditFormData & { id: number }) => {
+      const { id, ...updateData } = data;
+      const response = await fetch(`/api/waitlist/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+      if (!response.ok) throw new Error('Failed to update entry');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+      setEditingEntry(null);
+      toast({
+        title: "Entry updated",
+        description: "The waitlist entry has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update entry",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const columns: ColumnDef<WaitlistEntry>[] = [
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+    },
+    {
+      accessorKey: "phone_number",
+      header: "Phone",
+    },
+    {
+      accessorKey: "address",
+      header: "Address",
+    },
+    {
+      accessorKey: "zip_code",
+      header: "ZIP Code",
+    },
+    {
+      accessorKey: "notes",
+      header: "Notes",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created At",
+      cell: ({ row }) => {
+        return format(new Date(row.original.created_at), "MMM dd, yyyy HH:mm:ss");
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setEditingEntry(row.original);
+                editForm.reset({
+                  email: row.original.email,
+                  name: row.original.name || "",
+                  phone_number: row.original.phone_number || "",
+                  address: row.original.address || "",
+                  notes: row.original.notes || "",
+                });
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (confirm("Are you sure you want to delete this entry?")) {
+                  deleteEntryMutation.mutate(row.original.id);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   const isLoading = authLoading || dataLoading;
 
   if (isLoading) {
@@ -77,7 +211,11 @@ export default function WaitlistPage() {
   const exportToExcel = () => {
     const exportData = entries.map(entry => ({
       Email: entry.email,
+      Name: entry.name || '',
+      'Phone Number': entry.phone_number || '',
+      Address: entry.address || '',
       'ZIP Code': entry.zip_code,
+      Notes: entry.notes || '',
       'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
     }));
 
@@ -100,9 +238,9 @@ export default function WaitlistPage() {
     <div className="container mx-auto py-10 space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold mb-2">Waitlist Analytics</h1>
+          <h1 className="text-2xl font-bold mb-2">Waitlist Management</h1>
           <p className="text-muted-foreground">
-            Track and analyze waitlist signups and regional distribution
+            Manage and track waitlist signups
           </p>
         </div>
         <Button 
@@ -114,8 +252,6 @@ export default function WaitlistPage() {
           Logout
         </Button>
       </div>
-
-      <WaitlistAnalytics entries={entries} />
 
       <div>
         <div className="flex justify-between items-center mb-6">
@@ -131,6 +267,99 @@ export default function WaitlistPage() {
         </div>
         <DataTable columns={columns} data={entries} />
       </div>
+
+      <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Waitlist Entry</DialogTitle>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form 
+              onSubmit={editForm.handleSubmit((data) => {
+                if (!editingEntry) return;
+                updateEntryMutation.mutate({ ...data, id: editingEntry.id });
+              })} 
+              className="space-y-4"
+            >
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={updateEntryMutation.isPending}
+                >
+                  {updateEntryMutation.isPending ? (
+                    <>
+                      <LoadingSpinner className="mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -14,6 +14,10 @@ export const users = pgTable("users", {
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
+  name: text("name"),
+  phone_number: text("phone_number"),
+  address: text("address"),
+  notes: text("notes"),
   zip_code: text("zip_code").default("").notNull(),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
