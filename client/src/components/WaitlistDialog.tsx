@@ -77,10 +77,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       if (responseData.status === 'pending_verification') {
         // Complete form reset
+        form.reset();
+        // Complete verification form reset
         verificationForm.reset();
-        // Reset verification form state
         verificationForm.clearErrors();
-        // Explicitly set all form fields to empty
+        // Set default values explicitly
         verificationForm.setValue('code', '');
         setPendingEmail(data.email.trim());
         setStep('verifying');
@@ -126,12 +127,12 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         throw new Error(data.error || data.details || "Verification failed");
       }
 
-      // Only show success after successful verification
       if (data.success) {
         toast({
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
+        // Reset all forms and state
         form.reset();
         verificationForm.reset();
         setPendingEmail("");
@@ -161,8 +162,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     }
 
     if (!newOpen) {
+      // Reset all forms and state when dialog is closed
       form.reset();
       verificationForm.reset();
+      verificationForm.clearErrors();
       setPendingEmail("");
       setStep('initial');
       setIsSubmitting(false);
@@ -208,7 +211,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                       placeholder="Enter your ZIP code"
                       maxLength={5}
                       {...field}
-                      value={field.value}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         field.onChange(value);
