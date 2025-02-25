@@ -34,29 +34,25 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const initialForm = useForm<FormData>({
+  // Separate form instances
+  const emailForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       zip_code: "",
-    }
+    },
   });
 
-  const verificationForm = useForm<VerificationData>({
+  const codeForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
     defaultValues: {
       code: "",
-    }
+    },
   });
 
   const resetForms = () => {
-    initialForm.reset({
-      email: "",
-      zip_code: "",
-    });
-    verificationForm.reset({
-      code: "",
-    });
+    emailForm.reset();
+    codeForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -105,6 +101,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
     try {
       setIsSubmitting(true);
+      console.log("Submitting verification code:", values.code); // Debug log
+
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: {
@@ -159,10 +157,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...initialForm}>
-            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...emailForm}>
+            <form onSubmit={emailForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={initialForm.control}
+                control={emailForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -182,7 +180,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               />
 
               <FormField
-                control={initialForm.control}
+                control={emailForm.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
@@ -223,14 +221,14 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
             </form>
           </Form>
         ) : (
-          <Form {...verificationForm}>
-            <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
+          <Form {...codeForm}>
+            <form onSubmit={codeForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
                 Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
               </p>
 
               <FormField
-                control={verificationForm.control}
+                control={codeForm.control}
                 name="code"
                 render={({ field }) => (
                   <FormItem>
@@ -244,6 +242,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         disabled={isSubmitting}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          console.log("Code input value:", value); // Debug log
                           field.onChange(value);
                         }}
                         value={field.value}
