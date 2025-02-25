@@ -24,35 +24,19 @@ async function startServer() {
       origin: true,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     }));
 
-    // Add explicit error handling for parsing JSON
-    app.use(express.json({
-      verify: (req, res, buf) => {
-        try {
-          JSON.parse(buf.toString());
-        } catch (e) {
-          res.status(400).json({ error: 'Invalid JSON' });
-          throw new Error('Invalid JSON');
-        }
-      }
-    }));
-
+    app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
-    // Add request logging middleware to see all incoming requests
+    // Request logging middleware
     app.use((req, res, next) => {
       const start = Date.now();
-      log(`Incoming ${req.method} request to ${req.path}`);
-      log('Request headers:', JSON.stringify(req.headers, null, 2));
-      log('Request body:', JSON.stringify(req.body, null, 2));
-
-      res.on('finish', () => {
+      res.on("finish", () => {
         const duration = Date.now() - start;
-        log(`${req.method} ${req.path} ${res.statusCode} completed in ${duration}ms`);
+        log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
       });
-
       next();
     });
 

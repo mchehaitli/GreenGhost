@@ -2,21 +2,49 @@ import { Router } from 'express';
 import { db } from '../db';
 import { waitlist, insertWaitlistSchema, verificationSchema } from '../../db/schema';
 import { eq } from 'drizzle-orm';
+import { Request, Response, NextFunction } from 'express';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
 
 const router = Router();
 
-// Step 1: Initial waitlist signup
+// Middleware for admin routes
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  // For development, allow all requests
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
+  // Check if user is authenticated
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+};
+
+// Step 1: Initial waitlist signup - only creates unverified entry and sends verification code
 router.post('/api/waitlist', async (req, res) => {
   try {
     log('Received waitlist signup request');
-    const { email } = req.body;
+    log('Request body:', JSON.stringify(req.body, null, 2));
 
+    const { email, zip_code } = req.body;
+
+    if (!email || !zip_code) {
+      log('Missing required fields:', { email: !!email, zip_code: !!zip_code });
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Both email and zip_code are required'
+      });
+    }
+
+    // Validate input with Zod schema
     try {
-      insertWaitlistSchema.parse({ email });
+      const validatedData = insertWaitlistSchema.parse({ email, zip_code });
+      log('Input validation passed:', JSON.stringify(validatedData, null, 2));
     } catch (error) {
+      log('Input validation failed:', error);
       const validationError = fromZodError(error);
       return res.status(400).json({
         error: 'Validation failed',
@@ -43,24 +71,28 @@ router.post('/api/waitlist', async (req, res) => {
     try {
       if (existingEntry) {
         await db.update(waitlist)
-          .set({ verified: false })
+          .set({ zip_code, verified: false })
           .where(eq(waitlist.email, normalizedEmail));
         log(`Updated existing waitlist entry for ${normalizedEmail}`);
       } else {
         await db.insert(waitlist).values({
           email: normalizedEmail,
+          zip_code,
           verified: false
         });
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
 
-      // Send verification email
+      // Send verification email after successful database operation
       try {
-        await sendVerificationEmail(normalizedEmail);
+        const emailSent = await sendVerificationEmail(normalizedEmail, zip_code);
+        if (!emailSent) {
+          throw new Error('Failed to send verification email');
+        }
         log(`Verification email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Error sending verification email:', error);
-        throw new Error('Failed to send verification email');
+        // Continue with response despite email error
       }
 
       return res.json({
@@ -83,14 +115,18 @@ router.post('/api/waitlist', async (req, res) => {
   }
 });
 
-// Step 2: Verify email
+// Step 2: Verify email with code
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
     const { email, code } = req.body;
+    log(`Received verification request - Email: ${email}, Code: ${code}`);
 
+    // Validate input
     try {
       verificationSchema.parse({ email, code });
+      log('Verification input validation passed');
     } catch (error) {
+      log('Verification input validation failed:', error);
       const validationError = fromZodError(error);
       return res.status(400).json({
         error: 'Validation failed',
@@ -106,29 +142,42 @@ router.post('/api/waitlist/verify', async (req, res) => {
     });
 
     if (!entry) {
+      log(`No waitlist entry found for email: ${normalizedEmail}`);
       return res.status(404).json({
         error: 'Not found',
         details: 'No waitlist entry found for this email'
       });
     }
 
+    if (entry.verified) {
+      log(`Email ${normalizedEmail} already verified`);
+      return res.status(400).json({
+        error: 'Already verified',
+        details: 'This email is already verified'
+      });
+    }
+
     // Verify the code
     const isValid = await verifyCode(normalizedEmail, code);
     if (!isValid) {
+      log(`Invalid verification code for ${normalizedEmail}`);
       return res.status(400).json({
         error: 'Invalid code',
         details: 'The verification code is incorrect or expired'
       });
     }
 
-    // Update verification status and send welcome email
+    // Update verification status
     try {
       await db.update(waitlist)
         .set({ verified: true })
         .where(eq(waitlist.email, normalizedEmail));
+      log(`Successfully verified email: ${normalizedEmail}`);
 
+      // Send welcome email
       try {
-        await sendWelcomeEmail(normalizedEmail);
+        await sendWelcomeEmail(normalizedEmail, entry.zip_code);
+        log(`Welcome email sent to ${normalizedEmail}`);
       } catch (error) {
         log('Welcome email failed:', error);
         // Continue despite welcome email failure
@@ -150,6 +199,22 @@ router.post('/api/waitlist/verify', async (req, res) => {
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to verify email'
+    });
+  }
+});
+
+// Get all waitlist entries (admin only)
+router.get('/api/waitlist', requireAuth, async (_req, res) => {
+  try {
+    const entries = await db.query.waitlist.findMany({
+      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
+    });
+    return res.json(entries);
+  } catch (error) {
+    log('Error fetching waitlist entries:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      details: 'Failed to fetch entries'
     });
   }
 });

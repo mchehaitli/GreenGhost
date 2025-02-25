@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 type WaitlistEntry = {
   id: number;
   email: string;
+  zip_code: string;
   created_at: string;
 };
 
@@ -20,6 +21,10 @@ const columns: ColumnDef<WaitlistEntry>[] = [
   {
     accessorKey: "email",
     header: "Email",
+  },
+  {
+    accessorKey: "zip_code",
+    header: "Zip Code",
   },
   {
     accessorKey: "created_at",
@@ -72,6 +77,7 @@ export default function WaitlistPage() {
   const exportToExcel = () => {
     const exportData = entries.map(entry => ({
       Email: entry.email,
+      'ZIP Code': entry.zip_code,
       'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
     }));
 
@@ -96,7 +102,7 @@ export default function WaitlistPage() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Waitlist Analytics</h1>
           <p className="text-muted-foreground">
-            Track and analyze waitlist signups
+            Track and analyze waitlist signups and regional distribution
           </p>
         </div>
         <Button 
