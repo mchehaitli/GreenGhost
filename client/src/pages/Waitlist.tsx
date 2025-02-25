@@ -25,17 +25,17 @@ import {
 import VerificationCountdown from "@/components/VerificationCountdown";
 
 // Form schemas
-const formSchema = z.object({
+const initialFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
-const verificationSchema = z.object({
-  code: z.string().length(4, "Please enter the 4-digit code").regex(/^\d+$/, "Please enter only numbers"),
+const verificationFormSchema = z.object({
+  verificationCode: z.string().length(6, "Please enter the 6-digit code").regex(/^\d+$/, "Please enter only numbers"),
 });
 
-type FormData = z.infer<typeof formSchema>;
-type VerificationData = z.infer<typeof verificationSchema>;
+type InitialFormData = z.infer<typeof initialFormSchema>;
+type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
 const Waitlist = () => {
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
@@ -43,23 +43,30 @@ const Waitlist = () => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const initialForm = useForm<InitialFormData>({
+    resolver: zodResolver(initialFormSchema),
+    defaultValues: {
+      email: "",
+      zip_code: "",
+    },
   });
 
-  const verificationForm = useForm<VerificationData>({
-    resolver: zodResolver(verificationSchema),
+  const verificationForm = useForm<VerificationFormData>({
+    resolver: zodResolver(verificationFormSchema),
+    defaultValues: {
+      verificationCode: "",
+    },
   });
 
   const resetForms = () => {
-    form.reset();
+    initialForm.reset();
     verificationForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
   };
 
-  const onSubmit = async (values: FormData) => {
+  const onSubmit = async (values: InitialFormData) => {
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist', {
@@ -67,7 +74,10 @@ const Waitlist = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          email: values.email,
+          zip_code: values.zip_code,
+        }),
       });
 
       const data = await response.json();
@@ -81,7 +91,7 @@ const Waitlist = () => {
         setStep('verifying');
         toast({
           title: "Check your email",
-          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
+          description: "We've sent a 6-digit verification code to your email. The code will expire in 90 seconds.",
         });
       } else {
         throw new Error("Unexpected server response");
@@ -97,7 +107,7 @@ const Waitlist = () => {
     }
   };
 
-  const onVerificationSubmit = async (values: VerificationData) => {
+  const onVerificationSubmit = async (values: VerificationFormData) => {
     if (!pendingEmail || isSubmitting) return;
 
     try {
@@ -109,7 +119,7 @@ const Waitlist = () => {
         },
         body: JSON.stringify({
           email: pendingEmail,
-          code: values.code,
+          code: values.verificationCode,
         }),
       });
 
@@ -173,15 +183,15 @@ const Waitlist = () => {
                 <CardDescription>
                   {step === 'initial'
                     ? "Join our waitlist and be notified when we launch in your area"
-                    : "Enter the 4-digit code sent to your email"}
+                    : "Enter the 6-digit code sent to your email"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {step === 'initial' ? (
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <Form {...initialForm}>
+                    <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
                       <FormField
-                        control={form.control}
+                        control={initialForm.control}
                         name="email"
                         render={({ field }) => (
                           <FormItem>
@@ -201,7 +211,7 @@ const Waitlist = () => {
                       />
 
                       <FormField
-                        control={form.control}
+                        control={initialForm.control}
                         name="zip_code"
                         render={({ field }) => (
                           <FormItem>
@@ -213,11 +223,11 @@ const Waitlist = () => {
                                 maxLength={5}
                                 inputMode="numeric"
                                 disabled={isSubmitting}
-                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
                                 }}
+                                value={field.value}
                               />
                             </FormControl>
                             <FormMessage />
@@ -245,27 +255,27 @@ const Waitlist = () => {
                   <Form {...verificationForm}>
                     <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
                       <p className="text-sm text-muted-foreground mb-4">
-                        Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
+                        Enter the 6-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
                       </p>
 
                       <FormField
                         control={verificationForm.control}
-                        name="code"
+                        name="verificationCode"
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
                               <Input
                                 type="text"
-                                placeholder="0000"
-                                maxLength={4}
+                                placeholder="000000"
+                                maxLength={6}
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
-                                {...field}
                                 onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                                   field.onChange(value);
                                 }}
+                                value={field.value}
                                 className="text-center text-2xl tracking-[0.5em] font-mono"
                               />
                             </FormControl>

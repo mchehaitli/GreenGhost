@@ -11,17 +11,17 @@ import { Loader2 } from "lucide-react";
 import VerificationCountdown from "./VerificationCountdown";
 
 // Form schemas
-const formSchema = z.object({
+const initialFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
-const verificationSchema = z.object({
-  code: z.string().length(6, "Please enter the 6-digit code").regex(/^\d+$/, "Please enter only numbers"),
+const verificationFormSchema = z.object({
+  verificationCode: z.string().length(6, "Please enter the 6-digit code").regex(/^\d+$/, "Please enter only numbers"),
 });
 
-type FormData = z.infer<typeof formSchema>;
-type VerificationData = z.infer<typeof verificationSchema>;
+type InitialFormData = z.infer<typeof initialFormSchema>;
+type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -34,30 +34,30 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const emailForm = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const initialForm = useForm<InitialFormData>({
+    resolver: zodResolver(initialFormSchema),
     defaultValues: {
       email: "",
       zip_code: "",
     },
   });
 
-  const verificationForm = useForm<VerificationData>({
-    resolver: zodResolver(verificationSchema),
+  const verificationForm = useForm<VerificationFormData>({
+    resolver: zodResolver(verificationFormSchema),
     defaultValues: {
-      code: "",
+      verificationCode: "",
     },
   });
 
   const resetForms = () => {
-    emailForm.reset();
+    initialForm.reset();
     verificationForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
   };
 
-  const onSubmit = async (values: FormData) => {
+  const onSubmit = async (values: InitialFormData) => {
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist', {
@@ -65,7 +65,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          email: values.email,
+          zip_code: values.zip_code,
+        }),
       });
 
       const data = await response.json();
@@ -95,7 +98,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
-  const onVerificationSubmit = async (values: VerificationData) => {
+  const onVerificationSubmit = async (values: VerificationFormData) => {
     if (!pendingEmail || isSubmitting) return;
 
     try {
@@ -107,7 +110,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         },
         body: JSON.stringify({
           email: pendingEmail,
-          code: values.code,
+          code: values.verificationCode,
         }),
       });
 
@@ -153,10 +156,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...initialForm}>
+            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={emailForm.control}
+                control={initialForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -176,7 +179,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               />
 
               <FormField
-                control={emailForm.control}
+                control={initialForm.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
@@ -188,7 +191,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
-                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          field.onChange(value);
+                        }}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -221,7 +228,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
               <FormField
                 control={verificationForm.control}
-                name="code"
+                name="verificationCode"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
@@ -232,11 +239,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
-                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                           field.onChange(value);
                         }}
+                        value={field.value}
                         className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
