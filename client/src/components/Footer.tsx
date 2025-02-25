@@ -21,7 +21,7 @@ const Footer = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="col-span-2 md:col-span-1">
               <Link href="/">
-                <div className="flex items-center space-x-2 group" onClick={scrollToTop}> {/* Changed <a> to <div> */}
+                <div className="flex items-center space-x-2 group cursor-pointer" onClick={scrollToTop}>
                   <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
                   <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
                 </div>
@@ -35,17 +35,16 @@ const Footer = () => {
               <ul className="space-y-2">
                 <li>
                   <Link href="/about">
-                    <div onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block"> {/* Changed <a> to <div> */}
+                    <div onClick={scrollToTop} className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block cursor-pointer">
                       About Us
                     </div>
                   </Link>
                 </li>
                 <li>
                   <div 
-                    href="#" 
                     onClick={handleWaitlistClick}
                     className="text-sm text-muted-foreground transition-all duration-300 hover:text-primary hover:translate-x-1 inline-block cursor-pointer"
-                  > {/* Changed <a> to <div> */}
+                  >
                     Join Waitlist
                   </div>
                 </li>

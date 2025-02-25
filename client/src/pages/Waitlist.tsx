@@ -244,7 +244,7 @@ const Waitlist = () => {
                       />
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full bg-primary/10 text-primary hover:bg-primary/20"
                         disabled={isSubmitting || !form.formState.isValid}
                       >
                         {isSubmitting ? (

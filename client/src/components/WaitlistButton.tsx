@@ -16,12 +16,12 @@ const WaitlistButton = () => {
         transition={{ delay: 1 }}
       >
         <Button
-          variant="default"
+          variant="outline"
           size="lg"
-          className="rounded-l-lg rounded-r-none px-4 py-8 shadow-lg bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          className="rounded-l-lg rounded-r-none px-4 py-8 shadow-lg bg-primary/10 text-primary hover:bg-primary/20"
           onClick={() => setShowDialog(true)}
         >
-          <span className="absolute -rotate-90 flex items-center whitespace-nowrap text-primary-foreground font-semibold">
+          <span className="absolute -rotate-90 flex items-center whitespace-nowrap font-semibold">
             <Bot className="mr-2 h-4 w-4 rotate-90" />
             Join Waitlist
           </span>

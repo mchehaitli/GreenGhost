@@ -9,7 +9,10 @@ async function createTestAccount() {
   try {
     log('Creating test email account...');
     const testAccount = await nodemailer.createTestAccount();
-    log('Test account created successfully');
+    log('Test account created with credentials:', {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    });
     return testAccount;
   } catch (error) {
     log('Error creating test account:', error instanceof Error ? error.message : 'Unknown error');
@@ -25,7 +28,7 @@ async function createTransporter() {
     // Use test account in development
     if (process.env.NODE_ENV !== 'production') {
       const testAccount = await createTestAccount();
-      log('Using test SMTP account');
+      log('Using test SMTP account with user:', testAccount.user);
       return nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
@@ -34,8 +37,6 @@ async function createTransporter() {
           user: testAccount.user,
           pass: testAccount.pass,
         },
-        debug: true,
-        logger: true
       });
     }
 
@@ -49,8 +50,6 @@ async function createTransporter() {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      debug: true,
-      logger: true
     });
   } catch (error) {
     log('Error creating transport:', error instanceof Error ? error.message : 'Unknown error');
@@ -93,8 +92,7 @@ async function generateVerificationCode(email: string): Promise<string> {
       );
 
     const code = Math.floor(1000 + Math.random() * 9000).toString();
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Code expires in 15 minutes
+    const expiresAt = new Date(Date.now() + (90 * 1000)); // 90 seconds expiration
 
     // Store code in database
     await db.insert(verificationTokens).values({
@@ -157,7 +155,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     log(`Sending verification email to ${email}`);
 
     const mailOptions = {
-      from: `"GreenGhost Tech" <${process.env.SMTP_USER}>`,
+      from: `"GreenGhost Tech" <${process.env.SMTP_USER || 'noreply@greenghosttech.com'}>`,
       to: email,
       subject: "Your GreenGhost Tech Verification Code",
       html: `
@@ -183,7 +181,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
           </div>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            This verification code will expire in 15 minutes. If you didn't request this code, please ignore this email.
+            This verification code will expire in 90 seconds. If you didn't request this code, please ignore this email.
           </p>
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
@@ -198,10 +196,14 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
     const info = await transport.sendMail(mailOptions);
     log('Verification email sent successfully:', info.messageId);
+
     if (process.env.NODE_ENV !== 'production') {
       // Log preview URL for test emails
-      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      log('📧 Test Email Preview URL:', previewUrl);
+      console.log('📧 View test email at:', previewUrl);
     }
+
     return true;
   } catch (error) {
     log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
@@ -216,7 +218,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     log(`Sending welcome email to ${email}`);
 
     const mailOptions = {
-      from: `"GreenGhost Tech" <${process.env.SMTP_USER}>`,
+      from: `"GreenGhost Tech" <${process.env.SMTP_USER || 'noreply@greenghosttech.com'}>`,
       to: email,
       subject: "Welcome to GreenGhost Tech's Waitlist! 🌿",
       html: `
@@ -257,7 +259,9 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     log('Welcome email sent successfully:', info.messageId);
     if (process.env.NODE_ENV !== 'production') {
       // Log preview URL for test emails
-      log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      log('📧 Test Email Preview URL:', previewUrl);
+      console.log('📧 View test email at:', previewUrl);
     }
     return true;
   } catch (error) {
