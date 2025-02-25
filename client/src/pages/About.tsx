@@ -53,7 +53,7 @@ const About = () => {
                 <h2 className="text-3xl font-bold text-primary">Our Promise to You</h2>
                 <div className="space-y-4">
                   <p className="text-muted-foreground">
-                    Founded in Frisco by local homeowners who understood the challenges 
+                    Founded by local homeowners who understood the challenges 
                     of maintaining a beautiful lawn in the Texas climate, we set out to 
                     create a better solution.
                   </p>
@@ -63,7 +63,7 @@ const About = () => {
                     and that's exactly what we provide.
                   </p>
                   <p className="text-muted-foreground">
-                    Today, we're proud to help homeowners across North Texas reclaim 
+                    Today, we're proud to help homeowners across Texas reclaim 
                     their time while enjoying pristine, healthy lawns that enhance their 
                     homes and communities.
                   </p>
@@ -145,7 +145,7 @@ const About = () => {
               <h2 className="text-3xl font-bold">Ready for a Better Lawn Care Experience?</h2>
               <p className="text-xl opacity-90">
                 Join our waitlist today and be among the first to experience 
-                hassle-free lawn care in Frisco. Early members receive 
+                hassle-free lawn care in Texas. Early members receive 
                 priority access and special pricing.
               </p>
               <Button 
