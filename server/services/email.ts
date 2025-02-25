@@ -4,12 +4,22 @@ import { db } from '../db';
 import { verificationTokens } from '../../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
 
-// For development, use ethereal.email testing service
+let transporter: nodemailer.Transporter | null = null;
+
+// Create a new test account for development
 async function createTestAccount() {
   try {
     log('Creating test email account...');
     const testAccount = await nodemailer.createTestAccount();
-    log('Test account created with credentials:', testAccount.user);
+    log('Test account created:', {
+      user: testAccount.user,
+      pass: testAccount.pass,
+      smtp: {
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false
+      }
+    });
     return testAccount;
   } catch (error) {
     log('Error creating test account:', error instanceof Error ? error.message : 'Unknown error');
@@ -17,16 +27,13 @@ async function createTestAccount() {
   }
 }
 
-// Email transporter configuration with detailed logging
-async function createTransporter() {
-  try {
-    log('Setting up email transport...');
-
-    // Use test account in development
+// Initialize and verify transporter
+async function getTransporter(): Promise<nodemailer.Transporter> {
+  if (!transporter) {
+    log('Creating new transporter...');
     if (process.env.NODE_ENV !== 'production') {
       const testAccount = await createTestAccount();
-      log('Using test SMTP account with user:', testAccount.user);
-      return nodemailer.createTransport({
+      transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,
@@ -35,42 +42,30 @@ async function createTransporter() {
           pass: testAccount.pass,
         },
       });
+    } else {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
     }
 
-    // Use configured SMTP in production
-    log('Using production SMTP settings');
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-  } catch (error) {
-    log('Error creating transport:', error instanceof Error ? error.message : 'Unknown error');
-    throw error;
-  }
-}
-
-let transporter: nodemailer.Transporter | null = null;
-
-// Initialize and verify transporter
-async function getTransporter(): Promise<nodemailer.Transporter> {
-  try {
-    if (!transporter) {
-      transporter = await createTransporter();
+    try {
       log('Verifying SMTP connection...');
       await transporter.verify();
       log('SMTP connection verified successfully');
+    } catch (error) {
+      log('SMTP verification failed:', error instanceof Error ? error.message : 'Unknown error');
+      transporter = null;
+      throw error;
     }
-    return transporter;
-  } catch (error) {
-    log('SMTP Error:', error instanceof Error ? error.message : 'Unknown error');
-    transporter = null;
-    throw error;
   }
+
+  return transporter;
 }
 
 // Generate a 4-digit verification code
@@ -79,8 +74,7 @@ async function generateVerificationCode(email: string): Promise<string> {
     log(`Generating verification code for ${email}`);
 
     // Delete any existing unused tokens for this email
-    await db
-      .delete(verificationTokens)
+    await db.delete(verificationTokens)
       .where(
         and(
           eq(verificationTokens.email, email),
@@ -108,7 +102,6 @@ async function generateVerificationCode(email: string): Promise<string> {
   }
 }
 
-// Verify a code
 export async function verifyCode(email: string, code: string): Promise<boolean> {
   try {
     log(`Verifying code for email: ${email}`);
@@ -196,16 +189,15 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
     let previewUrl;
     if (process.env.NODE_ENV !== 'production') {
-      // Get preview URL for test emails
       previewUrl = nodemailer.getTestMessageUrl(info);
-      log('📧 Test Email Preview URL:', previewUrl);
+      log('📧 Preview URL:', previewUrl);
       console.log('📧 View test email at:', previewUrl);
     }
 
     return { success: true, previewUrl };
   } catch (error) {
     log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
-    transporter = null;
+    transporter = null; // Reset transporter on error
     return { success: false };
   }
 }
@@ -228,7 +220,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
           </p>
 
           <p style="color: #4b5563; line-height: 1.6;">
-            You're now entered for a chance to win a full year of FREE automated lawn maintenance! We'll notify all winners before our beta launch in Summer 2025.
+            You're now entered for a chance to win a full year of FREE automated lawn maintenance! Winner will be announced at launch.
           </p>
 
           <h2 style="color: #22c55e; margin-top: 30px;">What's Next?</h2>
@@ -255,16 +247,16 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const info = await transport.sendMail(mailOptions);
     log('Welcome email sent successfully:', info.messageId);
+
     if (process.env.NODE_ENV !== 'production') {
-      // Log preview URL for test emails
       const previewUrl = nodemailer.getTestMessageUrl(info);
-      log('📧 Test Email Preview URL:', previewUrl);
-      console.log('📧 View test email at:', previewUrl);
+      log('📧 Preview URL:', previewUrl);
     }
+
     return true;
   } catch (error) {
     log('Error sending welcome email:', error instanceof Error ? error.message : 'Unknown error');
-    transporter = null;
+    transporter = null; // Reset transporter on error
     return false;
   }
 }

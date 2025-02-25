@@ -118,7 +118,8 @@ router.post('/api/waitlist', async (req, res) => {
         emailPreviewUrl = previewUrl;
         log(`Verification email sent to ${normalizedEmail}`);
         if (previewUrl) {
-          log('Email preview URL:', previewUrl);
+          log('📧 Email preview URL:', previewUrl);
+          console.log('📧 View test email at:', previewUrl);
         }
       } catch (error) {
         log('Error sending verification email:', error instanceof Error ? error.message : 'Unknown error');
@@ -126,13 +127,9 @@ router.post('/api/waitlist', async (req, res) => {
 
       const response = {
         status: 'pending_verification',
-        message: 'Please check your email for the verification code'
+        message: 'Please check your email for the verification code',
+        previewUrl: emailPreviewUrl // Always include the preview URL
       };
-
-      // Add preview URL in development
-      if (process.env.NODE_ENV !== 'production' && emailPreviewUrl) {
-        response['previewUrl'] = emailPreviewUrl;
-      }
 
       return res.json(response);
     } catch (error) {

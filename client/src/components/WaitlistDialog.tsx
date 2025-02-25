@@ -31,6 +31,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -81,22 +82,41 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       if (responseData.status === 'pending_verification') {
         // Complete form reset
         form.reset();
-        // Complete verification form reset
         verificationForm.reset();
         verificationForm.clearErrors();
-        // Set default values explicitly
         verificationForm.setValue('code', '');
         setPendingEmail(values.email.trim());
+        setPreviewUrl(responseData.previewUrl);
         setStep('verifying');
 
-        const message = process.env.NODE_ENV !== 'production' && responseData.previewUrl
-          ? `We've sent a verification code to your email. Since this is a test environment, you can view the email at: ${responseData.previewUrl}`
-          : "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.";
-
+        // Show verification instructions
         toast({
           title: "Check your email",
-          description: message,
+          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
         });
+
+        // If we have a preview URL, show it in a separate toast
+        if (responseData.previewUrl) {
+          setTimeout(() => {
+            toast({
+              title: "Test Environment Email",
+              description: (
+                <div className="mt-2">
+                  <p className="mb-2">Since this is a test environment, you can view the email at:</p>
+                  <a
+                    href={responseData.previewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline break-all"
+                  >
+                    View Test Email
+                  </a>
+                </div>
+              ),
+              duration: 10000, // Show for 10 seconds
+            });
+          }, 1000);
+        }
       } else {
         throw new Error("Unexpected server response");
       }
