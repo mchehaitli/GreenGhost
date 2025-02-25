@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Match server schema exactly
+// Form schemas
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
@@ -47,17 +47,17 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     },
   });
 
-  const onSubmit = async (values: FormData) => {
-    if (isSubmitting) return;
-
+  const onSubmit = async (data: FormData) => {
     try {
       setIsSubmitting(true);
 
-      // Log form data for debugging
-      console.log('Form data:', {
-        values,
-        errors: form.formState.errors,
+      // Log form state before submission
+      console.log('Form submission:', {
+        data,
+        rawFormState: form.getValues(),
+        validationState: form.formState,
       });
+
 
       const response = await fetch("/api/waitlist", {
         method: "POST",
@@ -65,31 +65,26 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: values.email.trim().toLowerCase(),
-          zip_code: values.zip_code.trim(),
+          email: data.email.trim(),
+          zip_code: data.zip_code.trim(),
         }),
       });
 
-      // Log raw response for debugging
-      console.log('Server response status:', response.status);
-
-      const data = await response.json();
-      console.log('Server response data:', data);
+      const responseData = await response.json();
+      console.log('Server response:', { status: response.status, data: responseData });
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || "Failed to join waitlist");
+        throw new Error(responseData.error || responseData.details || "Failed to join waitlist");
       }
 
-      // Check response status
-      if (data.status === 'pending_verification') {
-        setPendingEmail(values.email.toLowerCase());
+      if (responseData.status === 'pending_verification') {
+        setPendingEmail(data.email.trim());
         setStep('verifying');
         toast({
           title: "Check your email",
           description: "We've sent a 4-digit verification code to your email.",
         });
       } else {
-        console.error('Unexpected server response:', data);
         throw new Error("Unexpected server response");
       }
     } catch (error) {
@@ -189,8 +184,8 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <Input 
-                      placeholder="Enter your email"
                       type="email"
+                      placeholder="Enter your email"
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -205,10 +200,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
                     <Input 
+                      type="text"
                       placeholder="Enter your ZIP code"
                       maxLength={5}
-                      inputMode="numeric"
                       {...field}
+                      value={field.value}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         field.onChange(value);
@@ -222,7 +218,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               <Button 
                 type="submit"
                 className="w-full"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !form.formState.isValid}
               >
                 {isSubmitting ? "Submitting..." : "Join Waitlist"}
               </Button>
@@ -242,7 +238,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     <Input
                       placeholder="Enter 4-digit code"
                       maxLength={4}
-                      inputMode="numeric"
                       {...field}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 4);
