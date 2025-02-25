@@ -40,7 +40,20 @@ const editFormSchema = z.object({
   notes: z.string().optional(),
 });
 
+const emailTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  subject: z.string().min(1, "Subject is required"),
+  html_content: z.string().min(1, "Email content is required"),
+});
+
 type EditFormData = z.infer<typeof editFormSchema>;
+type EmailTemplateFormData = z.infer<typeof emailTemplateSchema>;
+type SelectEmailTemplate = {
+  id: number;
+  name: string;
+  subject: string;
+  html_content: string;
+};
 
 const EmailPreviewTab = () => {
   const [previewType, setPreviewType] = useState<'verification' | 'welcome'>('verification');
@@ -187,26 +200,17 @@ const EmailPreviewTab = () => {
   );
 };
 
-const emailTemplateSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  subject: z.string().min(1, "Subject is required"),
-  html_content: z.string().min(1, "Email content is required"),
-});
-
-type EmailTemplateFormData = z.infer<typeof emailTemplateSchema>;
-type SelectEmailTemplate = {
-  id: number;
-  name: string;
-  subject: string;
-  html_content: string;
-};
-
 const EmailTemplateTab = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<SelectEmailTemplate | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const { toast } = useToast();
+  const [showRecipientDialog, setShowRecipientDialog] = useState(false);
+  const [selectedZipCodes, setSelectedZipCodes] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
 
-  const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
+
+  const { data: templates = [], isLoading: templatesLoading } = useQuery<SelectEmailTemplate[]>({
     queryKey: ["/api/email-templates"],
     queryFn: async () => {
       const response = await fetch("/api/email-templates", {
@@ -217,11 +221,52 @@ const EmailTemplateTab = () => {
     },
   });
 
-  const queryClient = useQueryClient();
+  const { data: waitlistEntries = [], isLoading: entriesLoading } = useQuery<WaitlistEntry[]>({
+    queryKey: ["/api/waitlist"],
+    queryFn: async () => {
+      const response = await fetch("/api/waitlist", {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error("Failed to fetch waitlist");
+      return response.json();
+    },
+  });
 
   const templateForm = useForm<EmailTemplateFormData>({
     resolver: zodResolver(emailTemplateSchema),
   });
+
+  // Filter waitlist entries based on date and ZIP codes
+  const filteredEntries = useMemo(() => {
+    let filtered = [...waitlistEntries];
+
+    // Apply date filter
+    const now = new Date();
+    if (dateFilter === 'week') {
+      filtered = filtered.filter(entry =>
+        new Date(entry.created_at) > subDays(now, 7)
+      );
+    } else if (dateFilter === 'month') {
+      filtered = filtered.filter(entry =>
+        new Date(entry.created_at) > subDays(now, 30)
+      );
+    }
+
+    // Apply ZIP code filter
+    if (selectedZipCodes.length > 0) {
+      filtered = filtered.filter(entry =>
+        selectedZipCodes.includes(entry.zip_code)
+      );
+    }
+
+    return filtered;
+  }, [waitlistEntries, dateFilter, selectedZipCodes]);
+
+  // Get unique ZIP codes from waitlist
+  const uniqueZipCodes = useMemo(() => {
+    const zipCodes = new Set(waitlistEntries.map(entry => entry.zip_code));
+    return Array.from(zipCodes).sort();
+  }, [waitlistEntries]);
 
   const createTemplateMutation = useMutation({
     mutationFn: async (data: EmailTemplateFormData) => {
@@ -306,17 +351,18 @@ const EmailTemplateTab = () => {
   });
 
   const sendEmailsMutation = useMutation({
-    mutationFn: async ({ templateId, zipCodes }: { templateId: number; zipCodes: string[] }) => {
+    mutationFn: async ({ templateId, emails }: { templateId: number; emails: string[] }) => {
       const response = await fetch(`/api/email-templates/${templateId}/send`, {
         method: "POST",
         credentials: 'include',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ zip_codes: zipCodes }),
+        body: JSON.stringify({ emails }),
       });
       if (!response.ok) throw new Error("Failed to send emails");
       return response.json();
     },
     onSuccess: (data) => {
+      setShowRecipientDialog(false);
       toast({
         title: "Success",
         description: `Sent email to ${data.total_sent} recipients`,
@@ -330,6 +376,30 @@ const EmailTemplateTab = () => {
       });
     },
   });
+
+  const sendTestEmail = async (templateId: number, email: string) => {
+    try {
+      const response = await fetch(`/api/email-templates/${templateId}/test`, {
+        method: "POST",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send test email");
+
+      toast({
+        title: "Success",
+        description: "Test email sent successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send test email",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleEdit = (template: SelectEmailTemplate) => {
     setSelectedTemplate(template);
@@ -372,7 +442,7 @@ const EmailTemplateTab = () => {
         </Button>
       </div>
 
-      {isLoading ? (
+      {(templatesLoading || entriesLoading) ? (
         <div className="flex items-center justify-center p-8">
           <LoadingSpinner size="lg" />
         </div>
@@ -401,24 +471,27 @@ const EmailTemplateTab = () => {
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-4">
                 <p className="font-medium">Subject: {template.subject}</p>
-                <div className="mt-4">
+                <div className="flex gap-2">
                   <Button
                     onClick={() => {
-                      const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all):");
-                      if (zipCodes !== null) {
-                        const zipCodeArray = zipCodes.split(",")
-                          .map(zip => zip.trim())
-                          .filter(zip => zip.length === 5);
-                        sendEmailsMutation.mutate({
-                          templateId: template.id,
-                          zipCodes: zipCodeArray,
-                        });
+                      const email = prompt("Enter email address for test:");
+                      if (email) {
+                        sendTestEmail(template.id, email);
                       }
                     }}
+                    variant="outline"
                   >
-                    Send Email
+                    Send Test Email
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      setShowRecipientDialog(true);
+                    }}
+                  >
+                    Send to Recipients
                   </Button>
                 </div>
               </CardContent>
@@ -427,6 +500,7 @@ const EmailTemplateTab = () => {
         </div>
       )}
 
+      {/* Template Edit/Create Dialog */}
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
         <DialogContent>
           <DialogHeader>
@@ -485,13 +559,253 @@ const EmailTemplateTab = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Recipients Selection Dialog */}
+      <Dialog open={showRecipientDialog} onOpenChange={setShowRecipientDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Select Recipients</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex gap-4 items-center">
+              <Button
+                variant={dateFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('all')}
+              >
+                All Time
+              </Button>
+              <Button
+                variant={dateFilter === 'week' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('week')}
+              >
+                Last Week
+              </Button>
+              <Button
+                variant={dateFilter === 'month' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('month')}
+              >
+                Last Month
+              </Button>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="flex flex-wrap gap-2">
+                {uniqueZipCodes.map((zipCode) => (
+                  <Button
+                    key={zipCode}
+                    variant={selectedZipCodes.includes(zipCode) ? 'default' : 'outline'}
+                    onClick={() => {
+                      setSelectedZipCodes(prev =>
+                        prev.includes(zipCode)
+                          ? prev.filter(z => z !== zipCode)
+                          : [...prev, zipCode]
+                      );
+                    }}
+                    size="sm"
+                  >
+                    {zipCode}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setSelectedZipCodes([])}
+                className="w-fit"
+              >
+                Clear Selection
+              </Button>
+            </div>
+
+            <div className="rounded-md border p-4">
+              <h3 className="font-medium mb-2">Selected Recipients</h3>
+              <p className="text-sm text-muted-foreground">
+                {filteredEntries.length} recipients selected
+              </p>
+              <div className="mt-2 max-h-40 overflow-y-auto">
+                {filteredEntries.map(entry => (
+                  <div key={entry.email} className="text-sm py-1">
+                    {entry.email} ({entry.zip_code})
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (selectedTemplate) {
+                  sendEmailsMutation.mutate({
+                    templateId: selectedTemplate.id,
+                    emails: filteredEntries.map(entry => entry.email)
+                  });
+                }
+              }}
+              disabled={filteredEntries.length === 0}
+            >
+              Send to {filteredEntries.length} Recipients
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+};
+
+const deleteEntryMutation = useMutation({
+  mutationFn: async (id: number) => {
+    const response = await fetch(`/api/waitlist/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Failed to delete entry');
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+    toast({
+      title: "Entry deleted",
+      description: "The waitlist entry has been removed successfully.",
+    });
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to delete entry",
+      variant: "destructive",
+    });
+  },
+});
+
+const updateEntryMutation = useMutation({
+  mutationFn: async (data: EditFormData & { id: number }) => {
+    const { id, ...updateData } = data;
+    const response = await fetch(`/api/waitlist/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+    if (!response.ok) throw new Error('Failed to update entry');
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+    setEditingEntry(null);
+    toast({
+      title: "Entry updated",
+      description: "The waitlist entry has been updated successfully.",
+    });
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to update entry",
+      variant: "destructive",
+    });
+  },
+});
+
+const columns: ColumnDef<WaitlistEntry>[] = [
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "phone_number",
+    header: "Phone",
+  },
+  {
+    accessorKey: "address",
+    header: "Address",
+  },
+  {
+    accessorKey: "zip_code",
+    header: "ZIP Code",
+  },
+  {
+    accessorKey: "notes",
+    header: "Notes",
+  },
+  {
+    accessorKey: "created_at",
+    header: "Created At",
+    cell: ({ row }) => {
+      return format(new Date(row.original.created_at), "MMM dd, yyyy HH:mm:ss");
+    },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setEditingEntry(row.original);
+              editForm.reset({
+                email: row.original.email,
+                name: row.original.name || "",
+                phone_number: row.original.phone_number || "",
+                address: row.original.address || "",
+                notes: row.original.notes || "",
+              });
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete this entry?")) {
+                deleteEntryMutation.mutate(row.original.id);
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
+];
+
+const exportToExcel = () => {
+  const exportData = entries.map(entry => ({
+    Email: entry.email,
+    Name: entry.name || '',
+    'Phone Number': entry.phone_number || '',
+    Address: entry.address || '',
+    'ZIP Code': entry.zip_code,
+    Notes: entry.notes || '',
+    'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+
+  XLSX.utils.book_append_sheet(wb, ws, "Waitlist Entries");
+  XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+};
+
+const handleLogout = async () => {
+  try {
+    await logout();
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
 };
 
 export default function WaitlistPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
 
   const editForm = useForm<EditFormData>({
@@ -553,130 +867,6 @@ export default function WaitlistPage() {
     };
   }, [entries]);
 
-  const deleteEntryMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/waitlist/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to delete entry');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
-      toast({
-        title: "Entry deleted",
-        description: "The waitlist entry has been removed successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete entry",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateEntryMutation = useMutation({
-    mutationFn: async (data: EditFormData & { id: number }) => {
-      const { id, ...updateData } = data;
-      const response = await fetch(`/api/waitlist/${id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-      if (!response.ok) throw new Error('Failed to update entry');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
-      setEditingEntry(null);
-      toast({
-        title: "Entry updated",
-        description: "The waitlist entry has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update entry",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const columns: ColumnDef<WaitlistEntry>[] = [
-    {
-      accessorKey: "email",
-      header: "Email",
-    },
-    {
-      accessorKey: "name",
-      header: "Name",
-    },
-    {
-      accessorKey: "phone_number",
-      header: "Phone",
-    },
-    {
-      accessorKey: "address",
-      header: "Address",
-    },
-    {
-      accessorKey: "zip_code",
-      header: "ZIP Code",
-    },
-    {
-      accessorKey: "notes",
-      header: "Notes",
-    },
-    {
-      accessorKey: "created_at",
-      header: "Created At",
-      cell: ({ row }) => {
-        return format(new Date(row.original.created_at), "MMM dd, yyyy HH:mm:ss");
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setEditingEntry(row.original);
-                editForm.reset({
-                  email: row.original.email,
-                  name: row.original.name || "",
-                  phone_number: row.original.phone_number || "",
-                  address: row.original.address || "",
-                  notes: row.original.notes || "",
-                });
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this entry?")) {
-                  deleteEntryMutation.mutate(row.original.id);
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
-
   const isLoading = authLoading || dataLoading;
 
   if (isLoading) {
@@ -693,31 +883,6 @@ export default function WaitlistPage() {
     return <Redirect to="/login" />;
   }
 
-  const exportToExcel = () => {
-    const exportData = entries.map(entry => ({
-      Email: entry.email,
-      Name: entry.name || '',
-      'Phone Number': entry.phone_number || '',
-      Address: entry.address || '',
-      'ZIP Code': entry.zip_code,
-      Notes: entry.notes || '',
-      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
-    }));
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(exportData);
-
-    XLSX.utils.book_append_sheet(wb, ws, "Waitlist Entries");
-    XLSX.writeFile(wb, `waitlist-entries-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
 
   return (
     <div className="container mx-auto py-10 space-y-8">
@@ -835,6 +1000,7 @@ export default function WaitlistPage() {
         <TabsContent value="templates">
           <EmailTemplateTab />
         </TabsContent>
+
         <TabsContent value="preview">
           <EmailPreviewTab />
         </TabsContent>
@@ -844,8 +1010,7 @@ export default function WaitlistPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Waitlist Entry</DialogTitle>
-          </DialogHeader>
-          <Form {...editForm}>
+          </DialogHeader>          <Form {...editForm}>
             <form
               onSubmit={editForm.handleSubmit((data) => {
                 if (!editingEntry) return;
@@ -914,19 +1079,7 @@ export default function WaitlistPage() {
                 )}
               />
               <DialogFooter>
-                <Button
-                  type="submit"
-                  disabled={updateEntryMutation.isPending}
-                >
-                  {updateEntryMutation.isPending ? (
-                    <>
-                      <LoadingSpinner className="mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
+                <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
           </Form>
