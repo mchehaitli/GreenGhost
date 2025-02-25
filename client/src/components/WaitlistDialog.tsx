@@ -79,6 +79,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
       if (responseData.status === 'pending_verification') {
         setPendingEmail(data.email.trim());
+        verificationForm.reset({ code: "" }); // Explicitly reset verification form
         setStep('verifying');
         toast({
           title: "Check your email",
@@ -91,7 +92,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "Failed to join waitlist",
         variant: "destructive",
       });
     } finally {

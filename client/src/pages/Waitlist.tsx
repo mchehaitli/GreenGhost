@@ -95,6 +95,7 @@ const Waitlist = () => {
 
       if (data.status === 'pending_verification') {
         setPendingEmail(values.email);
+        verificationForm.reset({ code: "" }); // Explicitly reset verification form
         setStep('verifying');
         toast({
           title: "Check your email",
@@ -192,7 +193,7 @@ const Waitlist = () => {
               <CardHeader>
                 <CardTitle>{step === 'initial' ? "Sign Up for Early Access" : "Enter Verification Code"}</CardTitle>
                 <CardDescription>
-                  {step === 'initial' 
+                  {step === 'initial'
                     ? "Join our waitlist and be notified when we launch in your area"
                     : "Enter the 4-digit code sent to your email"}
                 </CardDescription>
@@ -221,8 +222,8 @@ const Waitlist = () => {
                           <FormItem>
                             <FormLabel>ZIP Code</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="12345" 
+                              <Input
+                                placeholder="12345"
                                 maxLength={5}
                                 type="text"
                                 inputMode="numeric"
@@ -237,9 +238,9 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
+                      <Button
+                        type="submit"
+                        className="w-full"
                         disabled={isSubmitting || !form.formState.isValid}
                       >
                         {isSubmitting ? (
@@ -281,7 +282,7 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
-                      <Button 
+                      <Button
                         type="submit"
                         className="w-full"
                         disabled={isSubmitting}
@@ -317,7 +318,7 @@ const Waitlist = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Join our waitlist for a chance to win a full year of FREE automated 
+                  Join our waitlist for a chance to win a full year of FREE automated
                   landscape maintenance! Winner will be announced at launch.
                 </p>
               </CardContent>
@@ -332,7 +333,7 @@ const Waitlist = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  We're in the final stages of testing and will be launching before 
+                  We're in the final stages of testing and will be launching before
                   summer. Early waitlist members get priority access!
                 </p>
               </CardContent>
@@ -347,7 +348,7 @@ const Waitlist = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  With traditional landscaping facing labor shortages, our robotic workforce 
+                  With traditional landscaping facing labor shortages, our robotic workforce
                   is ready to serve. Reserve your spot before we're fully booked!
                 </p>
               </CardContent>
