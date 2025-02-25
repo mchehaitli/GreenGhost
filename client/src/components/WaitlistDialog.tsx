@@ -36,15 +36,27 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
   const initialForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      zip_code: "",
+    }
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
+    }
   });
 
   const resetForms = () => {
-    initialForm.reset();
-    verificationForm.reset();
+    initialForm.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
@@ -182,7 +194,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
-                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          field.onChange(value);
+                        }}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -226,7 +242,12 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
-                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          field.onChange(value);
+                        }}
+                        value={field.value}
+                        className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
                     <FormMessage />
