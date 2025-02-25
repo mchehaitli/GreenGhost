@@ -240,12 +240,11 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                          console.log("Code input value:", value); // Debug log
                           field.onChange(value);
                         }}
-                        value={field.value}
                         className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
