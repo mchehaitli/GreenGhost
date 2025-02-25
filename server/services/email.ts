@@ -12,6 +12,85 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Template rendering functions
+function renderVerificationEmail(email: string, code: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email</h1>
+
+      <p style="color: #4b5563; line-height: 1.6;">
+        Thank you for joining our waitlist! Please use the following 6-digit code to verify your email address:
+      </p>
+
+      <div style="margin: 30px 0; text-align: center;">
+        <div style="
+          background-color: #f3f4f6;
+          padding: 20px;
+          border-radius: 8px;
+          font-size: 32px;
+          letter-spacing: 8px;
+          font-weight: bold;
+          color: #22c55e;
+        ">
+          ${code}
+        </div>
+      </div>
+
+      <p style="color: #4b5563; line-height: 1.6;">
+        This verification code will expire in 90 seconds. If you didn't request this code, please ignore this email.
+      </p>
+
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 0.875rem;">
+          GreenGhost Tech
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function renderWelcomeEmail(email: string, zipCode: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech!</h1>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 10h.01" />
+          <path d="M15 10h.01" />
+          <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
+        </svg>
+      </div>
+
+      <p style="color: #4b5563; line-height: 1.6;">
+        Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
+      </p>
+
+      <p style="color: #4b5563; line-height: 1.6;">
+        You're now entered for a chance to win a full year of FREE automated lawn maintenance! Winner will be announced at launch.
+      </p>
+
+      <h2 style="color: #22c55e; margin-top: 30px;">What's Next?</h2>
+
+      <ul style="color: #4b5563; line-height: 1.6;">
+        <li>Keep an eye on your inbox for updates about our launch</li>
+        <li>You'll be among the first to know when we're ready to begin service in your area</li>
+        <li>Early waitlist members get priority access and special pricing</li>
+      </ul>
+
+      <p style="color: #4b5563; line-height: 1.6; margin-top: 30px;">
+        Have questions? Contact us at support@greenghosttech.com
+      </p>
+
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 0.875rem;">
+          GreenGhost Tech
+        </p>
+      </div>
+    </div>
+  `;
+}
+
 async function generateVerificationCode(email: string): Promise<string> {
   // Delete any existing unused tokens for this email
   await db.delete(verificationTokens)
@@ -77,39 +156,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Your GreenGhost Tech Verification Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email</h1>
-
-          <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for joining our waitlist! Please use the following 6-digit code to verify your email address:
-          </p>
-
-          <div style="margin: 30px 0; text-align: center;">
-            <div style="
-              background-color: #f3f4f6;
-              padding: 20px;
-              border-radius: 8px;
-              font-size: 32px;
-              letter-spacing: 8px;
-              font-weight: bold;
-              color: #22c55e;
-            ">
-              ${code}
-            </div>
-          </div>
-
-          <p style="color: #4b5563; line-height: 1.6;">
-            This verification code will expire in 90 seconds. If you didn't request this code, please ignore this email.
-          </p>
-
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech
-            </p>
-          </div>
-        </div>
-      `,
+      html: renderVerificationEmail(email, code),
     });
 
     log(`Verification email sent successfully to ${email}`);
@@ -128,45 +175,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Welcome to GreenGhost Tech's Waitlist!",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech!</h1>
-
-          <div style="text-align: center; margin: 20px 0;">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 10h.01" />
-              <path d="M15 10h.01" />
-              <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
-            </svg>
-          </div>
-
-          <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
-          </p>
-
-          <p style="color: #4b5563; line-height: 1.6;">
-            You're now entered for a chance to win a full year of FREE automated lawn maintenance! Winner will be announced at launch.
-          </p>
-
-          <h2 style="color: #22c55e; margin-top: 30px;">What's Next?</h2>
-
-          <ul style="color: #4b5563; line-height: 1.6;">
-            <li>Keep an eye on your inbox for updates about our launch</li>
-            <li>You'll be among the first to know when we're ready to begin service in your area</li>
-            <li>Early waitlist members get priority access and special pricing</li>
-          </ul>
-
-          <p style="color: #4b5563; line-height: 1.6; margin-top: 30px;">
-            Have questions? Contact us at support@greenghosttech.com
-          </p>
-
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech
-            </p>
-          </div>
-        </div>
-      `,
+      html: renderWelcomeEmail(email, zipCode),
     });
 
     log(`Welcome email sent successfully to ${email}`);
@@ -177,8 +186,17 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
   }
 }
 
+export async function previewEmailTemplate(templateType: 'verification' | 'welcome', email: string): Promise<string> {
+  if (templateType === 'verification') {
+    return renderVerificationEmail(email, '123456');
+  } else {
+    return renderWelcomeEmail(email, '12345');
+  }
+}
+
 export default {
   sendVerificationEmail,
   sendWelcomeEmail,
   verifyCode,
+  previewEmailTemplate,
 };
