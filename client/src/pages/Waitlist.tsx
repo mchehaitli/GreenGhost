@@ -27,7 +27,7 @@ const formSchema = z.object({
   email: z.string()
     .email("Please enter a valid email address")
     .transform(val => val.toLowerCase()),
-  zipCode: z.string()
+  zip_code: z.string()
     .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
 });
 
@@ -38,13 +38,15 @@ const Waitlist = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      zipCode: "",
+      zip_code: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
+      console.log('Submitting form:', values);
+
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
@@ -52,11 +54,12 @@ const Waitlist = () => {
         },
         body: JSON.stringify({
           email: values.email,
-          zipCode: values.zipCode,
+          zip_code: values.zip_code,
         }),
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         if (data.error === 'Duplicate entry') {
@@ -70,10 +73,14 @@ const Waitlist = () => {
         throw new Error(data.details || 'Failed to join waitlist');
       }
 
-      toast({
-        title: "Successfully joined waitlist!",
-        description: "You're now entered for a chance to win free maintenance for a year.",
-      });
+      if (data.status === 'pending_verification') {
+        toast({
+          title: "Check your email",
+          description: "We've sent a verification code to complete your signup.",
+        });
+      } else {
+        throw new Error("Unexpected server response");
+      }
 
       form.reset();
     } catch (error) {
@@ -132,7 +139,7 @@ const Waitlist = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
+                            <Input placeholder="your@email.com" type="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -140,12 +147,22 @@ const Waitlist = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="zipCode"
+                      name="zip_code"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>ZIP Code</FormLabel>
                           <FormControl>
-                            <Input placeholder="12345" {...field} />
+                            <Input 
+                              placeholder="12345" 
+                              maxLength={5}
+                              type="text"
+                              inputMode="numeric"
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                                field.onChange(value);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
