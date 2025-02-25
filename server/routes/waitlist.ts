@@ -118,8 +118,10 @@ router.post('/api/waitlist', async (req, res) => {
 // Step 2: Verify email with code
 router.post('/api/waitlist/verify', async (req, res) => {
   try {
+    log(`Received verification request`);
+    log('Request body:', JSON.stringify(req.body, null, 2));
+
     const { email, code } = req.body;
-    log(`Received verification request - Email: ${email}, Code: ${code}`);
 
     // Validate input
     try {
