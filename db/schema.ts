@@ -7,7 +7,7 @@ import { z } from "zod";
 export const waitlist = pgTable("waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
-  zip_code: text("zip_code").notNull(),
+  zip_code: text("zip_code").default("").notNull(), // Adding default value
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

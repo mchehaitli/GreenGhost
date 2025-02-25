@@ -107,7 +107,7 @@ router.post('/api/waitlist', async (req, res) => {
       });
     }
   } catch (error) {
-    log('Waitlist signup error:', error);
+    log('Waitlist signup error:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to process signup'
@@ -181,7 +181,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
         await sendWelcomeEmail(normalizedEmail, entry.zip_code);
         log(`Welcome email sent to ${normalizedEmail}`);
       } catch (error) {
-        log('Welcome email failed:', error);
+        log('Error sending welcome email:', error);
         // Continue despite welcome email failure
       }
 
@@ -197,7 +197,7 @@ router.post('/api/waitlist/verify', async (req, res) => {
       });
     }
   } catch (error) {
-    log('Verification error:', error);
+    log('Verification error:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to verify email'
