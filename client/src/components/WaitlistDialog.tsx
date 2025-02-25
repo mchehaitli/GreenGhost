@@ -1,7 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "./ui/form";
 import { Input } from "./ui/input";
@@ -70,18 +70,12 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: values.email,
-          zip_code: values.zip_code,
-        }),
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.error === 'Already registered') {
-          throw new Error('This email is already on our waitlist');
-        }
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
@@ -150,12 +144,15 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!newOpen) {
-        handleReset();
-      }
-      onOpenChange(newOpen);
-    }}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          handleReset();
+        }
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogContent>
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
@@ -175,14 +172,15 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         type="email"
                         placeholder="Enter your email"
                         autoComplete="email"
-                        {...field}
                         disabled={isSubmitting}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="zip_code"
@@ -195,18 +193,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         placeholder="Enter ZIP code"
                         maxLength={5}
                         inputMode="numeric"
-                        value={field.value}
+                        disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                           field.onChange(value);
                         }}
-                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <Button
                 type="submit"
                 className="w-full bg-primary/10 text-primary hover:bg-primary/20"
@@ -229,6 +228,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
               <p className="text-sm text-muted-foreground mb-4">
                 Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
               </p>
+
               <FormField
                 control={verificationForm.control}
                 name="code"
@@ -241,19 +241,20 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         maxLength={4}
                         inputMode="numeric"
                         autoComplete="one-time-code"
-                        value={field.value}
+                        disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                           field.onChange(value);
                         }}
                         className="text-center text-2xl tracking-[0.5em] font-mono"
-                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <VerificationCountdown 
                 onExpire={() => {
                   toast({
@@ -262,8 +263,9 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                     variant: "destructive",
                   });
                   handleReset();
-                }} 
+                }}
               />
+
               <Button
                 type="submit"
                 className="w-full bg-primary/10 text-primary hover:bg-primary/20"

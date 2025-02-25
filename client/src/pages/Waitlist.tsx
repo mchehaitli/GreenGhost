@@ -26,17 +26,12 @@ import VerificationCountdown from "@/components/VerificationCountdown";
 
 // Form schemas
 const formSchema = z.object({
-  email: z.string()
-    .email("Please enter a valid email address")
-    .transform(val => val.toLowerCase()),
-  zip_code: z.string()
-    .regex(/^\d{5}$/, "ZIP code must be exactly 5 digits")
+  email: z.string().email("Please enter a valid email address"),
+  zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
 const verificationSchema = z.object({
-  code: z.string()
-    .length(4, "Code must be 4 digits")
-    .regex(/^\d+$/, "Code must contain only numbers"),
+  code: z.string().length(4, "Code must be 4 digits").regex(/^\d+$/, "Code must contain only numbers"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -84,24 +79,13 @@ const Waitlist = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: values.email,
-          zip_code: values.zip_code,
-        }),
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.error === 'Duplicate entry') {
-          toast({
-            title: "Already registered",
-            description: "This email is already on our waitlist.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw new Error(data.details || 'Failed to join waitlist');
+        throw new Error(data.error || data.details || 'Failed to join waitlist');
       }
 
       if (data.status === 'pending_verification') {
@@ -109,7 +93,7 @@ const Waitlist = () => {
         setStep('verifying');
         toast({
           title: "Check your email",
-          description: "We've sent a verification code to complete your signup.",
+          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
         });
       } else {
         throw new Error("Unexpected server response");
@@ -117,7 +101,7 @@ const Waitlist = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to join waitlist. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to join waitlist",
         variant: "destructive",
       });
     } finally {
@@ -219,8 +203,8 @@ const Waitlist = () => {
                                 placeholder="your@email.com" 
                                 type="email"
                                 autoComplete="email"
-                                {...field}
                                 disabled={isSubmitting}
+                                {...field}
                               />
                             </FormControl>
                             <FormMessage />
@@ -239,12 +223,12 @@ const Waitlist = () => {
                                 placeholder="12345"
                                 maxLength={5}
                                 inputMode="numeric"
-                                value={field.value}
+                                disabled={isSubmitting}
+                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
                                 }}
-                                disabled={isSubmitting}
                               />
                             </FormControl>
                             <FormMessage />
@@ -259,7 +243,7 @@ const Waitlist = () => {
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Joining...
+                            Submitting...
                           </>
                         ) : (
                           "Join Waitlist"
@@ -285,13 +269,13 @@ const Waitlist = () => {
                                 maxLength={4}
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
-                                value={field.value}
+                                disabled={isSubmitting}
+                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
                                 }}
                                 className="text-center text-2xl tracking-[0.5em] font-mono"
-                                disabled={isSubmitting}
                               />
                             </FormControl>
                             <FormMessage />
