@@ -10,18 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import VerificationCountdown from "./VerificationCountdown";
 
-// Form schemas
+// Initial form schema
 const initialFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
-const verificationFormSchema = z.object({
-  verificationCode: z.string().length(6, "Please enter the 6-digit code").regex(/^\d+$/, "Please enter only numbers"),
-});
-
 type InitialFormData = z.infer<typeof initialFormSchema>;
-type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -32,6 +27,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const { toast } = useToast();
 
   const initialForm = useForm<InitialFormData>({
@@ -42,22 +38,18 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     },
   });
 
-  const verificationForm = useForm<VerificationFormData>({
-    resolver: zodResolver(verificationFormSchema),
-    defaultValues: {
-      verificationCode: "",
-    },
-  });
-
   const resetForms = () => {
-    initialForm.reset();
-    verificationForm.reset();
+    initialForm.reset({
+      email: "",
+      zip_code: "",
+    });
+    setVerificationCode("");
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
   };
 
-  const onSubmit = async (values: InitialFormData) => {
+  const onInitialSubmit = async (values: InitialFormData) => {
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/waitlist', {
@@ -98,8 +90,9 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
-  const onVerificationSubmit = async (values: VerificationFormData) => {
-    if (!pendingEmail || isSubmitting) return;
+  const handleVerificationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingEmail || isSubmitting || !verificationCode || verificationCode.length !== 6) return;
 
     try {
       setIsSubmitting(true);
@@ -110,7 +103,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         },
         body: JSON.stringify({
           email: pendingEmail,
-          code: values.verificationCode,
+          code: verificationCode,
         }),
       });
 
@@ -157,7 +150,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
         {step === 'initial' ? (
           <Form {...initialForm}>
-            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={initialForm.handleSubmit(onInitialSubmit)} className="space-y-4">
               <FormField
                 control={initialForm.control}
                 name="email"
@@ -220,65 +213,54 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
             </form>
           </Form>
         ) : (
-          <Form {...verificationForm}>
-            <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Enter the 6-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
-              </p>
+          <form onSubmit={handleVerificationSubmit} className="space-y-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Enter the 6-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
+            </p>
 
-              <FormField
-                control={verificationForm.control}
-                name="verificationCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="000000"
-                        maxLength={6}
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        disabled={isSubmitting}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          field.onChange(value);
-                        }}
-                        value={field.value}
-                        className="text-center text-2xl tracking-[0.5em] font-mono"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <VerificationCountdown
-                onExpire={() => {
-                  toast({
-                    title: "Verification Expired",
-                    description: "The verification period has expired. Please sign up again.",
-                    variant: "destructive",
-                  });
-                  resetForms();
-                }}
-              />
-
-              <Button
-                type="submit"
-                className="w-full bg-primary/10 text-primary hover:bg-primary/20"
+            <div>
+              <Input
+                type="text"
+                placeholder="000000"
+                maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify Code"
-                )}
-              </Button>
-            </form>
-          </Form>
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setVerificationCode(value);
+                }}
+                className="text-center text-2xl tracking-[0.5em] font-mono"
+              />
+            </div>
+
+            <VerificationCountdown
+              onExpire={() => {
+                toast({
+                  title: "Verification Expired",
+                  description: "The verification period has expired. Please sign up again.",
+                  variant: "destructive",
+                });
+                resetForms();
+              }}
+            />
+
+            <Button
+              type="submit"
+              className="w-full bg-primary/10 text-primary hover:bg-primary/20"
+              disabled={isSubmitting || verificationCode.length !== 6}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify Code"
+              )}
+            </Button>
+          </form>
         )}
       </DialogContent>
     </Dialog>
