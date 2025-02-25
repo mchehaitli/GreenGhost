@@ -51,22 +51,6 @@ export const emailSegments = pgTable("email_segments", {
   total_recipients: serial("total_recipients").notNull(),
 });
 
-// New table for blog posts
-export const blogPosts = pgTable("blog_posts", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  slug: text("slug").notNull().unique(),
-  summary: text("summary").notNull(),
-  content: text("content").notNull(),
-  author_id: serial("author_id").references(() => users.id),
-  published: boolean("published").default(false).notNull(),
-  published_at: timestamp("published_at"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-  tags: text("tags").array(),
-  featured_image: text("featured_image"),
-});
-
 // Relations
 export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
   waitlist: one(waitlist, {
@@ -79,13 +63,6 @@ export const emailSegmentsRelations = relations(emailSegments, ({ one }) => ({
   template: one(emailTemplates, {
     fields: [emailSegments.template_id],
     references: [emailTemplates.id],
-  }),
-}));
-
-export const blogPostsRelations = relations(blogPosts, ({ one }) => ({
-  author: one(users, {
-    fields: [blogPosts.author_id],
-    references: [users.id],
   }),
 }));
 
@@ -111,15 +88,6 @@ export const insertEmailTemplateSchema = z.object({
   html_content: z.string().min(1, "Email content is required"),
 });
 
-export const insertBlogPostSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
-  summary: z.string().min(1, "Summary is required"),
-  content: z.string().min(1, "Content is required"),
-  tags: z.array(z.string()).optional(),
-  featured_image: z.string().optional(),
-});
-
 // Export types
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -140,7 +108,3 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
-
-export const selectBlogPostSchema = createSelectSchema(blogPosts);
-export type InsertBlogPost = typeof blogPosts.$inferInsert;
-export type SelectBlogPost = typeof blogPosts.$inferSelect;

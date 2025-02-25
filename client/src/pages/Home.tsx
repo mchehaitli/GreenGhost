@@ -3,16 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import {
-  LeafIcon,
-  Clock,
-  Sun,
-  Sprout,
-  CheckCircle2,
-  DollarSign,
-  Leaf,
   Bot,
   Activity,
   Waves,
+  Sprout,
+  CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
@@ -30,7 +25,7 @@ export const Home = () => {
     <div>
       <Hero />
 
-      {/* Benefits Section */}
+      {/* Technology Preview Section */}
       <section className="py-20 bg-gradient-to-b from-background to-primary/5 border-t border-border/40">
         <div className="container">
           <motion.div
@@ -40,52 +35,39 @@ export const Home = () => {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-4xl font-bold mb-6 text-center">
-              Why Choose Our Service?
+            <h2 className="text-4xl font-bold mb-6">
+              Meet Your New Groundskeeper
             </h2>
-            <div className="space-y-6">
+            <p className="text-xl text-muted-foreground mb-8">
+              Our autonomous lawn care robots use advanced AI and precision sensors to deliver 
+              perfect cuts every time. Rain or shine, day or night, they work tirelessly to 
+              keep your lawn in pristine condition.
+            </p>
+            <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <Clock className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Time Savings</h3>
+                  <h3 className="font-semibold">24/7 Silent Operation</h3>
                   <p className="text-muted-foreground">
-                    Free up your weekends and spend more time with family. Our automated service works 24/7 to maintain your lawn.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Sun className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Hassle-Free Convenience</h3>
-                  <p className="text-muted-foreground">
-                    No more scheduling headaches or unreliable service. Our smart system handles everything automatically.
+                    Whisper-quiet technology means your lawn gets maintained without disturbing the peace
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Professional Results</h3>
+                  <h3 className="font-semibold">Smart Navigation</h3>
                   <p className="text-muted-foreground">
-                    Get a consistently perfect lawn that makes your neighbors envious. Expert trimming ensures every detail is perfect.
+                    Advanced sensors ensure precise coverage and obstacle avoidance
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <DollarSign className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Competitive Pricing</h3>
+                  <h3 className="font-semibold">Weather-Adaptive</h3>
                   <p className="text-muted-foreground">
-                    Premium service at an affordable price. Save money compared to traditional lawn care services.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Leaf className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Eco-Friendly Operation</h3>
-                  <p className="text-muted-foreground">
-                    Reduce your carbon footprint with our all-electric equipment. Quieter operation and zero emissions.
+                    Automatically adjusts mowing patterns based on weather conditions and grass growth
                   </p>
                 </div>
               </div>
@@ -238,7 +220,7 @@ export const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <motion.section
+      <motion.section 
         className="py-20 bg-primary text-primary-foreground"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}

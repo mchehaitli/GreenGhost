@@ -12,10 +12,6 @@ import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
 import AdminWaitlist from "@/pages/admin/Waitlist";
-import AdminBlog from "@/pages/admin/Blog";
-import Blog from "@/pages/Blog";
-import BlogPost from "@/pages/BlogPost";
-import FAQ from "@/pages/FAQ";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import NotFound from "@/pages/not-found";
@@ -32,13 +28,9 @@ function Router() {
       <Route path="/quote" component={Quote} />
       <Route path="/about" component={About} />
       <Route path="/waitlist" component={Waitlist} />
-      <Route path="/blog" component={Blog} />
-      <Route path="/blog/:slug" component={BlogPost} />
-      <Route path="/faq" component={FAQ} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
       <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
-      <Route path="/admin/blog" component={() => <ProtectedRoute component={AdminBlog} />} />
       <Route component={NotFound} />
     </Switch>
   );

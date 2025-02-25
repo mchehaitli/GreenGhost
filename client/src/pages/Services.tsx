@@ -8,20 +8,42 @@ import {
   Sprout,
   Scissors,
   Activity,
-  Clipper,
-  Check,
-  Settings,
-  Ruler,
+  Droplets,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import WaitlistDialog from "@/components/WaitlistDialog";
-import { subscriptionPlans } from "@/lib/subscription-plans";
+import WaitlistDialog from "@/components/WaitlistDialog"; // Added import
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false); // Added state
+  const services = [
+    {
+      icon: <Bot className="w-6 h-6" />,
+      title: "Automated Lawn Mowing",
+      description: "Precision cutting with robotic mowers for a perfect lawn every time.",
+      tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
+    },
+    {
+      icon: <Droplets className="w-6 h-6" />,
+      title: "Smart Irrigation",
+      description: "Water-efficient systems that adapt to weather conditions.",
+      tooltip: "Smart irrigation controllers analyze real-time weather data, soil moisture levels, and plant needs to optimize watering schedules, reducing water usage by up to 50%."
+    },
+    {
+      icon: <Scissors className="w-6 h-6" />,
+      title: "Scheduled Maintenance",
+      description: "Regular automated maintenance to keep your lawn looking its best.",
+      tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
+    },
+    {
+      icon: <Activity className="w-6 h-6" />,
+      title: "Lawn Health Analytics",
+      description: "Real-time monitoring and analysis of lawn conditions.",
+      tooltip: "Advanced analytics provide insights into your lawn's health, growth patterns, and maintenance needs."
+    }
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -30,33 +52,23 @@ const Services = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const serviceSteps = [
-    {
-      icon: <Ruler className="w-6 h-6" />,
-      title: "Initial Assessment",
-      description: "Our expert arrives and carefully assesses your lawn's specific needs and characteristics."
-    },
-    {
-      icon: <Settings className="w-6 h-6" />,
-      title: "Mower Setup",
-      description: "We set up the robotic mower with precise geofencing to ensure complete coverage of your lawn."
-    },
-    {
-      icon: <Bot className="w-6 h-6" />,
-      title: "Automated Mowing",
-      description: "Our advanced robotic mower maintains your lawn at the perfect height, adapting to growth patterns."
-    },
-    {
-      icon: <Scissors className="w-6 h-6" />,
-      title: "Expert Finishing",
-      description: "Professional trimming, edging, and bush cutting for that perfectly manicured look."
-    },
-    {
-      icon: <Check className="w-6 h-6" />,
-      title: "Quality Check",
-      description: "Final inspection ensures everything meets our high standards before departure."
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
     }
-  ];
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1
+    }
+  };
 
   return (
     <motion.div 
@@ -73,14 +85,14 @@ const Services = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="container relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-2xl mx-auto text-center">
             <motion.h1 
               className="text-4xl font-bold mb-6"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Our Service Process
+              Our Services
             </motion.h1>
             <motion.p 
               className="text-lg text-muted-foreground mb-8"
@@ -88,89 +100,64 @@ const Services = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Experience the perfect blend of automated efficiency and human expertise
+              Experience premium automated landscaping services
             </motion.p>
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
+              <Link href="/waitlist">Join Waitlist</Link>
+            </Button>
           </div>
         </div>
       </motion.section>
 
-      {/* Service Process Steps */}
       <section className="py-20 bg-background/50">
-        <div className="container">
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
-              {serviceSteps.map((step, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-start gap-6 p-6 bg-card rounded-lg border"
-                >
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    {step.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground">{step.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Subscription Plans */}
-      <section className="py-20 bg-background relative">
         <div className="container">
           <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
           >
-            <h2 className="text-3xl font-bold mb-4">Choose Your Service Frequency</h2>
-            <p className="text-lg text-muted-foreground">
-              Select a plan that fits your lawn care needs and schedule
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {subscriptionPlans.slice(0, 3).map((plan, index) => (
-              <Card key={plan.id} className="relative overflow-hidden">
-                <CardContent className="p-6">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-3xl font-bold text-primary mb-4">
-                    ${plan.price}<span className="text-sm text-muted-foreground">/month</span>
-                  </p>
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
-                  <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className="w-full" onClick={() => setShowWaitlist(true)}>
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {isLoading ? (
+              <>
+                {[...Array(4)].map((_, index) => (
+                  <motion.div 
+                    key={index} 
+                    variants={itemVariants}
+                    whileHover={{ 
+                      scale: 1.05,
+                      transition: { type: "spring", stiffness: 300 }
+                    }}
+                  >
+                    <ServiceCardSkeleton />
+                  </motion.div>
+                ))}
+              </>
+            ) : (
+              <>
+                {services.map((service, index) => (
+                  <motion.div 
+                    key={index} 
+                    variants={itemVariants}
+                    whileHover={{ 
+                      scale: 1.05,
+                      transition: { type: "spring", stiffness: 300 }
+                    }}
+                  >
+                    <ServiceCard
+                      icon={service.icon}
+                      title={service.title}
+                      description={service.description}
+                      tooltip={service.tooltip}
+                    />
+                  </motion.div>
+                ))}
+              </>
+            )}
           </motion.div>
         </div>
       </section>
 
-      {/* Pricing Calculator */}
-      <section className="py-20 bg-background/50">
+      <section className="py-20 bg-background relative">
         <div className="container">
           <motion.div 
             className="text-center mb-12"
@@ -181,7 +168,7 @@ const Services = () => {
           >
             <h2 className="text-3xl font-bold mb-4">Calculate Your Service Cost</h2>
             <p className="text-lg text-muted-foreground">
-              Get an instant estimate based on your lawn size and service frequency
+              Get an instant estimate for our automated lawn care services
             </p>
           </motion.div>
           <motion.div
@@ -203,8 +190,8 @@ const Services = () => {
         viewport={{ once: true }}
       >
         <div className="container text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Lawn Care Experience?</h2>
-          <p className="mb-8">Join our waitlist today and be among the first to experience the future of lawn care.</p>
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Landscape?</h2>
+          <p className="mb-8">Join our waitlist today to experience the future of lawn care.</p>
           <Button
             onClick={() => setShowWaitlist(true)}
             size="lg"
