@@ -58,7 +58,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
         validationState: form.formState,
       });
 
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
@@ -78,8 +77,10 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (responseData.status === 'pending_verification') {
+        // Reset both forms before changing state
+        verificationForm.reset();
+        verificationForm.setValue('code', '');
         setPendingEmail(data.email.trim());
-        verificationForm.reset({ code: "" }); // Explicitly reset verification form
         setStep('verifying');
         toast({
           title: "Check your email",
@@ -184,7 +185,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <Input 
+                    <Input
                       type="email"
                       placeholder="Enter your email"
                       {...field}
@@ -200,7 +201,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
-                    <Input 
+                    <Input
                       type="text"
                       placeholder="Enter your ZIP code"
                       maxLength={5}
@@ -216,7 +217,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   </FormItem>
                 )}
               />
-              <Button 
+              <Button
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting || !form.formState.isValid}
@@ -251,7 +252,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                   </FormItem>
                 )}
               />
-              <Button 
+              <Button
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}

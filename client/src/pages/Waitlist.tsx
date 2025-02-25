@@ -94,8 +94,10 @@ const Waitlist = () => {
       }
 
       if (data.status === 'pending_verification') {
+        // Reset both forms before changing state
+        verificationForm.reset();
+        verificationForm.setValue('code', '');
         setPendingEmail(values.email);
-        verificationForm.reset({ code: "" }); // Explicitly reset verification form
         setStep('verifying');
         toast({
           title: "Check your email",
