@@ -105,7 +105,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech | Frisco, Texas<br>
+              GreenGhost Tech<br>
               Revolutionizing lawn care through technology
             </p>
           </div>
@@ -150,12 +150,12 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
           </ul>
 
           <p style="color: #4b5563; line-height: 1.6; margin-top: 30px;">
-            Have questions? Reply to this email or contact us at support@greenghosttech.com
+            Have questions? Contact us at support@greenghosttech.com
           </p>
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech | Frisco, Texas<br>
+              GreenGhost Tech<br>
               Revolutionizing lawn care through technology
             </p>
           </div>
