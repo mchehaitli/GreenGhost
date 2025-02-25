@@ -25,7 +25,7 @@ export const Home = () => {
     <div>
       <Hero />
 
-      {/* Technology Preview Section */}
+      {/* Benefits Section */}
       <section className="py-20 bg-gradient-to-b from-background to-primary/5 border-t border-border/40">
         <div className="container">
           <motion.div
@@ -36,38 +36,64 @@ export const Home = () => {
             className="max-w-3xl mx-auto"
           >
             <h2 className="text-4xl font-bold mb-6">
-              Meet Your New Groundskeeper
+              Experience the Difference
             </h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Our autonomous lawn care robots use advanced AI and precision sensors to deliver 
-              perfect cuts every time. Rain or shine, day or night, they work tirelessly to 
-              keep your lawn in pristine condition.
+              Our comprehensive lawn care service combines reliability with excellence, 
+              delivering a superior experience that transforms how you think about lawn maintenance.
             </p>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">24/7 Silent Operation</h3>
+                  <h3 className="font-semibold">Reclaim Your Time</h3>
                   <p className="text-muted-foreground">
-                    Whisper-quiet technology means your lawn gets maintained without disturbing the peace
+                    Transform your weekends into quality time with family and friends while we maintain your lawn to perfection
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Smart Navigation</h3>
+                  <h3 className="font-semibold">Unmatched Convenience</h3>
                   <p className="text-muted-foreground">
-                    Advanced sensors ensure precise coverage and obstacle avoidance
+                    Experience truly hassle-free lawn care with our streamlined service and dedicated support team
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Weather-Adaptive</h3>
+                  <h3 className="font-semibold">Consistent Excellence</h3>
                   <p className="text-muted-foreground">
-                    Automatically adjusts mowing patterns based on weather conditions and grass growth
+                    Enjoy a perfectly maintained lawn year-round through our precise and systematic care approach
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">Cost-Effective Solution</h3>
+                  <p className="text-muted-foreground">
+                    Benefit from competitive pricing made possible by our innovative service model and efficient operations
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">Environmental Stewardship</h3>
+                  <p className="text-muted-foreground">
+                    Support sustainable lawn care practices that reduce environmental impact while maintaining beautiful results
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold">Dependable Service</h3>
+                  <p className="text-muted-foreground">
+                    Rest assured with our commitment to punctual, consistent service delivery you can always count on
                   </p>
                 </div>
               </div>
