@@ -45,10 +45,19 @@ const Waitlist = () => {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      zip_code: "",
+    },
+    mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
+    },
+    mode: "onSubmit"
   });
 
   const handleReset = () => {
@@ -187,7 +196,7 @@ const Waitlist = () => {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input 
+                              <Input
                                 type="email"
                                 placeholder="your@email.com"
                                 autoComplete="email"
@@ -212,6 +221,8 @@ const Waitlist = () => {
                                 maxLength={5}
                                 inputMode="numeric"
                                 disabled={isSubmitting}
+                                {...field}
+                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
@@ -257,6 +268,8 @@ const Waitlist = () => {
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
+                                {...field}
+                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
@@ -268,7 +281,7 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
-                      <VerificationCountdown 
+                      <VerificationCountdown
                         onExpire={() => {
                           toast({
                             title: "Verification Expired",

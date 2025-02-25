@@ -28,7 +28,7 @@ interface WaitlistDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
+const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
@@ -36,10 +36,19 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      zip_code: "",
+    },
+    mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      code: "",
+    },
+    mode: "onSubmit"
   });
 
   const handleReset = () => {
@@ -182,6 +191,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                           field.onChange(value);
@@ -229,6 +239,7 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                           field.onChange(value);
@@ -272,6 +283,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default WaitlistDialog;
