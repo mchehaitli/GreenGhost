@@ -51,7 +51,6 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
     try {
       setIsSubmitting(true);
 
-      // Log form state before submission
       console.log('Form submission:', {
         data,
         rawFormState: form.getValues(),
@@ -77,8 +76,11 @@ export function WaitlistDialog({ open, onOpenChange }: WaitlistDialogProps) {
       }
 
       if (responseData.status === 'pending_verification') {
-        // Reset both forms before changing state
+        // Complete form reset
         verificationForm.reset();
+        // Reset verification form state
+        verificationForm.clearErrors();
+        // Explicitly set all form fields to empty
         verificationForm.setValue('code', '');
         setPendingEmail(data.email.trim());
         setStep('verifying');
