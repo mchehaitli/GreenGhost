@@ -105,8 +105,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech<br>
-              Revolutionizing lawn care through technology
+              GreenGhost Tech
             </p>
           </div>
         </div>
@@ -133,6 +132,14 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech!</h1>
 
+          <div style="text-align: center; margin: 20px 0;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 10h.01" />
+              <path d="M15 10h.01" />
+              <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
+            </svg>
+          </div>
+
           <p style="color: #4b5563; line-height: 1.6;">
             Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
           </p>
@@ -155,8 +162,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 0.875rem;">
-              GreenGhost Tech<br>
-              Revolutionizing lawn care through technology
+              GreenGhost Tech
             </p>
           </div>
         </div>
