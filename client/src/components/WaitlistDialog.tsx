@@ -36,12 +36,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
-    mode: "onSubmit"
   });
 
   const resetForms = () => {
@@ -184,6 +182,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
+                        {...field}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                           field.onChange(value);
@@ -231,6 +230,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
+                        {...field}
+                        value={field.value}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                           field.onChange(value);

@@ -38,19 +38,17 @@ type FormData = z.infer<typeof formSchema>;
 type VerificationData = z.infer<typeof verificationSchema>;
 
 const Waitlist = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<'initial' | 'verifying'>('initial');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    mode: "onSubmit"
   });
 
   const verificationForm = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
-    mode: "onSubmit"
   });
 
   const resetForms = () => {
@@ -201,6 +199,7 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
                         name="zip_code"
@@ -214,6 +213,7 @@ const Waitlist = () => {
                                 maxLength={5}
                                 inputMode="numeric"
                                 disabled={isSubmitting}
+                                {...field}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                                   field.onChange(value);
@@ -224,6 +224,7 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
+
                       <Button
                         type="submit"
                         className="w-full bg-primary/10 text-primary hover:bg-primary/20"
@@ -246,6 +247,7 @@ const Waitlist = () => {
                       <p className="text-sm text-muted-foreground mb-4">
                         Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
                       </p>
+
                       <FormField
                         control={verificationForm.control}
                         name="code"
@@ -259,6 +261,8 @@ const Waitlist = () => {
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
+                                {...field}
+                                value={field.value}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
@@ -270,6 +274,7 @@ const Waitlist = () => {
                           </FormItem>
                         )}
                       />
+
                       <VerificationCountdown
                         onExpire={() => {
                           toast({
@@ -280,6 +285,7 @@ const Waitlist = () => {
                           resetForms();
                         }}
                       />
+
                       <Button
                         type="submit"
                         className="w-full bg-primary/10 text-primary hover:bg-primary/20"
