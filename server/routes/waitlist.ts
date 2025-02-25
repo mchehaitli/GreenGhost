@@ -143,19 +143,18 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
     const { email, code } = req.body;
 
-    try {
-      verificationSchema.parse({ email, code });
-      log('Verification input validation passed');
-    } catch (error) {
-      log('Verification input validation failed:', error);
-      const validationError = fromZodError(error);
+    if (!email || !code) {
+      log('Missing required fields');
       return res.status(400).json({
-        error: 'Validation failed',
-        details: validationError.message
+        error: 'Missing required fields',
+        details: 'Both email and code are required'
       });
     }
 
     const normalizedEmail = email.toLowerCase();
+
+    // Log the normalized values we're checking
+    log(`Attempting to verify email: ${normalizedEmail} with code: ${code}`);
 
     // Check if entry exists and hasn't expired
     const entry = await db.query.waitlist.findFirst({
@@ -189,6 +188,8 @@ router.post('/api/waitlist/verify', async (req, res) => {
 
     // Verify the code
     const isValid = await verifyCode(normalizedEmail, code);
+    log(`Verification result for ${normalizedEmail}: ${isValid ? 'valid' : 'invalid'}`);
+
     if (!isValid) {
       log(`Invalid verification code for ${normalizedEmail}`);
       return res.status(400).json({

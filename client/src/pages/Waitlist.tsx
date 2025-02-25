@@ -31,7 +31,7 @@ const formSchema = z.object({
 });
 
 const verificationSchema = z.object({
-  code: z.string(),
+  code: z.string().length(4, "Please enter the 4-digit code").regex(/^\d+$/, "Please enter only numbers"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -256,11 +256,16 @@ const Waitlist = () => {
                             <FormControl>
                               <Input
                                 type="text"
-                                placeholder="Enter verification code"
+                                placeholder="0000"
+                                maxLength={4}
+                                inputMode="numeric"
                                 autoComplete="one-time-code"
                                 disabled={isSubmitting}
                                 {...field}
-                                onChange={(e) => field.onChange(e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                  field.onChange(value);
+                                }}
                                 className="text-center text-2xl tracking-[0.5em] font-mono"
                               />
                             </FormControl>

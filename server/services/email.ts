@@ -17,7 +17,8 @@ async function generateVerificationCode(email: string): Promise<string> {
   await db.delete(verificationTokens)
     .where(eq(verificationTokens.email, email));
 
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  // Generate a 4-digit code
+  const code = Math.floor(1000 + Math.random() * 9000).toString().padStart(4, '0');
   const expiresAt = new Date(Date.now() + (90 * 1000)); // 90 seconds expiration
 
   await db.insert(verificationTokens).values({
@@ -28,38 +29,49 @@ async function generateVerificationCode(email: string): Promise<string> {
     used: false,
   });
 
+  log(`Generated verification code for ${email}: ${code}`);
   return code;
 }
 
 export async function verifyCode(email: string, code: string): Promise<boolean> {
-  const [storedToken] = await db
-    .select()
-    .from(verificationTokens)
-    .where(
-      and(
-        eq(verificationTokens.email, email),
-        eq(verificationTokens.token, code),
-        eq(verificationTokens.used, false),
-        gt(verificationTokens.expires_at, new Date())
-      )
-    );
+  try {
+    log(`Attempting to verify code for ${email}. Provided code: ${code}`);
 
-  if (!storedToken) {
+    const [storedToken] = await db
+      .select()
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.email, email),
+          eq(verificationTokens.token, code),
+          eq(verificationTokens.used, false),
+          gt(verificationTokens.expires_at, new Date())
+        )
+      );
+
+    if (!storedToken) {
+      log(`No valid token found for email: ${email}`);
+      return false;
+    }
+
+    // Mark the token as used
+    await db
+      .update(verificationTokens)
+      .set({ used: true })
+      .where(eq(verificationTokens.id, storedToken.id));
+
+    log(`Successfully verified code for email: ${email}`);
+    return true;
+  } catch (error) {
+    log('Error during code verification:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
-
-  await db
-    .update(verificationTokens)
-    .set({ used: true })
-    .where(eq(verificationTokens.id, storedToken.id));
-
-  return true;
 }
 
 export async function sendVerificationEmail(email: string, zipCode: string): Promise<boolean> {
   try {
     const code = await generateVerificationCode(email);
-    log(`Sending verification email to ${email}`);
+    log(`Generated verification code ${code} for ${email}`);
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
