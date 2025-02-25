@@ -1,25 +1,27 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { VerificationCountdown } from './VerificationCountdown';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "./ui/form";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import VerificationCountdown from "./VerificationCountdown";
 
-const emailFormSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
+// Form schemas
+const formSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  zip_code: z.string().length(5, "ZIP code must be 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
 });
 
-const verificationFormSchema = z.object({
-  code: z.string().length(4, 'Verification code must be 4 digits'),
+const verificationSchema = z.object({
+  code: z.string().length(4, "Please enter the 4-digit code").regex(/^\d+$/, "Please enter only numbers"),
 });
 
-type EmailFormData = z.infer<typeof emailFormSchema>;
-type VerificationFormData = z.infer<typeof verificationFormSchema>;
+type FormData = z.infer<typeof formSchema>;
+type VerificationData = z.infer<typeof verificationSchema>;
 
 interface WaitlistDialogProps {
   open: boolean;
@@ -32,15 +34,17 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const emailForm = useForm<EmailFormData>({
-    resolver: zodResolver(emailFormSchema),
+  // Separate form instances
+  const emailForm = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      zip_code: "",
     },
   });
 
-  const verificationForm = useForm<VerificationFormData>({
-    resolver: zodResolver(verificationFormSchema),
+  const codeForm = useForm<VerificationData>({
+    resolver: zodResolver(verificationSchema),
     defaultValues: {
       code: "",
     },
@@ -48,16 +52,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
   const resetForms = () => {
     emailForm.reset();
-    verificationForm.reset();
+    codeForm.reset();
     setPendingEmail("");
     setStep('initial');
     setIsSubmitting(false);
   };
 
-  const onEmailSubmit = async (values: EmailFormData) => {
+  const onSubmit = async (values: FormData) => {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: {
@@ -72,18 +75,20 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         throw new Error(data.error || data.details || "Failed to join waitlist");
       }
 
-      setPendingEmail(values.email);
-      setStep('verifying');
-      verificationForm.reset({ code: "" });
-
-      toast({
-        title: "Check your email",
-        description: "We've sent a 4-digit verification code to your email.",
-      });
+      if (data.status === 'pending_verification') {
+        setPendingEmail(values.email);
+        setStep('verifying');
+        toast({
+          title: "Check your email",
+          description: "We've sent a 4-digit verification code to your email. The code will expire in 90 seconds.",
+        });
+      } else {
+        throw new Error("Unexpected server response");
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "Failed to join waitlist",
         variant: "destructive",
       });
     } finally {
@@ -91,11 +96,13 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
-  const onVerificationSubmit = async (values: VerificationFormData) => {
-    if (!pendingEmail) return;
+  const onVerificationSubmit = async (values: VerificationData) => {
+    if (!pendingEmail || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
+      console.log("Submitting verification code:", values.code); // Debug log
+
       const response = await fetch("/api/waitlist/verify", {
         method: "POST",
         headers: {
@@ -151,17 +158,45 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
 
         {step === 'initial' ? (
           <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+            <form onSubmit={emailForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={emailForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter your email" 
+                      <Input
                         type="email"
+                        placeholder="Enter your email"
+                        autoComplete="email"
+                        disabled={isSubmitting}
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={emailForm.control}
+                name="zip_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP Code</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter ZIP code"
+                        maxLength={5}
+                        inputMode="numeric"
+                        disabled={isSubmitting}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          field.onChange(value);
+                        }}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -186,22 +221,32 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
             </form>
           </Form>
         ) : (
-          <Form {...verificationForm}>
-            <form onSubmit={verificationForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
+          <Form {...codeForm}>
+            <form onSubmit={codeForm.handleSubmit(onVerificationSubmit)} className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
                 Enter the 4-digit verification code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
               </p>
 
               <FormField
-                control={verificationForm.control}
+                control={codeForm.control}
                 name="code"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter 4-digit code"
+                      <Input
+                        type="text"
+                        placeholder="0000"
                         maxLength={4}
-                        {...field}
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        disabled={isSubmitting}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          console.log("Code input value:", value); // Debug log
+                          field.onChange(value);
+                        }}
+                        value={field.value}
+                        className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
                     <FormMessage />
@@ -209,14 +254,16 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                 )}
               />
 
-              <VerificationCountdown onExpired={() => {
-                toast({
-                  title: "Code Expired",
-                  description: "Please request a new verification code",
-                  variant: "destructive",
-                });
-                resetForms();
-              }} />
+              <VerificationCountdown
+                onExpire={() => {
+                  toast({
+                    title: "Verification Expired",
+                    description: "The verification period has expired. Please sign up again.",
+                    variant: "destructive",
+                  });
+                  resetForms();
+                }}
+              />
 
               <Button
                 type="submit"
