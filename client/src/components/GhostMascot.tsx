@@ -17,9 +17,9 @@ export const GhostMascot = ({
   const [isWaving, setIsWaving] = useState(false);
 
   const sizes = {
-    sm: "w-8 h-8",
-    md: "w-12 h-12",
-    lg: "w-16 h-16"
+    sm: "w-10 h-10",
+    md: "w-14 h-14",
+    lg: "w-20 h-20"
   };
 
   if (!animated) {
@@ -32,7 +32,7 @@ export const GhostMascot = ({
 
   return (
     <motion.div
-      className={cn("cursor-pointer text-primary", sizes[size], className)}
+      className={cn("cursor-pointer text-primary mt-4", sizes[size], className)}
       animate={isWaving ? {
         rotate: [0, -20, 20, -20, 20, 0],
         transition: {
