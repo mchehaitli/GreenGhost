@@ -34,7 +34,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const form = useForm<FormData>({
+  const initialForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -50,6 +50,19 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     },
     mode: "onSubmit"
   });
+
+  const resetForms = () => {
+    initialForm.reset({
+      email: "",
+      zip_code: "",
+    });
+    verificationForm.reset({
+      code: "",
+    });
+    setPendingEmail("");
+    setStep('initial');
+    setIsSubmitting(false);
+  };
 
   const onSubmit = async (values: FormData) => {
     setIsSubmitting(true);
@@ -116,7 +129,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
           title: "Success!",
           description: "You've successfully joined our waitlist. Welcome to GreenGhost Tech!",
         });
-        handleReset();
+        resetForms();
         onOpenChange(false);
       } else {
         throw new Error("Verification unsuccessful");
@@ -132,25 +145,12 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
   };
 
-  const handleReset = () => {
-    form.reset({
-      email: "",
-      zip_code: "",
-    });
-    verificationForm.reset({
-      code: "",
-    });
-    setPendingEmail("");
-    setStep('initial');
-    setIsSubmitting(false);
-  };
-
   return (
     <Dialog 
       open={open} 
       onOpenChange={(newOpen) => {
         if (!newOpen) {
-          handleReset();
+          resetForms();
         }
         onOpenChange(newOpen);
       }}
@@ -161,18 +161,18 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...initialForm}>
+            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={initialForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
                         placeholder="Enter your email"
+                        type="email"
                         autoComplete="email"
                         disabled={isSubmitting}
                         {...field}
@@ -184,15 +184,15 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               />
 
               <FormField
-                control={form.control}
+                control={initialForm.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ZIP Code</FormLabel>
                     <FormControl>
                       <Input
-                        type="text"
                         placeholder="Enter ZIP code"
+                        type="text"
                         maxLength={5}
                         inputMode="numeric"
                         disabled={isSubmitting}
@@ -238,8 +238,8 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                   <FormItem>
                     <FormControl>
                       <Input
-                        type="text"
                         placeholder="0000"
+                        type="text"
                         maxLength={4}
                         inputMode="numeric"
                         autoComplete="one-time-code"
@@ -264,7 +264,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                     description: "The verification period has expired. Please sign up again.",
                     variant: "destructive",
                   });
-                  handleReset();
+                  resetForms();
                 }}
               />
 
