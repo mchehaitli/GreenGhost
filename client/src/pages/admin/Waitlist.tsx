@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,7 +46,7 @@ const EmailPreviewTab = () => {
   const [previewType, setPreviewType] = useState<'verification' | 'welcome'>('verification');
   const [testEmail, setTestEmail] = useState('');
   const [previewHtml, setPreviewHtml] = useState('');
-  const { toast } = useToast();//this line was missing in the original edited code
+  const { toast } = useToast();
 
   const generatePreview = async () => {
     try {
