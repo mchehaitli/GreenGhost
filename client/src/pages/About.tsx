@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, Sprout, Clock, Shield, MapPin } from "lucide-react";
+import { Heart, Sprout, Clock, Shield } from "lucide-react";
 
 const About = () => {
   return (
@@ -16,15 +16,6 @@ const About = () => {
       <section className="bg-background py-8">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
-            <motion.div 
-              className="flex items-center justify-center gap-2 mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <MapPin className="h-5 w-5 text-primary" />
-              <span className="text-muted-foreground">Proudly Serving Frisco, Texas</span>
-            </motion.div>
             <motion.h1 
               className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent pb-2"
               initial={{ opacity: 0, y: 20 }}
