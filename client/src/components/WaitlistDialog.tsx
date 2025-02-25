@@ -34,7 +34,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
-  const form = useForm<FormData>({
+  const initialForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
@@ -43,7 +43,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
   });
 
   const resetForms = () => {
-    form.reset();
+    initialForm.reset();
     verificationForm.reset();
     setPendingEmail("");
     setStep('initial');
@@ -147,10 +147,10 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
         </DialogTitle>
 
         {step === 'initial' ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...initialForm}>
+            <form onSubmit={initialForm.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={initialForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -170,7 +170,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
               />
 
               <FormField
-                control={form.control}
+                control={initialForm.control}
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
@@ -183,10 +183,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         inputMode="numeric"
                         disabled={isSubmitting}
                         {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                          field.onChange(value);
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -231,11 +227,6 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                         autoComplete="one-time-code"
                         disabled={isSubmitting}
                         {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                          field.onChange(value);
-                        }}
-                        className="text-center text-2xl tracking-[0.5em] font-mono"
                       />
                     </FormControl>
                     <FormMessage />
@@ -243,7 +234,7 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
                 )}
               />
 
-              <VerificationCountdown 
+              <VerificationCountdown
                 onExpire={() => {
                   toast({
                     title: "Verification Expired",
