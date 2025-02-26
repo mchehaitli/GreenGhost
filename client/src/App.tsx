@@ -17,6 +17,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Pricing from "@/pages/Pricing";
+import AIReview from "@/pages/AIReview";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
