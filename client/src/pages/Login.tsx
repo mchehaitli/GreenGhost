@@ -31,7 +31,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !isLoading) {
-      setLocation("/admin/waitlist");
+      setLocation("/admin");
     }
   }, [user, isLoading, setLocation]);
 

@@ -11,7 +11,7 @@ import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
-import AdminPortal from "@/pages/admin/AdminPortal";
+import AdminPortal from "./pages/admin/AdminPortal";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
