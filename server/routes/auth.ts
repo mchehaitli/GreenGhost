@@ -32,15 +32,18 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
 
-    // Basic password validation
+    // Enhanced password validation
     if (!password || typeof password !== 'string') {
       console.log('Invalid password format - not a string');
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    if (password.length < 8) {
-      console.log('Password too short');
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      console.log('Password does not meet requirements');
+      return res.status(400).json({ 
+        error: 'Password must be at least 8 characters and contain uppercase, lowercase, and numbers' 
+      });
     }
 
     // Hash new password
