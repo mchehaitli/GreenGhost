@@ -25,11 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const resetPasswordSchema = z.object({
   password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    ),
+    .min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -72,7 +68,7 @@ export default function ResetPassword() {
     },
     onSuccess: () => {
       toast({
-        title: "Password Reset Successful",
+        title: "Success",
         description: "Your password has been reset. Please log in with your new password.",
       });
       setLocation('/login');
@@ -136,7 +132,7 @@ export default function ResetPassword() {
         <CardHeader>
           <CardTitle>Reset Your Password</CardTitle>
           <CardDescription>
-            Please enter your new password below. Password must be at least 8 characters long.
+            Please enter your new password below. It must be at least 8 characters long.
           </CardDescription>
         </CardHeader>
         <CardContent>
