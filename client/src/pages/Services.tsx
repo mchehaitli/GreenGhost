@@ -21,7 +21,7 @@ const Services = () => {
   const services = [
     {
       icon: <Bot className="w-6 h-6" />,
-      title: "Automated Lawn Mowing",
+      title: "Lawn Automation",
       description: "Precision cutting with robotic mowers for a perfect lawn every time.",
       tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
     },
@@ -39,8 +39,8 @@ const Services = () => {
     },
     {
       icon: <Activity className="w-6 h-6" />,
-      title: "Lawn Health Analytics",
-      description: "Real-time monitoring and analysis of lawn conditions.",
+      title: "Lawn Analytics",
+      description: "Real-time monitoring and analysis of lawn conditions for optimal health.",
       tooltip: "Advanced analytics provide insights into your lawn's health, growth patterns, and maintenance needs."
     }
   ];
