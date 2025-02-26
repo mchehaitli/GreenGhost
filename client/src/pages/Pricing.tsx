@@ -21,7 +21,6 @@ const plans = [
       "Custom care plan",
       "Advanced lawn treatments",
     ],
-    cta: "Get Started",
     popular: false,
   },
   {
@@ -38,7 +37,6 @@ const plans = [
       "24/7 support",
     ],
     nonFeatures: [],
-    cta: "Best Value",
     popular: true,
   },
   {
@@ -56,7 +54,6 @@ const plans = [
       "Landscape consultation",
     ],
     nonFeatures: [],
-    cta: "Contact Us",
     popular: false,
   },
 ];
@@ -133,7 +130,7 @@ const Pricing = () => {
                       variant={plan.popular ? "default" : "outline"}
                     >
                       <Link href="/waitlist">
-                        {plan.cta}
+                        Join Waitlist
                       </Link>
                     </Button>
                   </CardContent>
