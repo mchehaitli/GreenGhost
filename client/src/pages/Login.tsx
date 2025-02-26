@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -20,6 +21,11 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { login, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  
+  // Get redirect path from URL if available
+  const redirectPath = new URLSearchParams(window.location.search).get('redirect') || '/admin';
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -29,17 +35,27 @@ export default function Login() {
     },
   });
 
+  // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
-      setLocation("/admin");
+      setLocation(redirectPath);
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, isLoading, setLocation, redirectPath]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      setIsSubmitting(true);
       await login(data);
+      // The redirect will happen in the useEffect hook after user state updates
     } catch (error) {
       console.error('Login failed:', error);
+      toast({
+        title: "Login failed",
+        description: "Invalid username or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

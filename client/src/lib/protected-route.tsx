@@ -10,15 +10,18 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
+  const currentPath = window.location.pathname;
 
+  // Check authentication status when the component mounts or when auth state changes
   useEffect(() => {
     if (!isLoading && !user) {
-      const currentPath = window.location.pathname;
+      // If not loading and no user is found, redirect to login
       setLocation(`/login?redirect=${encodeURIComponent(currentPath)}`);
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, isLoading, setLocation, currentPath]);
 
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="container flex items-center justify-center min-h-screen">
@@ -27,10 +30,11 @@ export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     );
   }
 
+  // If not authenticated, redirect to login
   if (!user) {
-    // Immediately redirect if not authenticated
-    return <Redirect to="/login" />;
+    return <Redirect to={`/login?redirect=${encodeURIComponent(currentPath)}`} />;
   }
 
+  // If authenticated, render the protected component
   return <Component />;
 }
