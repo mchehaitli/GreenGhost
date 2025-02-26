@@ -37,6 +37,7 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
+      <Route path="/ai-review" component={AIReview} />
       <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
       <Route component={NotFound} />
     </Switch>
