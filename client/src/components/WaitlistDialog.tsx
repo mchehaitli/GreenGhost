@@ -22,9 +22,10 @@ type InitialFormData = z.infer<typeof initialFormSchema>;
 interface WaitlistDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isDemo?: boolean;
 }
 
-const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
+const WaitlistDialog = ({ open, onOpenChange, isDemo = false }: WaitlistDialogProps) => {
   const [step, setStep] = useState<'initial' | 'verifying' | 'welcome'>('initial');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
@@ -136,6 +137,55 @@ const WaitlistDialog = ({ open, onOpenChange }: WaitlistDialogProps) => {
     }
     onOpenChange(newOpen);
   };
+
+  // If this is a demo dialog, show the testing phase message
+  if (isDemo) {
+    return (
+      <Dialog open={open} onOpenChange={handleDialogClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Schedule a Demo</DialogTitle>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-medium">Coming Soon!</h3>
+              <p className="text-muted-foreground">
+                We're currently in the testing phase. Our automated lawn care demos will be available soon!
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Join our waitlist to be notified when demo scheduling becomes available in your area.
+              </p>
+            </div>
+            <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0 mt-4">
+              <Button 
+                className="flex-1" 
+                variant="outline"
+                onClick={() => {
+                  handleDialogClose(false);
+                  onOpenChange(false);
+                }}
+              >
+                Close
+              </Button>
+              <Button 
+                className="flex-1 bg-primary/10 text-primary hover:bg-primary/20" 
+                onClick={() => {
+                  handleDialogClose(false);
+                  // Open waitlist dialog instead
+                  setTimeout(() => onOpenChange(true), 100);
+                }}
+              >
+                Join Waitlist
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (step === 'welcome') {
     return (

@@ -32,7 +32,9 @@ const additionalServices = [
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [showWaitlist, setShowWaitlist] = useState(false); // Added state
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [showDemoDialog, setShowDemoDialog] = useState(false); // New state for demo dialog
+
   const services = [
     {
       icon: <Bot className="w-6 h-6" />,
@@ -150,7 +152,7 @@ const Services = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                onClick={() => setShowWaitlist(true)}
+                onClick={() => setShowDemoDialog(true)} // Changed to demo dialog
                 className="group"
               >
                 Schedule Demo
@@ -308,9 +310,17 @@ const Services = () => {
         </div>
       </motion.section>
 
+      {/* Waitlist Dialog */}
       <WaitlistDialog 
         open={showWaitlist} 
         onOpenChange={setShowWaitlist}
+      />
+
+      {/* Demo Dialog - Using the same WaitlistDialog component with a special demo mode */}
+      <WaitlistDialog 
+        open={showDemoDialog} 
+        onOpenChange={setShowDemoDialog}
+        isDemo={true} // Added prop to indicate this is for demo scheduling
       />
     </motion.div>
   );
