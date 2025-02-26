@@ -5,7 +5,6 @@ import { db } from '../db';
 import { sendPasswordResetEmail } from '../utils/email';
 import { users, passwordResetTokens } from '../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
-import { z } from 'zod';
 
 const router = Router();
 const scryptAsync = promisify(scrypt);
@@ -33,7 +32,7 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
 
-    // If token is valid, then validate password
+    // Basic password validation
     if (!password || typeof password !== 'string') {
       console.log('Invalid password format - not a string');
       return res.status(400).json({ error: 'Password is required' });
@@ -42,21 +41,6 @@ router.post('/reset-password', async (req, res) => {
     if (password.length < 8) {
       console.log('Password too short');
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      console.log('Missing uppercase letter');
-      return res.status(400).json({ error: 'Password must contain an uppercase letter' });
-    }
-
-    if (!/[a-z]/.test(password)) {
-      console.log('Missing lowercase letter');
-      return res.status(400).json({ error: 'Password must contain a lowercase letter' });
-    }
-
-    if (!/[0-9]/.test(password)) {
-      console.log('Missing number');
-      return res.status(400).json({ error: 'Password must contain a number' });
     }
 
     // Hash new password
@@ -121,7 +105,7 @@ router.post('/forgot-password', async (req, res) => {
       userId: user.id,
       token,
       expiresAt,
-      used: false // Added to track token usage
+      used: false
     });
 
     // Send reset email
