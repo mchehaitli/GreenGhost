@@ -22,16 +22,13 @@ import CaptureScreenshots from "@/pages/CaptureScreenshots";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import { ProtectedRoute } from "@/lib/protected-route";
-
-// Helper for protected routes that preserves component type
-const ProtectedRouteWrapper = ({ component }: { component: React.ComponentType }) => (
-  <ProtectedRoute component={component} />
-);
 
 function Router() {
   const [location] = useLocation();
-  
+
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -45,15 +42,17 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/admin">
-        <ProtectedRouteWrapper component={AdminPortal} />
+        <ProtectedRoute component={AdminPortal} />
       </Route>
       {/* Protected routes - only accessible through admin portal */}
       <Route path="/admin/ai-review">
-        <ProtectedRouteWrapper component={AIReview} />
+        <ProtectedRoute component={AIReview} />
       </Route>
       <Route path="/admin/capture">
-        <ProtectedRouteWrapper component={CaptureScreenshots} />
+        <ProtectedRoute component={CaptureScreenshots} />
       </Route>
       <Route component={NotFound} />
     </Switch>
