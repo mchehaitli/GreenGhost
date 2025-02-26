@@ -27,7 +27,6 @@ const Navigation = () => {
     { href: "/pricing", label: "Pricing" }, 
     { href: "/blog", label: "Blog" },
     { href: "/about", label: "About Us" },
-    { href: "/ai-review", label: "AI Review" },
   ];
 
   const handleWaitlistClick = (e: React.MouseEvent) => {
