@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
 import { Loader2, Send, Eye } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+// Create a simple Label component that doesn't use FormContext
+const Label = ({ children }: { children: ReactNode }) => (
+  <div className="text-sm font-medium leading-none mb-2">{children}</div>
+);
 
 type EmailTemplate = 'verification' | 'welcome';
 
