@@ -13,7 +13,6 @@ import { motion } from "framer-motion";
 import { subscriptionPlans } from "@/lib/subscription-plans";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
-import PricingCalculator from "@/components/PricingCalculator";
 
 export const Home = () => {
   const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
@@ -243,32 +242,6 @@ export const Home = () => {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Pricing Calculator Section - Added from Services page */}
-      <section className="py-20 bg-background/50 border-t border-border/40">
-        <div className="container">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-bold mb-4">Calculate Your Service Cost</h2>
-            <p className="text-lg text-muted-foreground">
-              Get an instant estimate for our automated lawn care services
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <PricingCalculator />
-          </motion.div>
         </div>
       </section>
 

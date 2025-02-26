@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import PricingCalculator from "@/components/PricingCalculator";
 
 const plans = [
   {
@@ -138,6 +139,32 @@ const Pricing = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Calculator Section - Added from Services page */}
+      <section className="py-20 bg-background/50 border-t border-border/40">
+        <div className="container">
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl font-bold mb-4">Calculate Your Custom Service Cost</h2>
+            <p className="text-lg text-muted-foreground">
+              Get an instant estimate for our automated lawn care services based on your specific needs
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <PricingCalculator />
+          </motion.div>
         </div>
       </section>
     </div>
