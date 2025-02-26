@@ -20,10 +20,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-type ForgotPasswordFormData = {
-  email: string;
-};
+const forgotPasswordSchema = z.object({
+  email: z.string()
+    .email("Please enter a valid email address")
+    .min(1, "Email is required"),
+});
+
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
@@ -31,6 +37,7 @@ export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: '',
     },
