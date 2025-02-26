@@ -127,7 +127,7 @@ const Pricing = () => {
                     <Button 
                       asChild 
                       className="w-full mt-auto"
-                      variant={plan.popular ? "default" : "outline"}
+                      variant={plan.popular ? "outline" : "outline"}
                     >
                       <Link href="/waitlist">
                         Join Waitlist
