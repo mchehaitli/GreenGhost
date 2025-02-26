@@ -5,9 +5,18 @@ import { db } from '../db';
 import { sendPasswordResetEmail } from '../utils/email';
 import { users, passwordResetTokens } from '../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
+import { z } from 'zod';
 
 const router = Router();
 const scryptAsync = promisify(scrypt);
+
+// Password validation schema
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password is too long")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
 
 // Generate a secure token
 function generateToken(length = 32) {
@@ -24,7 +33,7 @@ async function hashPassword(password: string) {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     // Find user by email
     const [user] = await db
       .select()
@@ -61,6 +70,15 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
+
+    // Validate password
+    const passwordValidation = passwordSchema.safeParse(password);
+    if (!passwordValidation.success) {
+      return res.status(400).json({ 
+        error: 'Invalid password format',
+        details: passwordValidation.error.errors[0].message
+      });
+    }
 
     // Find valid token
     const [resetToken] = await db
