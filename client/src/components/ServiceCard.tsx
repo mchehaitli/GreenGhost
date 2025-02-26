@@ -24,7 +24,7 @@ const ServiceCard = ({ title, description, icon, tooltip }: ServiceCardProps) =>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
-              <CardTitle className="text-base md:text-lg transition-colors duration-300 group-hover:text-primary">
+              <CardTitle className="text-base text-lg transition-colors duration-300 group-hover:text-primary">
                 {title}
               </CardTitle>
               {tooltip && (
