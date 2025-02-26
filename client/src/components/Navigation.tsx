@@ -22,9 +22,9 @@ const Navigation = () => {
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/pricing", label: "Pricing" }, // Added Pricing Route
     { href: "/services", label: "Services" },
     { href: "/how-it-works", label: "How It Works" },
+    { href: "/pricing", label: "Pricing" }, 
     { href: "/blog", label: "Blog" },
     { href: "/about", label: "About Us" },
   ];
