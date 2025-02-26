@@ -26,10 +26,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 const resetPasswordSchema = z.object({
   password: z.string()
     .min(8, "Password must be at least 8 characters")
-    .max(100, "Password is too long")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+    .refine(val => /[A-Z]/.test(val), "Password must contain at least one uppercase letter")
+    .refine(val => /[a-z]/.test(val), "Password must contain at least one lowercase letter")
+    .refine(val => /[0-9]/.test(val), "Password must contain at least one number"),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -59,14 +58,12 @@ export default function ResetPassword() {
     mutationFn: async (data: { password: string; token: string }) => {
       const response = await fetch('/api/reset-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to reset password' }));
+        const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to reset password');
       }
 
