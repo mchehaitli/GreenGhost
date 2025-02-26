@@ -192,7 +192,6 @@ const WaitlistDialog = ({ open, onOpenChange, isDemo = false }: WaitlistDialogPr
     return (
       <Dialog open={open} onOpenChange={handleDialogClose}>
         <WelcomeAnimation 
-          email={pendingEmail} 
           onComplete={() => {
             resetForms();
             onOpenChange(false);
