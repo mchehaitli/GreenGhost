@@ -10,12 +10,24 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Settings, DollarSign } from 'lucide-react';
+import { User, Settings, DollarSign, Mail, Users, Pencil, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { format } from 'date-fns';
 
 type WaitlistEntry = {
   id: number;
   email: string;
   created_at: string;
+  location?: string;
 };
 
 type EmailTemplate = {
@@ -30,6 +42,14 @@ type PricingData = {
   name: string;
   price: number;
   description: string;
+  features: string[];
+  serviceFrequency: string;
+  maxBookingsPerMonth: number;
+};
+
+type AdminUser = {
+  id: number;
+  username: string;
 };
 
 export default function AdminPortal() {
@@ -40,13 +60,15 @@ export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState("waitlist");
   const [newAdminUsername, setNewAdminUsername] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [newTemplateData, setNewTemplateData] = useState({
+    name: '',
+    subject: '',
+    html_content: ''
+  });
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      setLocation('/login');
-    }
-  }, [user, authLoading, setLocation]);
-
+  // Queries
   const {
     data: waitlistEntries = [],
     isLoading: waitlistLoading,
@@ -74,7 +96,16 @@ export default function AdminPortal() {
     enabled: activeTab === "pricing" && !!user,
   });
 
-  // Mutation for adding new admin
+  const {
+    data: adminUsers = [],
+    isLoading: adminsLoading,
+  } = useQuery<AdminUser[]>({
+    queryKey: ['admins'],
+    queryFn: () => fetch('/api/admins').then(res => res.json()),
+    enabled: activeTab === "settings" && !!user,
+  });
+
+  // Mutations
   const addAdminMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       const response = await fetch('/api/admin/create', {
@@ -86,6 +117,7 @@ export default function AdminPortal() {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
       toast({ title: "Admin created successfully" });
       setNewAdminUsername("");
       setNewAdminPassword("");
@@ -98,7 +130,29 @@ export default function AdminPortal() {
     },
   });
 
-  // Mutation for updating pricing
+  const updateAdminMutation = useMutation({
+    mutationFn: async (data: { id: number; username: string; password?: string }) => {
+      const response = await fetch(`/api/admin/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update admin');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      toast({ title: "Admin updated successfully" });
+      setEditingAdmin(null);
+    },
+    onError: () => {
+      toast({ 
+        title: "Failed to update admin", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const updatePricingMutation = useMutation({
     mutationFn: async (data: PricingData) => {
       const response = await fetch(`/api/pricing/${data.id}`, {
@@ -120,6 +174,49 @@ export default function AdminPortal() {
       });
     },
   });
+
+  const saveEmailTemplateMutation = useMutation({
+    mutationFn: async (data: Partial<EmailTemplate>) => {
+      const method = data.id ? 'PATCH' : 'POST';
+      const url = data.id ? `/api/email-templates/${data.id}` : '/api/email-templates';
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to save template');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      toast({ title: "Email template saved successfully" });
+      setEditingTemplate(null);
+      setNewTemplateData({ name: '', subject: '', html_content: '' });
+    },
+    onError: () => {
+      toast({ 
+        title: "Failed to save template", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Analytics calculations
+  const waitlistAnalytics = {
+    total: waitlistEntries.length,
+    lastWeek: waitlistEntries.filter(entry => {
+      const date = new Date(entry.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return date >= weekAgo;
+    }).length,
+    byLocation: waitlistEntries.reduce((acc, entry) => {
+      if (entry.location) {
+        acc[entry.location] = (acc[entry.location] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>),
+  };
 
   if (authLoading) {
     return (
@@ -163,8 +260,14 @@ export default function AdminPortal() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
-          <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
+          <TabsTrigger value="waitlist">
+            <Users className="w-4 h-4 mr-2" />
+            Waitlist
+          </TabsTrigger>
+          <TabsTrigger value="email-templates">
+            <Mail className="w-4 h-4 mr-2" />
+            Email Templates
+          </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="w-4 h-4 mr-2" />
             Settings
@@ -179,20 +282,50 @@ export default function AdminPortal() {
           {waitlistLoading ? (
             <LoadingSpinner />
           ) : (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Waitlist Entries</h2>
-              <div className="border rounded-lg divide-y">
-                {waitlistEntries.map((entry) => (
-                  <div key={entry.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{entry.email}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Joined: {new Date(entry.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Total Signups</h3>
+                  <p className="text-2xl font-bold">{waitlistAnalytics.total}</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Last 7 Days</h3>
+                  <p className="text-2xl font-bold">{waitlistAnalytics.lastWeek}</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-medium mb-2">Conversion Rate</h3>
+                  <p className="text-2xl font-bold">
+                    {waitlistAnalytics.total > 0 
+                      ? `${((waitlistAnalytics.lastWeek / waitlistAnalytics.total) * 100).toFixed(1)}%`
+                      : '0%'}
+                  </p>
+                </Card>
               </div>
+
+              <Card>
+                <div className="p-4 border-b">
+                  <h2 className="text-xl font-semibold">Waitlist Entries</h2>
+                </div>
+                <ScrollArea className="h-[400px]">
+                  <div className="p-4">
+                    {waitlistEntries.map((entry) => (
+                      <div key={entry.id} className="py-4 border-b last:border-0">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{entry.email}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Joined: {format(new Date(entry.created_at), 'PPP')}
+                            </p>
+                          </div>
+                          {entry.location && (
+                            <Badge variant="secondary">{entry.location}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </Card>
             </div>
           )}
         </TabsContent>
@@ -202,13 +335,126 @@ export default function AdminPortal() {
             <LoadingSpinner />
           ) : (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Email Templates</h2>
-              <div className="border rounded-lg divide-y">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Email Templates</h2>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setEditingTemplate(null)}>
+                      Add Template
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingTemplate ? 'Edit Template' : 'Create Template'}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Template Name</Label>
+                        <Input
+                          id="name"
+                          value={editingTemplate?.name || newTemplateData.name}
+                          onChange={(e) => {
+                            if (editingTemplate) {
+                              setEditingTemplate({
+                                ...editingTemplate,
+                                name: e.target.value
+                              });
+                            } else {
+                              setNewTemplateData({
+                                ...newTemplateData,
+                                name: e.target.value
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="subject">Subject</Label>
+                        <Input
+                          id="subject"
+                          value={editingTemplate?.subject || newTemplateData.subject}
+                          onChange={(e) => {
+                            if (editingTemplate) {
+                              setEditingTemplate({
+                                ...editingTemplate,
+                                subject: e.target.value
+                              });
+                            } else {
+                              setNewTemplateData({
+                                ...newTemplateData,
+                                subject: e.target.value
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="content">Content</Label>
+                        <textarea
+                          id="content"
+                          className="w-full min-h-[200px] p-2 border rounded-md"
+                          value={editingTemplate?.html_content || newTemplateData.html_content}
+                          onChange={(e) => {
+                            if (editingTemplate) {
+                              setEditingTemplate({
+                                ...editingTemplate,
+                                html_content: e.target.value
+                              });
+                            } else {
+                              setNewTemplateData({
+                                ...newTemplateData,
+                                html_content: e.target.value
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button
+                        onClick={() => {
+                          if (editingTemplate) {
+                            saveEmailTemplateMutation.mutate(editingTemplate);
+                          } else {
+                            saveEmailTemplateMutation.mutate(newTemplateData);
+                          }
+                        }}
+                      >
+                        Save Template
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="grid gap-4">
                 {emailTemplates.map((template) => (
-                  <div key={template.id} className="p-4">
-                    <h3 className="font-medium">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground">{template.subject}</p>
-                  </div>
+                  <Card key={template.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{template.name}</h3>
+                        <p className="text-sm text-muted-foreground">{template.subject}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingTemplate(template)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            // Implement delete functionality
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -220,6 +466,32 @@ export default function AdminPortal() {
             <h2 className="text-xl font-semibold mb-6">Admin Settings</h2>
             <div className="space-y-6">
               <div className="space-y-4">
+                <h3 className="text-lg font-medium">Current Admins</h3>
+                {adminsLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  <div className="space-y-4">
+                    {adminUsers.map((admin) => (
+                      <Card key={admin.id} className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{admin.username}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingAdmin(admin)}
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                <Separator className="my-6" />
+
                 <h3 className="text-lg font-medium">Add New Admin</h3>
                 <div className="grid gap-4">
                   <div className="grid gap-2">
@@ -264,6 +536,60 @@ export default function AdminPortal() {
               </div>
             </div>
           </Card>
+
+          {/* Edit Admin Dialog */}
+          {editingAdmin && (
+            <Dialog open={!!editingAdmin} onOpenChange={() => setEditingAdmin(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Admin User</DialogTitle>
+                  <DialogDescription>
+                    Update the credentials for {editingAdmin.username}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="editUsername">Username</Label>
+                    <Input
+                      id="editUsername"
+                      value={editingAdmin.username}
+                      onChange={(e) =>
+                        setEditingAdmin({
+                          ...editingAdmin,
+                          username: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editPassword">New Password (optional)</Label>
+                    <Input
+                      id="editPassword"
+                      type="password"
+                      placeholder="Leave blank to keep current password"
+                      onChange={(e) =>
+                        setEditingAdmin({
+                          ...editingAdmin,
+                          password: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      updateAdminMutation.mutate({
+                        id: editingAdmin.id,
+                        username: editingAdmin.username,
+                        ...(editingAdmin.password && { password: editingAdmin.password }),
+                      });
+                    }}
+                  >
+                    Update Admin
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </TabsContent>
 
         <TabsContent value="pricing">
@@ -306,6 +632,29 @@ export default function AdminPortal() {
                           defaultValue={plan.description}
                           onChange={(e) => {
                             const updatedPlan = { ...plan, description: e.target.value };
+                            updatePricingMutation.mutate(updatedPlan);
+                          }}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`frequency-${plan.id}`}>Service Frequency</Label>
+                        <Input
+                          id={`frequency-${plan.id}`}
+                          defaultValue={plan.serviceFrequency}
+                          onChange={(e) => {
+                            const updatedPlan = { ...plan, serviceFrequency: e.target.value };
+                            updatePricingMutation.mutate(updatedPlan);
+                          }}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`bookings-${plan.id}`}>Max Bookings per Month</Label>
+                        <Input
+                          id={`bookings-${plan.id}`}
+                          type="number"
+                          defaultValue={plan.maxBookingsPerMonth}
+                          onChange={(e) => {
+                            const updatedPlan = { ...plan, maxBookingsPerMonth: parseInt(e.target.value) };
                             updatePricingMutation.mutate(updatedPlan);
                           }}
                         />
