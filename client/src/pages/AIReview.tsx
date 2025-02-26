@@ -131,7 +131,7 @@ export default function AIReview() {
 
       <section>
         <h2 className="text-2xl font-bold mb-4 border-b pb-2">Pricing Plans</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
           {subscriptionPlans.map((plan) => (
             <Card key={plan.id}>
               <CardHeader>
@@ -155,6 +155,134 @@ export default function AIReview() {
             </Card>
           ))}
         </div>
+
+        <h3 className="text-xl font-bold mb-4">Dedicated Pricing Plans</h3>
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Essential Care</CardTitle>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-primary">$149</span>
+                <span className="text-sm text-muted-foreground ml-1">/month</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">Perfect for standard residential lawns up to 5,000 sq ft</p>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Bi-weekly lawn maintenance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Standard mowing and edging</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Basic fertilization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Seasonal cleanup</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary">
+            <CardHeader>
+              <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Most Popular
+                </span>
+              </div>
+              <CardTitle>Premium Care</CardTitle>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-primary">$249</span>
+                <span className="text-sm text-muted-foreground ml-1">/month</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">Ideal for larger properties up to 10,000 sq ft</p>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Weekly lawn maintenance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Premium mowing and edging</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Advanced fertilization program</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Priority scheduling</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estate Care</CardTitle>
+              <div className="mt-2">
+                <span className="text-2xl font-bold text-primary">$399</span>
+                <span className="text-sm text-muted-foreground ml-1">/month</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">Comprehensive care for luxury estates over 10,000 sq ft</p>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Weekly lawn maintenance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Premium mowing and edging</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Full-service lawn treatments</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Landscape consultation</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <h3 className="text-xl font-bold mb-4">Pricing Calculator Features</h3>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="mb-4">Our interactive pricing calculator allows users to:</p>
+            <ul className="list-disc pl-6 space-y-2 mb-4">
+              <li>Specify lawn size in square feet (with a base price of $0.10 per sq ft)</li>
+              <li>Select service frequency (Weekly, Bi-Weekly, Monthly) with appropriate price adjustments</li>
+              <li>Choose from 10 additional service options including:
+                <ul className="list-disc pl-6 mt-2 space-y-1">
+                  <li>Edging & Trimming ($0.05 per sq ft)</li>
+                  <li>Fertilization ($0.08 per sq ft)</li>
+                  <li>Weed Control ($0.07 per sq ft)</li>
+                  <li>Leaf Removal ($0.06 per sq ft)</li>
+                  <li>Soil Analysis & Treatment ($0.04 per sq ft)</li>
+                  <li>Lawn Aeration ($0.06 per sq ft)</li>
+                  <li>Garden Bed Maintenance ($0.08 per sq ft)</li>
+                  <li>Mulching Service ($0.05 per sq ft)</li>
+                  <li>Hardscape Cleaning ($0.06 per sq ft)</li>
+                  <li>Seasonal Cleanup ($0.08 per sq ft)</li>
+                </ul>
+              </li>
+              <li>Get real-time price calculations based on selections</li>
+            </ul>
+            <p>The calculator offers a transparent way for customers to understand pricing before joining our waitlist.</p>
+          </CardContent>
+        </Card>
       </section>
 
       <section>
