@@ -12,6 +12,10 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { fromZodError } from "zod-validation-error";
 
+interface AuthInfo {
+  message?: string;
+}
+
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -129,11 +133,13 @@ export function setupAuth(app: Express) {
         })
         .returning();
 
-      req.login(user, (err) => {
-        if (err) {
+      req.login(user, (loginErr: Error | null) => {
+        if (loginErr) {
           return res.status(500).json({ error: "Login failed after registration" });
         }
-        return res.status(201).json(user);
+        // Don't return password to client
+        const { password, ...safeUser } = user;
+        return res.status(201).json(safeUser);
       });
     } catch (error) {
       log('Registration error:', error);
@@ -142,24 +148,26 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: AuthInfo) => {
       if (err) {
         return next(err);
       }
       if (!user) {
         return res.status(401).json({ error: info?.message || "Authentication failed" });
       }
-      req.login(user, (err) => {
-        if (err) {
-          return next(err);
+      req.login(user, (loginErr: Error | null) => {
+        if (loginErr) {
+          return next(loginErr);
         }
-        return res.json(user);
+        // Don't return password to the client
+        const { password, ...safeUser } = user;
+        return res.json(safeUser);
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
-    req.logout((err) => {
+    req.logout((err: Error | null) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
@@ -171,7 +179,10 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    res.json(req.user);
+    
+    // Return only safe user data (don't include password)
+    const { password, ...safeUser } = req.user;
+    res.json(safeUser);
   });
 }
 

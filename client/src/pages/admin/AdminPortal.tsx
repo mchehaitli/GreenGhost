@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -126,9 +126,10 @@ type SelectEmailTemplate = {
 };
 
 export default function AdminPortal() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("waitlist");
   const [editMode, setEditMode] = useState(false);
   const [templateEditMode, setTemplateEditMode] = useState(false);
@@ -136,6 +137,13 @@ export default function AdminPortal() {
   const [selectedTemplate, setSelectedTemplate] = useState<SelectEmailTemplate | null>(null);
   const [previewMode, setPreviewMode] = useState<'verification' | 'welcome' | null>(null);
   const [previewEmail, setPreviewEmail] = useState("user@example.com");
+  
+  // Ensure user is authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setLocation('/login');
+    }
+  }, [user, authLoading, setLocation]);
 
   // Waitlist data query
   const {
@@ -424,8 +432,23 @@ export default function AdminPortal() {
           <Badge variant="outline" className="flex gap-1 px-3 py-1">
             <User className="w-3 h-3" /> {user?.username}
           </Badge>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/login">Logout</Link>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                await logout();
+                setLocation('/login');
+              } catch (error) {
+                toast({
+                  title: "Logout Failed",
+                  description: "Could not log out. Please try again.",
+                  variant: "destructive"
+                });
+              }
+            }}
+          >
+            Logout
           </Button>
         </div>
       </div>
