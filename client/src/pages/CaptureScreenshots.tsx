@@ -29,7 +29,6 @@ export default function CaptureScreenshots() {
   ]);
   
   const [capturing, setCapturing] = useState(false);
-  // AI Review text state removed
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [allCaptured, setAllCaptured] = useState(false);
   const [activeTab, setActiveTab] = useState('capture-status');
@@ -75,7 +74,7 @@ export default function CaptureScreenshots() {
       prevRoutes.map(route => ({ ...route, status: 'pending', screenshotUrl: undefined, content: undefined }))
     );
     
-    // No need to extract AI Review text anymore
+    // Content capture only - AI Review functionality has been removed
   };
 
   // Effect to capture screenshots sequentially
@@ -183,7 +182,7 @@ export default function CaptureScreenshots() {
     return () => clearTimeout(timer);
   }, [capturing, currentIndex]);
 
-  // AI Review text download function removed
+  // Content download functions
 
   // Function to download all content as a single file
   const downloadAllContent = () => {
@@ -199,7 +198,7 @@ export default function CaptureScreenshots() {
       }
     });
     
-    // AI Review text section removed
+    // Generate the content file with all captured pages
     
     // Create a download link
     const blob = new Blob([allContent], { type: 'text/plain' });
