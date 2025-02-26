@@ -25,7 +25,7 @@ export default function CaptureScreenshots() {
     { path: '/about', name: 'About', status: 'pending' },
     { path: '/waitlist', name: 'Waitlist', status: 'pending' },
     { path: '/theme', name: 'Theme Customization', status: 'pending' },
-    { path: '/ai-review', name: 'AI Review', status: 'pending' },
+    { path: '/internal/ai-review', name: 'AI Review', status: 'pending' },
   ]);
   
   const [capturing, setCapturing] = useState(false);
@@ -76,7 +76,7 @@ export default function CaptureScreenshots() {
     );
     
     // Extract AI Review text separately
-    const aiText = await extractPageContent('/ai-review');
+    const aiText = await extractPageContent('/internal/ai-review');
     if (aiText) {
       setAiReviewText(aiText);
     }
@@ -219,7 +219,7 @@ export default function CaptureScreenshots() {
     // Add AI Review text if available
     if (aiReviewText) {
       allContent += "## AI Review\n";
-      allContent += `URL: /ai-review\n\n`;
+      allContent += `URL: /internal/ai-review\n\n`;
       allContent += `${aiReviewText}\n\n`;
       allContent += "---\n\n";
     }

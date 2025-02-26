@@ -38,7 +38,8 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-      <Route path="/ai-review" component={AIReview} />
+      {/* AI Review page hidden from direct navigation */}
+      <Route path="/internal/ai-review" component={AIReview} />
       <Route path="/capture" component={CaptureScreenshots} />
       <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
       <Route component={NotFound} />
