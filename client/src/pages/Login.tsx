@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -27,7 +27,7 @@ type LoginFormData = {
 };
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +35,13 @@ export default function Login() {
   // Get redirect URL from query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const redirectTo = searchParams.get('redirect') || '/admin';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      setLocation(decodeURIComponent(redirectTo));
+    }
+  }, [user, authLoading, setLocation, redirectTo]);
 
   const form = useForm<LoginFormData>({
     defaultValues: {
@@ -47,8 +54,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(data);
-      // Use the redirect parameter or fallback to /admin
-      setLocation(decodeURIComponent(redirectTo));
+      // The redirect will happen automatically through the useEffect above
     } catch (error) {
       toast({
         title: "Login Failed",
@@ -59,6 +65,20 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  // If still checking auth status, show loading
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // If already logged in, don't show the form
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary/5">
