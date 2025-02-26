@@ -29,7 +29,7 @@ const Footer = () => {
               </Link>
 
               {/* Social Media Icons - Aligned with the G in GreenGhost */}
-              <div className="flex space-x-5 mt-5">
+              <div className="flex space-x-5 mt-5 ml-1.5">
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Instagram">
                   <Instagram size={20} />
                 </a>
