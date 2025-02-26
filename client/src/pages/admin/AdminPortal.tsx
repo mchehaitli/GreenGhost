@@ -198,10 +198,11 @@ export default function AdminPortal() {
   // Mutations
   const updateWaitlistMutation = useMutation({
     mutationFn: async (data: EditFormData) => {
-      return apiRequest(`/api/waitlist/${data.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      return apiRequest(
+        'PATCH',
+        `/api/waitlist/${data.id}`,
+        data
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/waitlist'] });
@@ -223,9 +224,10 @@ export default function AdminPortal() {
 
   const deleteWaitlistMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/waitlist/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(
+        'DELETE',
+        `/api/waitlist/${id}`
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/waitlist'] });
@@ -246,10 +248,11 @@ export default function AdminPortal() {
 
   const createEmailTemplateMutation = useMutation({
     mutationFn: async (data: EmailTemplateFormData) => {
-      return apiRequest('/api/email-templates', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest(
+        'POST',
+        '/api/email-templates',
+        data
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
@@ -265,10 +268,11 @@ export default function AdminPortal() {
 
   const updateEmailTemplateMutation = useMutation({
     mutationFn: async (data: EmailTemplateFormData) => {
-      return apiRequest(`/api/email-templates/${data.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      return apiRequest(
+        'PATCH',
+        `/api/email-templates/${data.id}`,
+        data
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
@@ -285,9 +289,10 @@ export default function AdminPortal() {
 
   const deleteEmailTemplateMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/email-templates/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(
+        'DELETE',
+        `/api/email-templates/${id}`
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
