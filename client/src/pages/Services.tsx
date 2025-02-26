@@ -8,11 +8,27 @@ import {
   Scissors,
   Activity,
   Droplets,
+  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import WaitlistDialog from "@/components/WaitlistDialog"; // Added import
+
+// Additional services array - copied from PricingCalculator.tsx
+const additionalServices = [
+  { id: "edging", name: "Edging & Trimming", pricePerSqft: 0.05, description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
+  { id: "fertilization", name: "Fertilization", pricePerSqft: 0.08, description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
+  { id: "weedControl", name: "Weed Control", pricePerSqft: 0.07, description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
+  { id: "leafRemoval", name: "Leaf Removal", pricePerSqft: 0.06, description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
+  { id: "soilTesting", name: "Soil Analysis & Treatment", pricePerSqft: 0.04, description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
+  { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06, description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
+  { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08, description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
+  { id: "mulching", name: "Mulching Service", pricePerSqft: 0.05, description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
+  { id: "hardscaping", name: "Hardscape Cleaning", pricePerSqft: 0.06, description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
+  { id: "seasonalCleanup", name: "Seasonal Cleanup", pricePerSqft: 0.08, description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
+];
 
 const Services = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -153,6 +169,69 @@ const Services = () => {
                 ))}
               </>
             )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Additional Services Section */}
+      <section className="py-20 bg-background border-t border-border/40">
+        <div className="container">
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl font-bold mb-4">Additional Services</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Enhance your lawn care experience with our premium add-on services, 
+              each designed to address specific aspects of landscape maintenance
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
+            {additionalServices.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+              >
+                <Card className="h-full border-primary/10 hover:border-primary/30 transition-colors duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">{service.name}</h3>
+                        <p className="text-muted-foreground text-sm">{service.description}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-between items-center">
+                      <span className="text-sm text-primary font-medium">
+                        ${service.pricePerSqft.toFixed(2)}/sq ft
+                      </span>
+                      <Button variant="ghost" size="sm" className="group" asChild>
+                        <Link href="/waitlist" className="flex items-center gap-1">
+                          Learn More
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
