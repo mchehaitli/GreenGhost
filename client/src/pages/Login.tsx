@@ -32,6 +32,10 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Get redirect URL from query parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectTo = searchParams.get('redirect') || '/admin';
+
   const form = useForm<LoginFormData>({
     defaultValues: {
       username: '',
@@ -43,7 +47,8 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(data);
-      setLocation('/admin');
+      // Use the redirect parameter or fallback to /admin
+      setLocation(decodeURIComponent(redirectTo));
     } catch (error) {
       toast({
         title: "Login Failed",
