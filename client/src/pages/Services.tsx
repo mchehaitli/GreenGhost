@@ -28,7 +28,7 @@ const Services = () => {
     {
       icon: <Droplets className="w-6 h-6" />,
       title: "Smart Irrigation",
-      description: "Water-efficient systems that adapt to weather conditions.",
+      description: "Water-efficient irrigation systems that adapt to weather conditions and soil moisture.",
       tooltip: "Smart irrigation controllers analyze real-time weather data, soil moisture levels, and plant needs to optimize watering schedules, reducing water usage by up to 50%."
     },
     {
@@ -142,6 +142,7 @@ const Services = () => {
                       scale: 1.05,
                       transition: { type: "spring", stiffness: 300 }
                     }}
+                    className="h-full"
                   >
                     <ServiceCard
                       icon={service.icon}

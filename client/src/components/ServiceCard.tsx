@@ -16,7 +16,7 @@ interface ServiceCardProps {
 
 const ServiceCard = ({ title, description, icon, tooltip }: ServiceCardProps) => {
   return (
-    <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
+    <Card className="h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group">
       <CardHeader>
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110">
@@ -41,7 +41,7 @@ const ServiceCard = ({ title, description, icon, tooltip }: ServiceCardProps) =>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <p className="text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
