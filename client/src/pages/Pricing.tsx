@@ -138,19 +138,6 @@ const Pricing = () => {
               </motion.div>
             ))}
           </div>
-
-          <div className="mt-20 max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl font-bold mb-4">
-              Have Questions About Our Pricing?
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Our team is here to help you choose the right plan for your needs.
-              Contact us for a custom quote or to discuss special requirements.
-            </p>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/contact">Contact Sales</Link>
-            </Button>
-          </div>
         </div>
       </section>
     </div>
