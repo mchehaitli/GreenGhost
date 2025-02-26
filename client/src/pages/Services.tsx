@@ -107,20 +107,71 @@ const Services = () => {
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Our Services
+              Transforming Lawn Care with Technology
             </motion.h1>
             <motion.p 
-              className="text-lg text-muted-foreground mb-8"
+              className="text-xl text-muted-foreground mb-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Experience premium automated landscaping services
+              <span className="text-primary font-semibold">Revolutionary solutions</span> that deliver professional results with minimal human intervention
             </motion.p>
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
-              <Link href="/waitlist">Join Waitlist</Link>
-            </Button>
+            <motion.div
+              className="flex justify-center items-center gap-2 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="text-sm">Time-saving</span>
+              </div>
+              <span className="text-muted-foreground">•</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="text-sm">Water-efficient</span>
+              </div>
+              <span className="text-muted-foreground">•</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="text-sm">Eco-friendly</span>
+              </div>
+            </motion.div>
+            <motion.div 
+              className="flex flex-wrap justify-center gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
+                <Link href="/waitlist">Join Waitlist</Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                onClick={() => setShowWaitlist(true)}
+                className="group"
+              >
+                Schedule Demo
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </motion.div>
           </div>
+
+          {/* Added decorative elements */}
+          <motion.div 
+            className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.8 }}
+            transition={{ duration: 1, delay: 0.2 }}
+          />
+          <motion.div 
+            className="absolute -bottom-20 -right-20 w-60 h-60 bg-primary/10 rounded-full blur-3xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ duration: 1, delay: 0.3 }}
+          />
         </div>
       </motion.section>
 
