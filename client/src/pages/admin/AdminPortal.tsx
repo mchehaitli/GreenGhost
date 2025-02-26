@@ -1000,15 +1000,15 @@ export default function AdminPortal() {
                 <Separator />
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <FormLabel>Username</FormLabel>
-                    <div className="flex gap-2 mt-2">
+                    <div className="font-medium mb-2">Username</div>
+                    <div className="flex gap-2">
                       <Input value={user?.username} disabled />
                       <Button variant="outline" disabled>Change</Button>
                     </div>
                   </div>
                   <div>
-                    <FormLabel>Password</FormLabel>
-                    <div className="flex gap-2 mt-2">
+                    <div className="font-medium mb-2">Password</div>
+                    <div className="flex gap-2">
                       <Input type="password" value="••••••••" disabled />
                       <Button variant="outline" disabled>Change</Button>
                     </div>

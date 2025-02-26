@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -28,7 +28,8 @@ export function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return null; // Let useEffect handle redirect
+    // Immediately redirect if not authenticated
+    return <Redirect to="/login" />;
   }
 
   return <Component />;
