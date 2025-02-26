@@ -11,7 +11,7 @@ import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
-import AdminWaitlist from "@/pages/admin/Waitlist";
+import AdminPortal from "@/pages/admin/AdminPortal";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
@@ -38,9 +38,10 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-      <Route path="/ai-review" component={AIReview} />
-      <Route path="/capture" component={CaptureScreenshots} />
-      <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
+      <Route path="/admin" component={() => <ProtectedRoute component={AdminPortal} />} />
+      {/* Protected routes - only accessible through admin portal */}
+      <Route path="/admin/ai-review" component={() => <ProtectedRoute component={AIReview} />} />
+      <Route path="/admin/capture" component={() => <ProtectedRoute component={CaptureScreenshots} />} />
       <Route component={NotFound} />
     </Switch>
   );
