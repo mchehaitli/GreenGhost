@@ -25,7 +25,7 @@ export default function CaptureScreenshots() {
     { path: '/about', name: 'About', status: 'pending' },
     { path: '/waitlist', name: 'Waitlist', status: 'pending' },
     { path: '/theme', name: 'Theme Customization', status: 'pending' },
-    { path: '/internal/ai-review', name: 'AI Review', status: 'pending' },
+
   ]);
   
   const [capturing, setCapturing] = useState(false);
@@ -75,11 +75,7 @@ export default function CaptureScreenshots() {
       prevRoutes.map(route => ({ ...route, status: 'pending', screenshotUrl: undefined, content: undefined }))
     );
     
-    // Extract AI Review text separately
-    const aiText = await extractPageContent('/internal/ai-review');
-    if (aiText) {
-      setAiReviewText(aiText);
-    }
+    // No need to extract AI Review text anymore
   };
 
   // Effect to capture screenshots sequentially
