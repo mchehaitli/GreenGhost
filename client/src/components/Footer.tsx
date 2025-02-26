@@ -28,8 +28,8 @@ const Footer = () => {
                 </div>
               </Link>
 
-              {/* Social Media Icons */}
-              <div className="flex space-x-4 mt-4">
+              {/* Social Media Icons - Moved to be more centered and slightly to the right */}
+              <div className="flex justify-center md:justify-start space-x-5 mt-5 pl-4">
                 <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Instagram">
                   <Instagram size={20} />
                 </a>
