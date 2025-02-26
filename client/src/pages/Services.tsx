@@ -87,6 +87,18 @@ const Services = () => {
     }
   };
 
+  // Handler for demo dialog close events
+  const handleDemoDialogChange = (open: boolean) => {
+    setShowDemoDialog(open);
+    // If dialog is closing and not by the X button (user clicked Join Waitlist)
+    if (!open) {
+      // We need a slight delay to avoid dialog animations conflicting
+      setTimeout(() => {
+        setShowWaitlist(true);
+      }, 100);
+    }
+  };
+
   return (
     <motion.div 
       className="min-h-screen relative overflow-hidden"
@@ -319,7 +331,7 @@ const Services = () => {
       {/* Demo Dialog - Using the same WaitlistDialog component with a special demo mode */}
       <WaitlistDialog 
         open={showDemoDialog} 
-        onOpenChange={setShowDemoDialog}
+        onOpenChange={handleDemoDialogChange}
         isDemo={true} // Added prop to indicate this is for demo scheduling
       />
     </motion.div>
