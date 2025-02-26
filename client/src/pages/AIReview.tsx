@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { subscriptionPlans } from "@/lib/subscription-plans";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Link as LinkIcon, Instagram, Twitter, Facebook, Linkedin, Mail, Phone } from "lucide-react";
+import { Link } from "wouter";
 
 // This page is designed specifically for AI tools to "see" the website content
 // It transforms the dynamic, animated content into static, text-based content
@@ -12,7 +13,13 @@ export default function AIReview() {
     <div className="container py-10 space-y-12">
       <section className="text-center">
         <h1 className="text-4xl font-bold mb-2">GreenGhost Tech - Website Content for AI Review</h1>
-        <p className="text-muted-foreground">This page contains text-based representations of our website content to help AI tools review our site.</p>
+        <p className="text-muted-foreground mb-2">This page contains text-based representations of our website content to help AI tools review our site.</p>
+        <div className="flex justify-center">
+          <Button asChild className="mt-2">
+            <Link href="/waitlist">Join Our Waitlist</Link>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-4">URL: https://greenghost-tech.example.com/ai-review</p>
       </section>
 
       <section>
@@ -357,6 +364,150 @@ export default function AIReview() {
         </Card>
       </section>
 
+      <section>
+        <h2 className="text-2xl font-bold mb-4 border-b pb-2">How It Works Process</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-xl font-bold mb-3">Our Service Process</h3>
+            <ol className="list-decimal pl-6 space-y-3 mb-4">
+              <li>
+                <strong>Initial Assessment</strong>
+                <p className="text-muted-foreground">Our technology team conducts a thorough analysis of your property using satellite imagery and AI to create a custom service plan.</p>
+              </li>
+              <li>
+                <strong>System Installation</strong>
+                <p className="text-muted-foreground">We deploy our proprietary sensors and robotic equipment customized to your lawn's specific needs and challenges.</p>
+              </li>
+              <li>
+                <strong>Smart Monitoring</strong>
+                <p className="text-muted-foreground">Advanced IoT sensors continuously collect data about soil conditions, grass health, and environmental factors.</p>
+              </li>
+              <li>
+                <strong>Automated Maintenance</strong>
+                <p className="text-muted-foreground">Our AI-driven system determines optimal maintenance schedules and dispatches robotic equipment at ideal times.</p>
+              </li>
+              <li>
+                <strong>Continuous Improvement</strong>
+                <p className="text-muted-foreground">Machine learning algorithms analyze performance data to constantly improve service quality and efficiency.</p>
+              </li>
+            </ol>
+            
+            <h3 className="text-xl font-bold mb-3">Technology Integration</h3>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Mobile App Access</strong> - Monitor your lawn's health and service schedule</li>
+              <li><strong>Smart Home Integration</strong> - Works with Google Home and Amazon Alexa</li>
+              <li><strong>Automated Updates</strong> - System improves through regular software updates</li>
+              <li><strong>Weather Adaptation</strong> - Services adjust automatically based on local weather patterns</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Blog Content</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-xl font-bold mb-3">Featured Blog Posts</h3>
+            <ul className="space-y-4">
+              <li>
+                <div className="border-l-4 border-primary pl-4">
+                  <h4 className="font-bold">The Future of Lawn Care: How Automation is Changing the Game</h4>
+                  <p className="text-sm text-muted-foreground">Published: February 15, 2025 | 8 min read</p>
+                  <p className="mt-2">Explore how smart technology and robotics are revolutionizing residential landscaping, making professional-level lawn care accessible to more homeowners while reducing environmental impact.</p>
+                </div>
+              </li>
+              <li>
+                <div className="border-l-4 border-primary pl-4">
+                  <h4 className="font-bold">5 Ways Smart Irrigation Saves Water and Money</h4>
+                  <p className="text-sm text-muted-foreground">Published: January 30, 2025 | 6 min read</p>
+                  <p className="mt-2">Learn how modern irrigation technology is transforming water usage in Texas lawns, with some systems reducing consumption by up to 40% while maintaining healthier grass.</p>
+                </div>
+              </li>
+              <li>
+                <div className="border-l-4 border-primary pl-4">
+                  <h4 className="font-bold">Seasonal Lawn Care Guide for North Texas</h4>
+                  <p className="text-sm text-muted-foreground">Published: December 18, 2024 | 10 min read</p>
+                  <p className="mt-2">A comprehensive guide to maintaining a healthy lawn throughout the year in North Texas climate, including month-by-month maintenance tips and regional considerations.</p>
+                </div>
+              </li>
+            </ul>
+            
+            <h3 className="text-xl font-bold mb-3 mt-6">Blog Categories</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="justify-start">Lawn Care Tips</Button>
+              <Button variant="outline" className="justify-start">Technology</Button>
+              <Button variant="outline" className="justify-start">Sustainability</Button>
+              <Button variant="outline" className="justify-start">DIY Projects</Button>
+              <Button variant="outline" className="justify-start">Equipment Reviews</Button>
+              <Button variant="outline" className="justify-start">Seasonal Guides</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Footer Information</h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid md:grid-cols-4 gap-4">
+              <div>
+                <h3 className="font-bold mb-2">GreenGhost Tech</h3>
+                <p className="text-sm text-muted-foreground mb-2">Revolutionizing lawn care with advanced technology</p>
+                <div className="flex space-x-2">
+                  <Facebook className="h-5 w-5 text-muted-foreground" />
+                  <Instagram className="h-5 w-5 text-muted-foreground" />
+                  <Twitter className="h-5 w-5 text-muted-foreground" />
+                  <Linkedin className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-bold mb-2">Quick Links</h3>
+                <ul className="space-y-1 text-sm">
+                  <li>Home</li>
+                  <li>Services</li>
+                  <li>How It Works</li>
+                  <li>Pricing</li>
+                  <li>Blog</li>
+                  <li>About Us</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-bold mb-2">Contact Us</h3>
+                <ul className="space-y-1 text-sm">
+                  <li className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" /> support@greenghost-tech.example.com
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" /> (972) 555-0123
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" /> Dallas-Fort Worth, Texas
+                  </li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-bold mb-2">Legal</h3>
+                <ul className="space-y-1 text-sm">
+                  <li>Terms of Service</li>
+                  <li>Privacy Policy</li>
+                  <li>Cookie Policy</li>
+                  <li>Service Agreement</li>
+                  <li>Refund Policy</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="border-t pt-4 mt-4 text-center text-xs text-muted-foreground">
+              <p>© 2025 GreenGhost Technologies, LLC. All rights reserved.</p>
+              <p className="mt-1">Serving the Dallas-Fort Worth Metroplex and expanding throughout Texas</p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       <section className="pb-10">
         <h2 className="text-2xl font-bold mb-4 border-b pb-2">Technical Implementation Details</h2>
         <Card>
@@ -370,6 +521,10 @@ export default function AIReview() {
               <li><strong>Authentication:</strong> Custom implementation with Passport.js</li>
               <li><strong>Responsive Design:</strong> Mobile-first approach with tailored layouts</li>
               <li><strong>Admin Dashboard:</strong> Protected routes with data visualization</li>
+              <li><strong>Database Schema:</strong> Users, Waitlist, Verification Tokens, Email Templates, Email Segments</li>
+              <li><strong>Email Integration:</strong> Transactional emails for waitlist confirmations and marketing</li>
+              <li><strong>API Architecture:</strong> RESTful API endpoints with JSON responses</li>
+              <li><strong>Deployment:</strong> Continuous deployment on cloud infrastructure</li>
             </ul>
           </CardContent>
         </Card>
