@@ -1,71 +1,59 @@
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useAuth } from '@/hooks/use-auth';
+import { useLocation } from 'wouter';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useToast } from "@/components/ui/use-toast";
 
-const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  username: string;
+  password: string;
+};
 
 export default function Login() {
-  const { login, user, isLoading } = useAuth();
+  const { login } = useAuth();
   const [, setLocation] = useLocation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
-  // Get redirect path from URL if available
-  const redirectPath = new URLSearchParams(window.location.search).get('redirect') || '/admin';
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      username: '',
+      password: '',
     },
   });
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !isLoading) {
-      setLocation(redirectPath);
-    }
-  }, [user, isLoading, setLocation, redirectPath]);
-
   const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
     try {
-      setIsSubmitting(true);
       await login(data);
-      // The redirect will happen in the useEffect hook after user state updates
+      setLocation('/admin');
     } catch (error) {
-      console.error('Login failed:', error);
       toast({
-        title: "Login failed",
+        title: "Login Failed",
         description: "Invalid username or password",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary/5">
@@ -73,7 +61,7 @@ export default function Login() {
         <CardHeader>
           <CardTitle>Admin Login</CardTitle>
           <CardDescription>
-            Sign in to access the waitlist management dashboard
+            Sign in to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -107,19 +95,8 @@ export default function Login() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full bg-primary/10 text-primary hover:bg-primary/20"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? (
-                  <>
-                    <LoadingSpinner className="mr-2" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign in"
-                )}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
           </Form>
