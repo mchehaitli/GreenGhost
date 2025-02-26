@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import WaitlistDialog from "./WaitlistDialog";
+import { Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
 
 const Footer = () => {
   const [showWaitlist, setShowWaitlist] = useState(false);
@@ -26,6 +27,22 @@ const Footer = () => {
                   <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Tech</span>
                 </div>
               </Link>
+
+              {/* Social Media Icons */}
+              <div className="flex space-x-4 mt-4">
+                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Instagram">
+                  <Instagram size={20} />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Twitter">
+                  <Twitter size={20} />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Facebook">
+                  <Facebook size={20} />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="LinkedIn">
+                  <Linkedin size={20} />
+                </a>
+              </div>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
