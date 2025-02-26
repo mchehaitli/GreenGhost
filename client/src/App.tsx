@@ -17,7 +17,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Pricing from "@/pages/Pricing";
-
+import AIReview from "@/pages/AIReview";
 import CaptureScreenshots from "@/pages/CaptureScreenshots";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
@@ -38,9 +38,8 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-      {/* Protected admin routes */}
-
-      <Route path="/admin/capture" component={() => <ProtectedRoute component={CaptureScreenshots} />} />
+      <Route path="/ai-review" component={AIReview} />
+      <Route path="/capture" component={CaptureScreenshots} />
       <Route path="/admin/waitlist" component={() => <ProtectedRoute component={AdminWaitlist} />} />
       <Route component={NotFound} />
     </Switch>
