@@ -1,5 +1,5 @@
-import { ReactNode, createContext, useContext } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { ReactNode, createContext, useContext, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface SelectUser {
@@ -19,28 +19,58 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: user, error, isLoading, refetch } = useQuery<SelectUser | null>({
+  // Set up the authentication query
+  const { 
+    data: user, 
+    error, 
+    isLoading, 
+    refetch, 
+    status,
+    isError
+  } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
-      const response = await fetch("/api/user", {
-        credentials: 'include'
-      });
+      console.log("Fetching user auth data...");
+      try {
+        const response = await fetch("/api/user", {
+          credentials: 'include'
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          return null;
+        console.log(`Auth response status: ${response.status}`);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log("User not authenticated");
+            return null;
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      return response.json();
+        const userData = await response.json();
+        console.log("User authenticated:", userData);
+        return userData;
+      } catch (err) {
+        console.error("Auth query error:", err);
+        throw err;
+      }
     },
     retry: false,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+  
+  // Log authentication state changes for debugging
+  useEffect(() => {
+    console.log("Auth state:", { 
+      status, 
+      isLoading, 
+      isError, 
+      user: user ? `User ${user.username}` : 'No user'
+    });
+  }, [status, isLoading, isError, user]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {

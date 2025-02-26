@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,7 +24,14 @@ import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
 
+// Helper for protected routes that preserves component type
+const ProtectedRouteWrapper = ({ component }: { component: React.ComponentType }) => (
+  <ProtectedRoute component={component} />
+);
+
 function Router() {
+  const [location] = useLocation();
+  
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -38,10 +45,16 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-      <Route path="/admin" component={() => <ProtectedRoute component={AdminPortal} />} />
+      <Route path="/admin">
+        <ProtectedRouteWrapper component={AdminPortal} />
+      </Route>
       {/* Protected routes - only accessible through admin portal */}
-      <Route path="/admin/ai-review" component={() => <ProtectedRoute component={AIReview} />} />
-      <Route path="/admin/capture" component={() => <ProtectedRoute component={CaptureScreenshots} />} />
+      <Route path="/admin/ai-review">
+        <ProtectedRouteWrapper component={AIReview} />
+      </Route>
+      <Route path="/admin/capture">
+        <ProtectedRouteWrapper component={CaptureScreenshots} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
