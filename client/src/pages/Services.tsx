@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
 import ServiceCardSkeleton from "@/components/ServiceCardSkeleton";
-import PricingCalculator from "@/components/PricingCalculator";
 import {
   Bot,
   Sprout,
@@ -154,31 +153,6 @@ const Services = () => {
                 ))}
               </>
             )}
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-background relative">
-        <div className="container">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-bold mb-4">Calculate Your Service Cost</h2>
-            <p className="text-lg text-muted-foreground">
-              Get an instant estimate for our automated lawn care services
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <PricingCalculator />
           </motion.div>
         </div>
       </section>
