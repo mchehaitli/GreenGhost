@@ -142,7 +142,7 @@ export function setupAuth(app: Express) {
         return res.status(201).json(safeUser);
       });
     } catch (error) {
-      log('Registration error:', error instanceof Error ? error.message : String(error));
+      log(`Registration error: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Registration failed" });
     }
   });
