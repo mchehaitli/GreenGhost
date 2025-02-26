@@ -29,7 +29,7 @@ export default function CaptureScreenshots() {
   ]);
   
   const [capturing, setCapturing] = useState(false);
-  const [aiReviewText, setAiReviewText] = useState<string | null>(null);
+  // AI Review text state removed
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [allCaptured, setAllCaptured] = useState(false);
   const [activeTab, setActiveTab] = useState('capture-status');
@@ -183,20 +183,7 @@ export default function CaptureScreenshots() {
     return () => clearTimeout(timer);
   }, [capturing, currentIndex]);
 
-  // Function to download AI Review text
-  const downloadAiReviewText = () => {
-    if (!aiReviewText) return;
-    
-    const blob = new Blob([aiReviewText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ai-review-content.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  // AI Review text download function removed
 
   // Function to download all content as a single file
   const downloadAllContent = () => {
@@ -212,13 +199,7 @@ export default function CaptureScreenshots() {
       }
     });
     
-    // Add AI Review text if available
-    if (aiReviewText) {
-      allContent += "## AI Review\n";
-      allContent += `URL: /internal/ai-review\n\n`;
-      allContent += `${aiReviewText}\n\n`;
-      allContent += "---\n\n";
-    }
+    // AI Review text section removed
     
     // Create a download link
     const blob = new Blob([allContent], { type: 'text/plain' });
@@ -337,7 +318,7 @@ export default function CaptureScreenshots() {
         <div>
           <h1 className="text-3xl font-bold">GreenGhost Tech Website Capture</h1>
           <p className="text-muted-foreground mt-1">
-            Visit and document all website pages for AI review
+            Capture and document website pages for content review
           </p>
         </div>
         
@@ -407,29 +388,7 @@ export default function CaptureScreenshots() {
             </CardContent>
           </Card>
 
-          {/* AI Review Text */}
-          {aiReviewText && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="mr-2 h-5 w-5" /> AI Review Text Content
-                </CardTitle>
-                <CardDescription>
-                  Text content extracted from the AI Review page
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    {aiReviewText.substring(0, 100)}...
-                  </p>
-                  <Button onClick={downloadAiReviewText} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" /> Download Text
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* AI Review section removed */}
         </TabsContent>
         
         <TabsContent value="download-all" className="space-y-4 mt-4">
