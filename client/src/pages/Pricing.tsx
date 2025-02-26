@@ -91,7 +91,7 @@ const Pricing = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Card className={`relative h-full ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
+                <Card className={`relative h-full flex flex-col ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
                   {plan.popular && (
                     <div className="absolute -top-4 left-0 right-0 flex justify-center">
                       <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
@@ -109,8 +109,8 @@ const Pricing = () => {
                       {plan.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 mb-8">
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-3 mb-8 flex-1">
                       {plan.features.map((feature) => (
                         <li key={feature} className="flex items-start gap-2">
                           <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -126,7 +126,7 @@ const Pricing = () => {
                     </ul>
                     <Button 
                       asChild 
-                      className="w-full"
+                      className="w-full mt-auto"
                       variant={plan.popular ? "default" : "outline"}
                     >
                       <Link href="/waitlist">

@@ -232,7 +232,7 @@ export const Home = () => {
                         ))}
                       </ul>
                       <Button asChild className="w-full mt-auto">
-                        <Link href="/services">
+                        <Link href="/waitlist">
                           Join Waitlist
                         </Link>
                       </Button>
