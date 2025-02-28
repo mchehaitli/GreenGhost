@@ -636,7 +636,7 @@ export default function WaitlistPage() {
       accessorKey: "created_at",
       header: "Created At",
       cell: ({ row }) => {
-        return format(new Date(row.original.created_at), "MMM dd, yyyy HH:mm:ss");
+        return format(new Date(row.original.created_at), "MMM dd, yyyy 'at' HH:mm:ss");
       },
     },
     {
