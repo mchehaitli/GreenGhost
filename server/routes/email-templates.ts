@@ -5,7 +5,6 @@ import { eq, inArray } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
-import emailService from '../services/email';
 
 const router = Router();
 
@@ -93,36 +92,29 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
     }
 
     // Get template
-    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, templateId));
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, templateId)
+    });
+
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
 
     // Get recipients
-    const recipients = await db.select().from(waitlist)
-      .where(zip_codes.length > 0 ? inArray(waitlist.zip_code, zip_codes) : undefined);
-
-    // Send emails
-    let successCount = 0;
-    for (const recipient of recipients) {
-      try {
-        await emailService.sendCustomEmail(recipient.email, template.subject, template.html_content);
-        successCount++;
-      } catch (error) {
-        log(`Failed to send email to ${recipient.email}:`, error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
+    const recipients = await db.query.waitlist.findMany({
+      where: zip_codes.length > 0 ? inArray(waitlist.zip_code, zip_codes) : undefined
+    });
 
     // Record segment
     const [segment] = await db.insert(emailSegments).values({
       template_id: templateId,
       zip_codes: zip_codes,
-      total_recipients: successCount,
+      total_recipients: recipients.length,
     }).returning();
 
     return res.json({
       success: true,
-      total_sent: successCount,
+      total_recipients: recipients.length,
       segment_id: segment.id,
     });
   } catch (error) {
