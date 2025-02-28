@@ -65,7 +65,7 @@ export const services = pgTable("services", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Add care plans table
+// Add care plans table with proper validation
 export const carePlans = pgTable("care_plans", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -112,6 +112,19 @@ export const insertEmailTemplateSchema = z.object({
   subject: z.string().min(1, "Email subject is required"),
   html_content: z.string().min(1, "Email content is required"),
 });
+
+// Add validation schemas for care plans
+export const insertCarePlanSchema = z.object({
+  name: z.string().min(1, "Plan name is required"),
+  description: z.string().min(1, "Plan description is required"),
+  base_price: z.number().positive("Price must be positive"),
+  features: z.array(z.string()).min(1, "At least one feature is required"),
+});
+
+export const updateCarePlanSchema = z.object({
+  base_price: z.number().positive("Price must be positive"),
+});
+
 
 // Export types
 export const selectUserSchema = createSelectSchema(users);
