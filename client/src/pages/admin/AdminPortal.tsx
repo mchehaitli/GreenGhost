@@ -616,7 +616,11 @@ export default function AdminPortal() {
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
                         <div>
-                          {entry.email}
+                          <Input
+                            value={unsavedChanges[entry.id]?.email ?? entry.email}
+                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
+                            className="mb-1"
+                          />
                           <div className="text-sm text-muted-foreground">
                             {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                           </div>
