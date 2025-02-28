@@ -33,9 +33,20 @@ import {
   ChevronUp,
   ChevronDown,
   Loader2,
-  MapPin
+  MapPin,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SortField = 'created_at' | 'zip_code';
 type SortDirection = 'asc' | 'desc';
@@ -72,6 +83,9 @@ export default function AdminPortal() {
   const [isAutoPopulating, setIsAutoPopulating] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -135,6 +149,33 @@ export default function AdminPortal() {
     },
   });
 
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/waitlist/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete entry');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      toast({
+        title: "Entry deleted",
+        description: "The waitlist entry has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete entry",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleFieldChange = (entryId: number, field: keyof WaitlistEntry, value: string) => {
     setUnsavedChanges(prev => ({
       ...prev,
@@ -158,6 +199,19 @@ export default function AdminPortal() {
       field,
       direction: current.field === field && current.direction === 'asc' ? 'desc' : 'asc'
     }));
+  };
+
+  const handleDelete = (id: number) => {
+    setEntryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (entryToDelete) {
+      deleteEntryMutation.mutate(entryToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
   };
 
   const filteredAndSortedEntries = [...waitlistEntries]
@@ -515,6 +569,7 @@ export default function AdminPortal() {
                       {getSortIcon('zip_code')}
                     </TableHead>
                     <TableHead>Notes</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -626,6 +681,17 @@ export default function AdminPortal() {
                           </DialogContent>
                         </Dialog>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(entry.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -675,6 +741,20 @@ export default function AdminPortal() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the waitlist entry and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
