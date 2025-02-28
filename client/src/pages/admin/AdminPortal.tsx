@@ -93,16 +93,19 @@ export default function AdminPortal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
       });
-      if (!response.ok) throw new Error('Failed to update entry');
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to update entry');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
-      toast({ title: "Entry updated successfully" });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Failed to update entry",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
     },
@@ -172,6 +175,7 @@ export default function AdminPortal() {
         throw new Error('No location data found for this ZIP code');
       }
     } catch (error) {
+      console.error('Error in handleCityStateFromZip:', error);
       toast({
         title: "ZIP Code Validation Failed",
         description: error instanceof Error ? error.message : "Please enter city and state manually",
@@ -248,6 +252,7 @@ export default function AdminPortal() {
         variant: successCount > 0 ? "default" : "destructive"
       });
     } catch (error) {
+      console.error('Error in handleAutoPopulateAll:', error);
       toast({
         title: "Auto-population Failed",
         description: "An error occurred while updating locations.",
