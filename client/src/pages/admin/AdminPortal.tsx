@@ -28,9 +28,15 @@ import {
   Search,
   SlidersHorizontal,
   FileText,
-  Save
+  Save,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
+
+type SortField = 'created_at' | 'zip_code';
+type SortDirection = 'asc' | 'desc';
 
 type WaitlistEntry = {
   id: number;
@@ -46,20 +52,6 @@ type WaitlistEntry = {
   notes?: string;
 };
 
-type EmailTemplate = {
-  id: number;
-  name: string;
-  subject: string;
-  html_content: string;
-};
-
-type PricingData = {
-  id: number;
-  name: string;
-  price: number;
-  description: string;
-};
-
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -70,6 +62,10 @@ export default function AdminPortal() {
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [currentNotes, setCurrentNotes] = useState("");
   const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
+    field: 'created_at',
+    direction: 'desc'
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -108,6 +104,41 @@ export default function AdminPortal() {
     },
   });
 
+  const handleSort = (field: SortField) => {
+    setSortConfig(current => ({
+      field,
+      direction: current.field === field && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const filteredAndSortedEntries = [...waitlistEntries]
+    .filter(entry => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        entry.email.toLowerCase().includes(searchLower) ||
+        entry.first_name?.toLowerCase().includes(searchLower) ||
+        entry.last_name?.toLowerCase().includes(searchLower) ||
+        entry.zip_code?.includes(searchTerm)
+      );
+    })
+    .sort((a, b) => {
+      const { field, direction } = sortConfig;
+      const modifier = direction === 'asc' ? 1 : -1;
+
+      if (field === 'created_at') {
+        return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * modifier;
+      }
+
+      if (field === 'zip_code') {
+        const zipA = a.zip_code || '';
+        const zipB = b.zip_code || '';
+        return zipA.localeCompare(zipB) * modifier;
+      }
+
+      return 0;
+    });
+
   const handleCityStateFromZip = async (zip: string, entryId: number) => {
     try {
       const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
@@ -139,17 +170,6 @@ export default function AdminPortal() {
     }
   };
 
-  const filteredEntries = waitlistEntries.filter(entry => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      entry.email.toLowerCase().includes(searchLower) ||
-      entry.first_name?.toLowerCase().includes(searchLower) ||
-      entry.last_name?.toLowerCase().includes(searchLower) ||
-      entry.zip_code?.includes(searchTerm)
-    );
-  });
-
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -157,6 +177,15 @@ export default function AdminPortal() {
       </div>
     );
   }
+
+  const getSortIcon = (field: SortField) => {
+    if (sortConfig.field !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return sortConfig.direction === 'asc' ? 
+      <ChevronUp className="ml-2 h-4 w-4" /> : 
+      <ChevronDown className="ml-2 h-4 w-4" />;
+  };
 
   return (
     <div className="container py-10">
@@ -230,19 +259,31 @@ export default function AdminPortal() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      Email / Sign-up Time
+                      {getSortIcon('created_at')}
+                    </TableHead>
                     <TableHead>First Name</TableHead>
                     <TableHead>Last Name</TableHead>
                     <TableHead>Phone Number</TableHead>
                     <TableHead>Street Address</TableHead>
                     <TableHead>City</TableHead>
                     <TableHead>State</TableHead>
-                    <TableHead>ZIP Code</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => handleSort('zip_code')}
+                    >
+                      ZIP Code
+                      {getSortIcon('zip_code')}
+                    </TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEntries.map((entry) => (
+                  {filteredAndSortedEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
                         <div>
