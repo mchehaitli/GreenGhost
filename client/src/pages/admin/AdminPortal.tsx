@@ -897,7 +897,7 @@ export default function AdminPortal() {
               <TabsContent value="waitlist">
                 <div className="space-y-4">
                   <div className="grid gap-4">
-                    <<div className="space-y-2">
+                    <div className="space-y-2">
                       <Label>Verification Code Timeout (seconds)</Label>
                       <Input 
                         type="number"
