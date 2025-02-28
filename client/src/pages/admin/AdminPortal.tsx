@@ -796,9 +796,73 @@ export default function AdminPortal() {
         </TabsContent>
 
         <TabsContent value="email-templates">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Email Templates</h2>
-            <p className="text-muted-foreground">Configure your email templates here.</p>
+          <Card className="p-4 md:p-6 relative">
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
+                <p className="text-muted-foreground">
+                  Manage automated email templates for different events in your application.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="p-4">
+                  <h3 className="text-lg font-medium mb-4">Welcome Email</h3>
+                  <EmailTemplateEditor
+                    initialData={{
+                      name: "Welcome Email",
+                      subject: "Welcome to Our Waitlist!",
+                      html_content: `
+<h1>Welcome aboard!</h1>
+<p>Dear {firstName},</p>
+<p>Thank you for joining our waitlist! We're thrilled to have you as part of our growing community.</p>
+<p>We'll keep you updated on our progress and let you know as soon as we're ready to serve your area.</p>
+<p>Best regards,<br>The Team</p>
+                      `.trim()
+                    }}
+                    onSave={async (data) => {
+                      const response = await fetch('/api/email-templates/welcome', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                      });
+                      if (!response.ok) {
+                        throw new Error('Failed to save template');
+                      }
+                    }}
+                  />
+                </Card>
+
+                <Card className="p-4">
+                  <h3 className="text-lg font-medium mb-4">Verification Email</h3>
+                  <EmailTemplateEditor
+                    initialData={{
+                      name: "Verification Email",
+                      subject: "Verify Your Email Address",
+                      html_content: `
+<h1>Verify Your Email</h1>
+<p>Hello!</p>
+<p>Please use the following code to verify your email address:</p>
+<h2 style="font-size: 24px; color: #0066cc;">{verificationCode}</h2>
+<p>This code will expire in 90 seconds.</p>
+<p>If you didn't request this verification, please ignore this email.</p>
+<p>Best regards,<br>The Team</p>
+                      `.trim()
+                    }}
+                    onSave={async (data) => {
+                      const response = await fetch('/api/email-templates/verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                      });
+                      if (!response.ok) {
+                        throw new Error('Failed to save template');
+                      }
+                    }}
+                  />
+                </Card>
+              </div>
+            </div>
           </Card>
         </TabsContent>
 
