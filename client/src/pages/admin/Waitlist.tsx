@@ -489,7 +489,7 @@ const EmailTemplateTab = () => {
   );
 };
 
-export default function WaitlistPage() {
+const WaitlistPage = () => {
   const { user, isLoading: authLoading, logout } = useAuth();
   const queryClient = useQueryClient();
   const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
@@ -636,7 +636,8 @@ export default function WaitlistPage() {
       accessorKey: "created_at",
       header: "Created At",
       cell: ({ row }) => {
-        return format(new Date(row.original.created_at), "MMM dd, yyyy 'at' HH:mm:ss");
+        const date = new Date(row.original.created_at);
+        return format(date, "MMM dd, yyyy 'at' h:mm:ss a");
       },
     },
     {
@@ -701,7 +702,7 @@ export default function WaitlistPage() {
       Address: entry.address || '',
       'ZIP Code': entry.zip_code,
       Notes: entry.notes || '',
-      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy HH:mm:ss")
+      'Signup Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm:ss a")
     }));
 
     const wb = XLSX.utils.book_new();
@@ -934,4 +935,6 @@ export default function WaitlistPage() {
       </Dialog>
     </div>
   );
-}
+};
+
+export default WaitlistPage;
