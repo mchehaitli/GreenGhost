@@ -515,14 +515,16 @@ export default function AdminPortal() {
             <UserPlus className="w-4 h-4 mr-2" />
             Waitlist Entries
           </TabsTrigger>
-          <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </TabsTrigger>
           <TabsTrigger value="pricing">
             <DollarSign className="w-4 h-4 mr-2" />
             Pricing
+          </TabsTrigger>
+          <TabsTrigger value="email-templates">
+            Email Templates
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -817,6 +819,7 @@ export default function AdminPortal() {
             <p className="text-muted-foreground">Configure your pricing plans here.</p>
           </Card>
         </TabsContent>
+
       </Tabs>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
