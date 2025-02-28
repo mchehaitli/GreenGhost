@@ -121,8 +121,11 @@ export const insertCarePlanSchema = z.object({
   features: z.array(z.string()).min(1, "At least one feature is required"),
 });
 
+// Update the validation schema for care plan updates
 export const updateCarePlanSchema = z.object({
-  base_price: z.number().positive("Price must be positive"),
+  base_price: z.number().positive("Price must be positive").or(
+    z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format").transform(val => parseFloat(val))
+  ),
 });
 
 
