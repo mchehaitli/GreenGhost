@@ -47,6 +47,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 
 type WaitlistEntry = {
   id: number;
@@ -502,7 +503,19 @@ export default function AdminPortal() {
         </TabsList>
 
         <TabsContent value="waitlist-entries" className="space-y-4">
-          <Card className="p-6">
+          <Card className="p-6 relative">
+            <LoadingOverlay 
+              isLoading={waitlistLoading} 
+              text="Loading entries..."
+            />
+            <LoadingOverlay 
+              isLoading={isSaving} 
+              text="Saving changes..."
+            />
+            <LoadingOverlay
+              isLoading={isAutoPopulating}
+              text="Auto-populating locations..."
+            />
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4 flex-1">
                 <div className="relative flex-1 max-w-sm">
@@ -543,7 +556,7 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <div className="rounded-md border">
+            <div className="rounded-md border relative">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -702,6 +715,7 @@ export default function AdminPortal() {
                 onClick={handleSaveChanges}
                 disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
                 size="lg"
+                className="relative"
               >
                 {isSaving ? (
                   <>
