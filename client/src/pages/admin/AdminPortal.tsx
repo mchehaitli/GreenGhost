@@ -202,15 +202,44 @@ export default function AdminPortal() {
       }
 
       for (const entry of entriesToUpdate) {
-        if (entry.zip_code) {
-          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
-          if (success) {
+        if (!entry.zip_code) continue;
+
+        // Validate ZIP code format
+        if (!/^\d{5}$/.test(entry.zip_code)) {
+          failCount++;
+          continue;
+        }
+
+        try {
+          setLoadingZips(prev => ({ ...prev, [entry.id]: true }));
+          const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+
+          if (!response.ok) {
+            throw new Error(`ZIP code lookup failed: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          if (data && data.places && data.places[0]) {
+            const place = data.places[0];
+            await updateEntryMutation.mutateAsync({
+              id: entry.id,
+              city: place['place name'],
+              state: place['state abbreviation'],
+            });
             successCount++;
           } else {
             failCount++;
           }
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          failCount++;
+          console.error(`Error processing ZIP code ${entry.zip_code}:`, error);
+        } finally {
+          setLoadingZips(prev => ({ ...prev, [entry.id]: false }));
         }
+
+        // Add delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       toast({
