@@ -6,15 +6,15 @@ import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
+import authRoutes from './routes/auth';
 
 export function registerRoutes(app: Express): Server {
-  // Register waitlist routes
-  app.use(waitlistRoutes);
+  // Register API routes first
+  app.use('/api', authRoutes);
+  app.use('/api', waitlistRoutes);
+  app.use('/api', emailTemplateRoutes);
 
-  // Register email template routes
-  app.use(emailTemplateRoutes);
-
-  // Add email preview routes
+  // Add email preview routes with API prefix
   app.post('/api/email/preview/:type', async (req, res) => {
     try {
       const { type } = req.params;

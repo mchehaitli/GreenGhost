@@ -28,11 +28,12 @@ async function startServer() {
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
 
+    // Parse JSON and URL-encoded bodies
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
-    // Force JSON content type for all responses
-    app.use((req, res, next) => {
+    // API route handler - ensure JSON responses for /api routes
+    app.use('/api', (req, res, next) => {
       res.setHeader('Content-Type', 'application/json');
       next();
     });
@@ -56,13 +57,24 @@ async function startServer() {
       const server = registerRoutes(app);
       log('Routes registered successfully');
 
-      // Add error handling middleware before static files
+      // Add error handling middleware
       app.use(errorHandler);
 
+      // Setup Vite or static files after API routes,
+      // but only for non-API routes
       if (process.env.NODE_ENV === 'production') {
         log('Setting up static file serving...');
-        app.use(express.static(path.resolve(__dirname, '../dist/public')));
-        app.get('*', (_req, res) => {
+        app.use((req, res, next) => {
+          if (req.path.startsWith('/api/')) {
+            return next();
+          }
+          express.static(path.resolve(__dirname, '../dist/public'))(req, res, next);
+        });
+
+        app.get('*', (req, res, next) => {
+          if (req.path.startsWith('/api/')) {
+            return next();
+          }
           res.sendFile(path.resolve(__dirname, '../dist/public/index.html'));
         });
       } else {
