@@ -24,8 +24,11 @@ router.patch('/:id', async (req, res) => {
   const { base_price } = req.body;
 
   try {
+    // Convert string to number if needed
+    const numericPrice = typeof base_price === 'string' ? parseFloat(base_price) : base_price;
+
     // Validate input data
-    const validatedData = updateCarePlanSchema.parse({ base_price });
+    const validatedData = updateCarePlanSchema.parse({ base_price: numericPrice });
 
     const updatedPlan = await db
       .update(carePlans)

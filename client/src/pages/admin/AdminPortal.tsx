@@ -621,11 +621,36 @@ export default function AdminPortal() {
 
     setIsUpdatingPlan(true);
     try {
-      await updatePlanMutation.mutateAsync({ id, price: newPrice });
+      const response = await fetch(`/api/care-plans/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base_price: Number(newPrice) }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update plan');
+      }
+
+      // Refresh data
+      await queryClient.invalidateQueries({ queryKey: ['care-plans'] });
+
       setUnsavedPlanPrices(prev => {
         const updated = { ...prev };
         delete updated[id];
         return updated;
+      });
+
+      toast({
+        title: "Plan Price Updated",
+        description: "Plan price updated successfully!",
+      });
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast({
+        title: "Failed to Update Plan Price",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
       });
     } finally {
       setIsUpdatingPlan(false);
@@ -901,44 +926,43 @@ export default function AdminPortal() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Street Address</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>City</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
-                          onChange={(e)=> handleFieldChange(selectedEntry.id, 'city', e.target.value)}
-                          className="mt-1"
-                          disabled={loadingZips[selectedEntry.id]}
-                        />
-                      </div>
-                      <div>
-                        <Label>State</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
-                          className="mt-1"
-                          disabled={loadingZips[selectedEntry.id]}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <Label>Notes</Label>
-                      <Textarea
-                        value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
-                        onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
+                    <div className="space-y-4"><div>
+                      <Label>Street Address</Label>
+                      <Input
+                        value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
+                        onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
                         className="mt-1"
-                        rows={4}
+                      />
+                    </div>
+                    <div>
+                      <Label>City</Label>
+                      <Input
+                        value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
+                        onChange={(e)=> handleFieldChange(selectedEntry.id, 'city', e.target.value)}
+                        className="mt-1"
+                        disabled={loadingZips[selectedEntry.id]}
+                      />
+                    </div>
+                    <div>
+                      <Label>State</Label>
+                      <Input
+                        value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
+                        onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
+                        className="mt-1"
+                        disabled={loadingZips[selectedEntry.id]}
                       />
                     </div>
                   </div>
+                  <div className="col-span-2">
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
+                      onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
+                      className="mt-1"
+                      rows={4}
+                    />
+                  </div>
+                </div>
                 )}
                 <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                   <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
