@@ -70,6 +70,8 @@ export default function AdminPortal() {
     direction: 'desc'
   });
   const [isAutoPopulating, setIsAutoPopulating] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -87,45 +89,69 @@ export default function AdminPortal() {
   });
 
   const updateEntryMutation = useMutation({
-    mutationFn: async (entry: Partial<WaitlistEntry>) => {
-      if (!entry.id) {
-        throw new Error('Entry ID is required for updates');
+    mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
+      setIsSaving(true);
+      try {
+        const results = await Promise.all(
+          entries.map(async (entry) => {
+            console.log('Sending update request:', entry);
+
+            const response = await fetch(`/api/waitlist/${entry.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(entry),
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+              console.error('Update failed:', responseData);
+              throw new Error(responseData.details || responseData.error || 'Failed to update entry');
+            }
+
+            return responseData;
+          })
+        );
+        return results;
+      } finally {
+        setIsSaving(false);
       }
-
-      console.log('Sending update request:', entry); // Debug log
-
-      const response = await fetch(`/api/waitlist/${entry.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        console.error('Update failed:', responseData); // Debug log
-        throw new Error(responseData.details || responseData.error || 'Failed to update entry');
-      }
-
-      return responseData;
     },
-    onSuccess: (data) => {
-      console.log('Update successful:', data); // Debug log
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      setUnsavedChanges({});
       toast({
-        title: "Entry updated",
-        description: "The waitlist entry has been updated successfully.",
+        title: "Changes saved",
+        description: "All waitlist entries have been updated successfully.",
       });
     },
     onError: (error) => {
-      console.error('Update entry error:', error);
+      console.error('Update entries error:', error);
       toast({
-        title: "Failed to update entry",
+        title: "Failed to save changes",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
     },
   });
+
+  const handleFieldChange = (entryId: number, field: keyof WaitlistEntry, value: string) => {
+    setUnsavedChanges(prev => ({
+      ...prev,
+      [entryId]: {
+        ...prev[entryId],
+        id: entryId,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveChanges = () => {
+    const changes = Object.values(unsavedChanges);
+    if (changes.length > 0) {
+      updateEntryMutation.mutate(changes);
+    }
+  };
 
   const handleSort = (field: SortField) => {
     setSortConfig(current => ({
@@ -216,11 +242,7 @@ export default function AdminPortal() {
       if (data && data.places && data.places[0]) {
         const place = data.places[0];
         try {
-          await updateEntryMutation.mutateAsync({
-            id: entryId,
-            city: place['place name'],
-            state: place['state abbreviation'],
-          });
+          await updateEntryMutation.mutateAsync([{id: entryId, city: place['place name'], state: place['state abbreviation']}]);
           return true;
         } catch (error) {
           console.error('Failed to update entry with ZIP data:', error);
@@ -322,11 +344,7 @@ export default function AdminPortal() {
 
           if (data && data.places && data.places[0]) {
             const place = data.places[0];
-            await updateEntryMutation.mutateAsync({
-              id: entry.id,
-              city: place['place name'],
-              state: place['state abbreviation'],
-            });
+            await updateEntryMutation.mutateAsync([{id: entry.id, city: place['place name'], state: place['state abbreviation']}]);
             successCount++;
           } else {
             throw new Error('No location data found');
@@ -365,10 +383,7 @@ export default function AdminPortal() {
 
   const saveNotes = () => {
     if (currentEntryId) {
-      updateEntryMutation.mutate({
-        id: currentEntryId,
-        notes: currentNotes,
-      });
+      updateEntryMutation.mutateAsync([{id: currentEntryId, notes: currentNotes}]);
       setShowNotesDialog(false);
     }
   };
@@ -515,74 +530,44 @@ export default function AdminPortal() {
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.first_name || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              first_name: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.first_name ?? entry.first_name ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'first_name', e.target.value)}
                           className="max-w-[150px]"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.last_name || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              last_name: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.last_name ?? entry.last_name ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'last_name', e.target.value)}
                           className="max-w-[150px]"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.phone_number || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              phone_number: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.phone_number ?? entry.phone_number ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'phone_number', e.target.value)}
                           className="max-w-[150px]"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.street_address || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              street_address: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.street_address ?? entry.street_address ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'street_address', e.target.value)}
                           className="max-w-[200px]"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.city || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              city: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.city ?? entry.city ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'city', e.target.value)}
                           className="max-w-[150px]"
                           disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
                       <TableCell>
                         <Input
-                          value={entry.state || ''}
-                          onChange={(e) => {
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              state: e.target.value,
-                            });
-                          }}
+                          value={unsavedChanges[entry.id]?.state ?? entry.state ?? ''}
+                          onChange={(e) => handleFieldChange(entry.id, 'state', e.target.value)}
                           className="max-w-[80px]"
                           disabled={loadingZips[entry.id]}
                         />
@@ -590,13 +575,10 @@ export default function AdminPortal() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Input
-                            value={entry.zip_code || ''}
+                            value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
                             onChange={(e) => {
                               const zip = e.target.value;
-                              updateEntryMutation.mutate({
-                                id: entry.id,
-                                zip_code: zip,
-                              });
+                              handleFieldChange(entry.id, 'zip_code', zip);
                               if (zip.length === 5) {
                                 handleCityStateFromZip(zip, entry.id);
                               }
@@ -648,6 +630,26 @@ export default function AdminPortal() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            <div className="fixed bottom-8 right-8">
+              <Button 
+                onClick={handleSaveChanges}
+                disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
+                size="lg"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
             </div>
           </Card>
         </TabsContent>
