@@ -1,65 +1,40 @@
-import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, X } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import PricingCalculator from "@/components/PricingCalculator";
-
-const plans = [
-  {
-    name: "Essential Care",
-    price: 149,
-    description: "Perfect for standard residential lawns up to 5,000 sq ft",
-    features: [
-      "Bi-weekly lawn maintenance",
-      "Standard mowing and edging",
-      "Basic fertilization",
-      "Seasonal cleanup",
-      "Email support",
-    ],
-    nonFeatures: [
-      "Priority scheduling",
-      "Custom care plan",
-      "Advanced lawn treatments",
-    ],
-    popular: false,
-  },
-  {
-    name: "Premium Care",
-    price: 249,
-    description: "Ideal for larger properties up to 10,000 sq ft",
-    features: [
-      "Weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Seasonal cleanup and preparation",
-      "Priority scheduling",
-      "Custom care plan",
-      "24/7 support",
-    ],
-    nonFeatures: [],
-    popular: true,
-  },
-  {
-    name: "Estate Care",
-    price: 399,
-    description: "Comprehensive care for luxury estates over 10,000 sq ft",
-    features: [
-      "Weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Full-service lawn treatments",
-      "Priority scheduling",
-      "Customized care plan",
-      "24/7 dedicated support",
-      "Landscape consultation",
-    ],
-    nonFeatures: [],
-    popular: false,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import PricingCalculator from "../components/PricingCalculator";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { CheckCircle } from "lucide-react";
+import { LoadingSpinner } from "../components/ui/loading-spinner";
 
 const Pricing = () => {
+  const { data: plans, isLoading, error } = useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: async () => {
+      const response = await fetch('/api/care-plans');
+      if (!response.ok) {
+        throw new Error('Failed to fetch subscription plans');
+      }
+      return response.json();
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <p className="text-red-500">Error loading pricing plans</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <section className="py-20">
@@ -84,61 +59,38 @@ const Pricing = () => {
             </motion.p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {plans.map((plan, index) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card className={`relative h-full flex flex-col ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                      <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    <div className="mt-4 flex items-baseline">
-                      <span className="text-4xl font-bold">${plan.price}</span>
-                      <span className="text-muted-foreground ml-2">/month</span>
-                    </div>
-                    <CardDescription className="mt-4">
-                      {plan.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-3 mb-8 flex-1">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                      {plan.nonFeatures.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-muted-foreground">
-                          <X className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button 
-                      asChild 
-                      className="w-full mt-auto"
-                      variant={plan.popular ? "outline" : "outline"}
-                    >
-                      <Link href="/waitlist">
-                        Join Waitlist
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
+          <motion.div 
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {plans?.map((plan) => (
+              <Card key={plan.id} className="flex flex-col border-2 hover:border-primary/50 transition-all duration-200">
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <div className="mb-6">
+                    <p className="text-3xl font-bold">${parseFloat(plan.base_price).toFixed(2)}</p>
+                    <p className="text-muted-foreground">per month</p>
+                  </div>
+                  <ul className="space-y-2">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full">Get Started</Button>
+                </CardFooter>
+              </Card>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 

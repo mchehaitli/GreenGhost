@@ -616,42 +616,26 @@ export default function AdminPortal() {
   });
 
   const handleUpdatePlan = async (id: number) => {
-    const newPrice = unsavedPlanPrices[id];
-    if (newPrice === undefined) return;
-
     setIsUpdatingPlan(true);
     try {
+      const price = unsavedPlanPrices[id];
+      if (price === undefined) return;
+
       const response = await fetch(`/api/care-plans/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base_price: Number(newPrice) }),
+        body: JSON.stringify({ base_price: price }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update plan');
+        throw new Error(errorData.error || 'Failed to update plan price');
       }
 
-      // Refresh data
+      // Invalidate both care plans and subscription plans queries
       await queryClient.invalidateQueries({ queryKey: ['care-plans'] });
-
-      setUnsavedPlanPrices(prev => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
-
-      toast({
-        title: "Plan Price Updated",
-        description: "Plan price updated successfully!",
-      });
-    } catch (error) {
-      console.error('Error updating plan:', error);
-      toast({
-        title: "Failed to Update Plan Price",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
+      // Add this to ensure the pricing page gets updated
+      await queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
     } finally {
       setIsUpdatingPlan(false);
     }
@@ -893,100 +877,6 @@ export default function AdminPortal() {
                 </Table>
               </div>
             </div>
-
-            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-              <DialogContent className="w-[calc(100%-2rem)] md:w-[800px] max-w-2xl p-4 md:p-6">
-                <DialogHeader>
-                  <DialogTitle>Customer Details</DialogTitle>
-                </DialogHeader>
-                {selectedEntry && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label>First Name</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Last Name</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Phone Number</Label>
-                        <Input                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-4"><div>
-                      <Label>Street Address</Label>
-                      <Input
-                        value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
-                        onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label>City</Label>
-                      <Input
-                        value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
-                        onChange={(e)=> handleFieldChange(selectedEntry.id, 'city', e.target.value)}
-                        className="mt-1"
-                        disabled={loadingZips[selectedEntry.id]}
-                      />
-                    </div>
-                    <div>
-                      <Label>State</Label>
-                      <Input
-                        value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
-                        onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
-                        className="mt-1"
-                        disabled={loadingZips[selectedEntry.id]}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
-                      onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
-                      className="mt-1"
-                      rows={4}
-                    />
-                  </div>
-                </div>
-                )}
-                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                  <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
-                    Close
-                  </Button>
-                  <Button 
-                    onClick={handleSaveChanges}
-                    disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </AlertDialogFooter>
-              </DialogContent>
-            </Dialog>
 
             <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
               <Button 
