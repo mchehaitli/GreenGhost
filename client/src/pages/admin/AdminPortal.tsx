@@ -915,31 +915,30 @@ export default function AdminPortal() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-xl font-semibold">Pricing Management</h2>
-                  <p className="text-muted-foreground">Manage your service prices andofferings</p>
+                  <p className="text-muted-foreground">Manage your service prices and offerings</p>
                 </div>
 
                 <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Search services..."
-                      value={serviceSearchTerm}
-                      onChange={(e) => setServiceSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search services..."
+                        value={serviceSearchTerm}
+                        onChange={(e) => setServiceSearchTerm(e.target.value)}
+                        className="pl-10 w-[200px]"
+                      />
+                    </div>
+                    <Button onClick={() => {
+                      setEditingService(null);
+                      setShowServiceDialog(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Service
+                    </Button>
                   </div>
-                  <Button onClick={() => {
-                    setEditingService(null);
-                    setShowServiceDialog(true);
-                  }}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Service
-                  </Button>
                 </div>
-              </div>
 
-              <div className="overflow-x-auto">
-                <div className="rounded-md border min-w-[800px]">
+                <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -951,43 +950,57 @@ export default function AdminPortal() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredServices.map((service) => (
-                        <TableRow key={service.id}>
-                          <TableCell className="font-medium">{service.name}</TableCell>
-                          <TableCell>{service.description}</TableCell>
-                          <TableCell>
-                            <Badge variant={service.category === 'core' ? 'default' : 'secondary'}>
-                              {service.category}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${service.price_per_sqft.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditService(service)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteService(service.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      {filteredServices.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            {servicesLoading ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading services...
+                              </div>
+                            ) : (
+                              'No services found'
+                            )}
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        filteredServices.map((service) => (
+                          <TableRow key={service.id}>
+                            <TableCell className="font-medium">{service.name}</TableCell>
+                            <TableCell>{service.description}</TableCell>
+                            <TableCell>
+                              <Badge variant={service.category === 'core' ? 'default' : 'secondary'}>
+                                {service.category}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              ${service.price_per_sqft.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditService(service)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteService(service.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
               </div>
-            </div>
           </Card>
 
           <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
