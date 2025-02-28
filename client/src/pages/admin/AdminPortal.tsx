@@ -172,11 +172,26 @@ export default function AdminPortal() {
       setLoadingZips(prev => ({ ...prev, [entryId]: true }));
       console.log(`Fetching data for ZIP: ${zip}`);
 
-      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-      console.log(`ZIP API response status: ${response.status}`);
+      // Try API with retries
+      let retries = 2;
+      let response;
+      while (retries >= 0) {
+        response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+        console.log(`ZIP API response status: ${response.status}`);
 
-      if (!response.ok) {
-        throw new Error(`ZIP code lookup failed: ${response.statusText}`);
+        if (response.ok) break;
+
+        if (retries > 0) {
+          // Wait longer between retries
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          retries--;
+        } else {
+          throw new Error(`ZIP code lookup failed after retries: ${response.statusText}`);
+        }
+      }
+
+      if (!response?.ok) {
+        throw new Error('Failed to get response from ZIP API');
       }
 
       const data = await response.json();
@@ -245,14 +260,28 @@ export default function AdminPortal() {
 
           // Add delay between requests to avoid rate limiting
           if (successCount + failCount > 0) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
           }
 
-          const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
-          console.log(`ZIP API response for ${entry.zip_code}:`, response.status);
+          // Try API with retries
+          let retries = 2;
+          let response;
+          while (retries >= 0) {
+            response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+            console.log(`ZIP API response for ${entry.zip_code}:`, response.status);
 
-          if (!response.ok) {
-            throw new Error(`ZIP code lookup failed: ${response.statusText}`);
+            if (response.ok) break;
+
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              retries--;
+            } else {
+              throw new Error(`ZIP code lookup failed after retries: ${response.statusText}`);
+            }
+          }
+
+          if (!response?.ok) {
+            throw new Error('Failed to get response from ZIP API');
           }
 
           const data = await response.json();
