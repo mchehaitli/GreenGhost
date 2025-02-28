@@ -3,6 +3,7 @@ import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
+import { errorHandler } from "./middleware/error-handler";
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +31,12 @@ async function startServer() {
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
+    // Force JSON content type for all responses
+    app.use((req, res, next) => {
+      res.setHeader('Content-Type', 'application/json');
+      next();
+    });
+
     // Request logging middleware
     app.use((req, res, next) => {
       const start = Date.now();
@@ -49,13 +56,8 @@ async function startServer() {
       const server = registerRoutes(app);
       log('Routes registered successfully');
 
-      // Error handling middleware
-      app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-        console.error('Error:', err);
-        const status = err.status || err.statusCode || 500;
-        const message = err.message || "Internal Server Error";
-        res.status(status).json({ error: message });
-      });
+      // Add error handling middleware before static files
+      app.use(errorHandler);
 
       if (process.env.NODE_ENV === 'production') {
         log('Setting up static file serving...');
@@ -92,26 +94,6 @@ async function startServer() {
       log(`Server running at http://0.0.0.0:${port}`);
       log('Environment:', process.env.NODE_ENV || 'development');
       log('CORS:', 'enabled for all origins');
-
-      // Handle server errors
-      server.on('error', (error: NodeJS.ErrnoException) => {
-        if (error.syscall !== 'listen') {
-          throw error;
-        }
-
-        switch (error.code) {
-          case 'EACCES':
-            console.error(`Port ${port} requires elevated privileges`);
-            process.exit(1);
-            break;
-          case 'EADDRINUSE':
-            console.error(`Port ${port} is already in use`);
-            process.exit(1);
-            break;
-          default:
-            throw error;
-        }
-      });
 
     } catch (error) {
       log('Error during server initialization:', error instanceof Error ? error.message : 'Unknown error');
