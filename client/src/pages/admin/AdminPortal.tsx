@@ -72,6 +72,16 @@ let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   // Add any other problematic ZIP codes here
 };
 
+type Service = {
+  id: number;
+  name: string;
+  description: string;
+  price_per_sqft: number;
+  category: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -92,6 +102,8 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [unsavedPricingChanges, setUnsavedPricingChanges] = useState<Record<number, number>>({});
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -469,6 +481,85 @@ export default function AdminPortal() {
     setShowDetailsDialog(true);
   };
 
+  const {
+    data: services,
+    isLoading: servicesLoading,
+  } = useQuery<Service[]>({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const res = await fetch('/api/services');
+      if (!res.ok) throw new Error('Failed to fetch services');
+      return res.json();
+    },
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: async ({ id, price }: { id: number; price: number }) => {
+      const res = await fetch(`/api/services/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price_per_sqft: price }),
+      });
+      if (!res.ok) throw new Error('Failed to update price');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast({
+        title: "Price updated",
+        description: "Service price has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update price",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleUpdateService = async (id: number) => {
+    const newPrice = unsavedPricingChanges[id];
+    if (newPrice === undefined) return;
+
+    setIsUpdatingPrice(true);
+    try {
+      await updateServiceMutation.mutateAsync({ id, price: newPrice });
+      setUnsavedPricingChanges(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
+    } finally {
+      setIsUpdatingPrice(false);
+    }
+  };
+
+  const handleSaveAllPricing = async () => {
+    setIsUpdatingPrice(true);
+    try {
+      await Promise.all(
+        Object.entries(unsavedPricingChanges).map(([id, price]) =>
+          updateServiceMutation.mutateAsync({ id: Number(id), price })
+        )
+      );
+      setUnsavedPricingChanges({});
+      toast({
+        title: "All prices updated",
+        description: "All service prices have been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to update prices",
+        description: "Some price updates failed. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingPrice(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -813,10 +904,110 @@ export default function AdminPortal() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pricing">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Pricing</h2>
-            <p className="text-muted-foreground">Configure your pricing plans here.</p>
+        <TabsContent value="pricing" className="space-y-4">
+          <Card className="p-4 md:p-6 relative">
+            <LoadingOverlay 
+              isLoading={servicesLoading} 
+              text="Loading services..."
+            />
+            <LoadingOverlay 
+              isLoading={isUpdatingPrice} 
+              text="Updating prices..."
+            />
+
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Pricing Management</h2>
+                <p className="text-muted-foreground">Update service prices per square foot.</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <div className="rounded-md border min-w-[800px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Service Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="w-[150px]">Price ($/sqft)</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services?.map((service) => (
+                        <TableRow 
+                          key={service.id}
+                          className="transition-colors duration-200 hover:bg-primary/5 group"
+                        >
+                          <TableCell className="font-medium">{service.name}</TableCell>
+                          <TableCell>{service.description}</TableCell>
+                          <TableCell>{service.category}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={
+                                  unsavedPricingChanges[service.id] !== undefined 
+                                    ? unsavedPricingChanges[service.id] 
+                                    : service.price_per_sqft
+                                }
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  if (!isNaN(value) && value >= 0) {
+                                    setUnsavedPricingChanges(prev => ({
+                                      ...prev,
+                                      [service.id]: value
+                                    }));
+                                  }
+                                }}
+                                className="transition-all duration-200 group-hover:border-primary/50"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateService(service.id)}
+                              disabled={unsavedPricingChanges[service.id] === undefined}
+                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
+                            >
+                              {updateServiceMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <Button
+                  onClick={handleSaveAllPricing}
+                  disabled={Object.keys(unsavedPricingChanges).length === 0 || isUpdatingPrice}
+                  size="lg"
+                  className="relative"
+                >
+                  {isUpdatingPrice ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save All Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </Card>
         </TabsContent>
 
