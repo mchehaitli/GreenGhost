@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -31,7 +31,8 @@ import {
   Save,
   ArrowUpDown,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -62,6 +63,7 @@ export default function AdminPortal() {
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [currentNotes, setCurrentNotes] = useState("");
   const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
+  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
     field: 'created_at',
     direction: 'desc'
@@ -140,9 +142,22 @@ export default function AdminPortal() {
     });
 
   const handleCityStateFromZip = async (zip: string, entryId: number) => {
+    // Only process if it's a valid 5-digit ZIP code
+    if (!/^\d{5}$/.test(zip)) {
+      return;
+    }
+
     try {
+      setLoadingZips(prev => ({ ...prev, [entryId]: true }));
+
       const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+
+      if (!response.ok) {
+        throw new Error(`ZIP code lookup failed: ${response.statusText}`);
+      }
+
       const data = await response.json();
+
       if (data && data.places && data.places[0]) {
         const place = data.places[0];
         updateEntryMutation.mutate({
@@ -150,13 +165,21 @@ export default function AdminPortal() {
           city: place['place name'],
           state: place['state abbreviation'],
         });
+        toast({
+          title: "Location Updated",
+          description: `Found ${place['place name']}, ${place['state abbreviation']}`,
+        });
+      } else {
+        throw new Error('No location data found for this ZIP code');
       }
     } catch (error) {
       toast({
-        title: "Failed to fetch location data",
-        description: "Please enter city and state manually",
+        title: "ZIP Code Validation Failed",
+        description: error instanceof Error ? error.message : "Please enter city and state manually",
         variant: "destructive"
       });
+    } finally {
+      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
     }
   };
 
@@ -351,6 +374,7 @@ export default function AdminPortal() {
                             });
                           }}
                           className="max-w-[150px]"
+                          disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
                       <TableCell>
@@ -363,23 +387,29 @@ export default function AdminPortal() {
                             });
                           }}
                           className="max-w-[80px]"
+                          disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          value={entry.zip_code || ''}
-                          onChange={(e) => {
-                            const zip = e.target.value;
-                            updateEntryMutation.mutate({
-                              id: entry.id,
-                              zip_code: zip,
-                            });
-                            if (zip.length === 5) {
-                              handleCityStateFromZip(zip, entry.id);
-                            }
-                          }}
-                          className="max-w-[100px]"
-                        />
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={entry.zip_code || ''}
+                            onChange={(e) => {
+                              const zip = e.target.value;
+                              updateEntryMutation.mutate({
+                                id: entry.id,
+                                zip_code: zip,
+                              });
+                              if (zip.length === 5) {
+                                handleCityStateFromZip(zip, entry.id);
+                              }
+                            }}
+                            className="max-w-[100px]"
+                          />
+                          {loadingZips[entry.id] && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
