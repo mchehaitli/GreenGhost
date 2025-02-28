@@ -1,11 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { db } from "./db";
-import { waitlist } from "../db/schema";
-import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
-import servicesRoutes from './routes/services'; // Add services routes
+import servicesRoutes from './routes/services';
+import carePlansRoutes from './routes/care-plans';
 import emailService from './services/email';
 
 export function registerRoutes(app: Express): Server {
@@ -17,6 +15,9 @@ export function registerRoutes(app: Express): Server {
 
   // Register services routes
   app.use('/api/services', servicesRoutes);
+
+  // Register care plans routes
+  app.use('/api/care-plans', carePlansRoutes);
 
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
