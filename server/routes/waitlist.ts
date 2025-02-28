@@ -61,7 +61,7 @@ router.patch('/api/waitlist/:id', requireAuth, async (req, res) => {
       notes 
     } = req.body;
 
-    console.log('Updating waitlist entry:', { id, ...req.body }); // Debug log
+    console.log('Received update request for entry:', { id, ...req.body }); // Debug log
 
     const updates: any = {};
 
@@ -76,20 +76,27 @@ router.patch('/api/waitlist/:id', requireAuth, async (req, res) => {
     if (zip_code !== undefined) updates.zip_code = zip_code;
     if (notes !== undefined) updates.notes = notes;
 
-    await db.update(waitlist)
+    console.log('Updating with fields:', updates); // Debug log
+
+    const result = await db.update(waitlist)
       .set(updates)
-      .where(eq(waitlist.id, id));
+      .where(eq(waitlist.id, id))
+      .returning();
 
-    const updatedEntry = await db.query.waitlist.findFirst({
-      where: eq(waitlist.id, id)
-    });
+    console.log('Update result:', result); // Debug log
 
-    console.log('Updated entry:', updatedEntry); // Debug log
+    if (!result || result.length === 0) {
+      throw new Error('No rows updated');
+    }
 
+    const updatedEntry = result[0];
     return res.json(updatedEntry);
   } catch (error) {
-    console.error('Error updating waitlist entry:', error instanceof Error ? error.message : 'Unknown error');
-    return res.status(500).json({ error: 'Failed to update entry' });
+    console.error('Error updating waitlist entry:', error);
+    return res.status(500).json({ 
+      error: 'Failed to update entry',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

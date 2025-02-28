@@ -92,7 +92,7 @@ export default function AdminPortal() {
         throw new Error('Entry ID is required for updates');
       }
 
-      console.log('Updating entry:', entry); // Debug log
+      console.log('Sending update request:', entry); // Debug log
 
       const response = await fetch(`/api/waitlist/${entry.id}`, {
         method: 'PATCH',
@@ -104,7 +104,7 @@ export default function AdminPortal() {
 
       if (!response.ok) {
         console.error('Update failed:', responseData); // Debug log
-        throw new Error(responseData.error || 'Failed to update entry');
+        throw new Error(responseData.details || responseData.error || 'Failed to update entry');
       }
 
       return responseData;
@@ -112,6 +112,10 @@ export default function AdminPortal() {
     onSuccess: (data) => {
       console.log('Update successful:', data); // Debug log
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      toast({
+        title: "Entry updated",
+        description: "The waitlist entry has been updated successfully.",
+      });
     },
     onError: (error) => {
       console.error('Update entry error:', error);
