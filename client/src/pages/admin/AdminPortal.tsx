@@ -9,33 +9,20 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
+  Search,
+  MapPin,
+  FileText,
+  Save,
+  Loader2,
+  Trash2,
+  Download,
   User,
   Settings,
   DollarSign,
   UserPlus,
-  Search,
-  SlidersHorizontal,
-  FileText,
-  Save,
-  ArrowUpDown,
-  ChevronUp,
-  ChevronDown,
-  Loader2,
-  MapPin,
-  Trash2
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -47,6 +34,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 
 type SortField = 'created_at' | 'zip_code';
 type SortDirection = 'asc' | 'desc';
@@ -398,6 +397,7 @@ export default function AdminPortal() {
             await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
           }
           
+
           // Check if this is a known problematic ZIP code
           if (knownZipCodeMappings[entry.zip_code]) {
             const mapping = knownZipCodeMappings[entry.zip_code];
@@ -497,6 +497,39 @@ export default function AdminPortal() {
     }
   };
 
+  const handleExportToExcel = () => {
+    try {
+      const workbook = XLSX.utils.book_new();
+      const excelData = filteredAndSortedEntries.map(entry => ({
+        'Email': entry.email,
+        'Sign-up Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a"),
+        'First Name': entry.first_name || '',
+        'Last Name': entry.last_name || '',
+        'Phone Number': entry.phone_number || '',
+        'Street Address': entry.street_address || '',
+        'City': entry.city || '',
+        'State': entry.state || '',
+        'ZIP Code': entry.zip_code || '',
+        'Notes': entry.notes || ''
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Waitlist Entries');
+      XLSX.writeFile(workbook, `waitlist-entries-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+      toast({
+        title: "Export Successful",
+        description: "Waitlist entries have been exported to Excel.",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export waitlist entries.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -576,27 +609,33 @@ export default function AdminPortal() {
                     className="pl-10"
                   />
                 </div>
-                <Button variant="outline" size="icon">
-                  <SlidersHorizontal className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleExportToExcel}
+                  className="bg-primary/10 text-primary hover:bg-primary/20"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export to Excel
+                </Button>
+                <Button
+                  onClick={handleAutoPopulateAll}
+                  disabled={isAutoPopulating}
+                >
+                  {isAutoPopulating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Auto Populate City/State
+                    </>
+                  )}
                 </Button>
               </div>
-              <Button
-                onClick={handleAutoPopulateAll}
-                disabled={isAutoPopulating}
-                className="ml-4"
-              >
-                {isAutoPopulating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Auto Populate City/State
-                  </>
-                )}
-              </Button>
             </div>
 
             <div className="rounded-md border">
