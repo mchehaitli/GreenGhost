@@ -10,7 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Settings, DollarSign } from 'lucide-react';
+import { User, Settings, DollarSign, UserPlus } from 'lucide-react';
 
 type WaitlistEntry = {
   id: number;
@@ -37,7 +37,7 @@ export default function AdminPortal() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("waitlist");
+  const [activeTab, setActiveTab] = useState("waitlist-entries");
   const [newAdminUsername, setNewAdminUsername] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
 
@@ -53,7 +53,7 @@ export default function AdminPortal() {
   } = useQuery<WaitlistEntry[]>({
     queryKey: ['waitlist'],
     queryFn: () => fetch('/api/waitlist').then(res => res.json()),
-    enabled: activeTab === "waitlist" && !!user,
+    enabled: activeTab === "waitlist-entries" && !!user, // Changed key
   });
 
   const {
@@ -74,7 +74,6 @@ export default function AdminPortal() {
     enabled: activeTab === "pricing" && !!user,
   });
 
-  // Mutation for adding new admin
   const addAdminMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       const response = await fetch('/api/admin/create', {
@@ -91,14 +90,13 @@ export default function AdminPortal() {
       setNewAdminPassword("");
     },
     onError: () => {
-      toast({ 
-        title: "Failed to create admin", 
-        variant: "destructive" 
+      toast({
+        title: "Failed to create admin",
+        variant: "destructive"
       });
     },
   });
 
-  // Mutation for updating pricing
   const updatePricingMutation = useMutation({
     mutationFn: async (data: PricingData) => {
       const response = await fetch(`/api/pricing/${data.id}`, {
@@ -114,9 +112,9 @@ export default function AdminPortal() {
       toast({ title: "Pricing updated successfully" });
     },
     onError: () => {
-      toast({ 
-        title: "Failed to update pricing", 
-        variant: "destructive" 
+      toast({
+        title: "Failed to update pricing",
+        variant: "destructive"
       });
     },
   });
@@ -140,9 +138,9 @@ export default function AdminPortal() {
           <Badge variant="outline" className="flex gap-1 px-3 py-1">
             <User className="w-3 h-3" /> {user?.username}
           </Badge>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={async () => {
               try {
                 await logout();
@@ -163,7 +161,10 @@ export default function AdminPortal() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+          <TabsTrigger value="waitlist-entries">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Waitlist Entries
+          </TabsTrigger>
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="w-4 h-4 mr-2" />
@@ -175,26 +176,11 @@ export default function AdminPortal() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="waitlist">
-          {waitlistLoading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Waitlist Entries</h2>
-              <div className="border rounded-lg divide-y">
-                {waitlistEntries.map((entry) => (
-                  <div key={entry.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{entry.email}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Joined: {new Date(entry.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <TabsContent value="waitlist-entries" className="space-y-4">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Waitlist Entries</h2>
+            <p className="text-muted-foreground">Ready for your customization requirements.</p>
+          </Card>
         </TabsContent>
 
         <TabsContent value="email-templates">
