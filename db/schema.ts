@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -54,6 +54,18 @@ export const emailSegments = pgTable("email_segments", {
   total_recipients: serial("total_recipients").notNull(),
 });
 
+// Services table
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  price_per_sqft: decimal("price_per_sqft", { precision: 10, scale: 2 }).notNull(),
+  category: text("category").notNull(), // 'core' or 'additional'
+  active: boolean("active").default(true).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
   waitlist: one(waitlist, {
@@ -78,6 +90,13 @@ export const insertUserSchema = z.object({
 export const insertWaitlistSchema = z.object({
   email: z.string().email("Invalid email address"),
   zip_code: z.string().length(5, "ZIP code must be exactly 5 digits").regex(/^\d+$/, "ZIP code must be numeric"),
+});
+
+export const insertServiceSchema = z.object({
+  name: z.string().min(1, "Service name is required"),
+  description: z.string().min(1, "Service description is required"),
+  price_per_sqft: z.number().min(0, "Price must be non-negative"),
+  category: z.enum(["core", "additional"]),
 });
 
 export const verificationSchema = z.object({
@@ -111,3 +130,7 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
+
+export const selectServiceSchema = createSelectSchema(services);
+export type InsertService = typeof services.$inferInsert;
+export type SelectService = typeof services.$inferSelect;

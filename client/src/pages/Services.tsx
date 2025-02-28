@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
 import ServiceCardSkeleton from "@/components/ServiceCardSkeleton";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bot,
   Sprout,
@@ -10,64 +11,47 @@ import {
   Droplets,
   CheckCircle2,
   ArrowRight,
-} from "lucide-react";
-import { useState, useEffect } from "react";
+} from 'lucide-react';
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import WaitlistDialog from "@/components/WaitlistDialog"; // Added import
+import WaitlistDialog from "@/components/WaitlistDialog";
 
-// Additional services array - copied from PricingCalculator.tsx
-const additionalServices = [
-  { id: "edging", name: "Edging & Trimming", description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
-  { id: "fertilization", name: "Fertilization", description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
-  { id: "weedControl", name: "Weed Control", description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
-  { id: "leafRemoval", name: "Leaf Removal", description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
-  { id: "soilTesting", name: "Soil Analysis & Treatment", description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
-  { id: "aerationService", name: "Lawn Aeration", description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
-  { id: "gardenMaintenance", name: "Garden Bed Maintenance", description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
-  { id: "mulching", name: "Mulching Service", description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
-  { id: "hardscaping", name: "Hardscape Cleaning", description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
-  { id: "seasonalCleanup", name: "Seasonal Cleanup", description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
-];
+type Service = {
+  id: number;
+  name: string;
+  description: string;
+  category: 'core' | 'additional';
+  active: boolean;
+};
+
+const serviceIcons = {
+  "Lawn Automation": <Bot className="w-6 h-6" />,
+  "Smart Irrigation": <Droplets className="w-6 h-6" />,
+  "Scheduled Maintenance": <Scissors className="w-6 h-6" />,
+  "Lawn Analytics": <Activity className="w-6 h-6" />,
+};
 
 const Services = () => {
-  const [isLoading, setIsLoading] = useState(true);
   const [showWaitlist, setShowWaitlist] = useState(false);
-  const [showDemoDialog, setShowDemoDialog] = useState(false); // New state for demo dialog
+  const [showDemoDialog, setShowDemoDialog] = useState(false);
 
-  const services = [
-    {
-      icon: <Bot className="w-6 h-6" />,
-      title: "Lawn Automation",
-      description: "Precision cutting with robotic mowers for a perfect lawn every time.",
-      tooltip: "Our AI-powered robotic mowers use advanced sensors and GPS technology to navigate your lawn with millimeter precision, operating 24/7 in any weather condition."
+  const { data: services = [], isLoading } = useQuery<Service[]>({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const res = await fetch('/api/services');
+      if (!res.ok) throw new Error('Failed to fetch services');
+      return res.json();
     },
-    {
-      icon: <Droplets className="w-6 h-6" />,
-      title: "Smart Irrigation",
-      description: "Water-efficient irrigation systems that adapt to weather conditions and soil moisture.",
-      tooltip: "Smart irrigation controllers analyze real-time weather data, soil moisture levels, and plant needs to optimize watering schedules, reducing water usage by up to 50%."
-    },
-    {
-      icon: <Scissors className="w-6 h-6" />,
-      title: "Scheduled Maintenance",
-      description: "Regular automated maintenance to keep your lawn looking its best.",
-      tooltip: "Automated scheduling system deploys maintenance robots at optimal times, considering growth patterns, weather forecasts, and your preferences."
-    },
-    {
-      icon: <Activity className="w-6 h-6" />,
-      title: "Lawn Analytics",
-      description: "Real-time monitoring and analysis of lawn conditions for optimal health.",
-      tooltip: "Advanced analytics provide insights into your lawn's health, growth patterns, and maintenance needs."
-    }
-  ];
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const coreServices = services.filter(service => 
+    service.active && service.category === 'core'
+  );
+
+  const additionalServices = services.filter(service => 
+    service.active && service.category === 'additional'
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -87,12 +71,9 @@ const Services = () => {
     }
   };
 
-  // Handler for demo dialog close events
   const handleDemoDialogChange = (open: boolean) => {
     setShowDemoDialog(open);
-    // If dialog is closing and not by the X button (user clicked Join Waitlist)
     if (!open) {
-      // We need a slight delay to avoid dialog animations conflicting
       setTimeout(() => {
         setShowWaitlist(true);
       }, 100);
@@ -164,7 +145,7 @@ const Services = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                onClick={() => setShowDemoDialog(true)} // Changed to demo dialog
+                onClick={() => setShowDemoDialog(true)}
                 className="group"
               >
                 Schedule Demo
@@ -173,7 +154,6 @@ const Services = () => {
             </motion.div>
           </div>
 
-          {/* Added decorative elements */}
           <motion.div 
             className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"
             initial={{ opacity: 0 }}
@@ -198,47 +178,41 @@ const Services = () => {
             animate="visible"
           >
             {isLoading ? (
-              <>
-                {[...Array(4)].map((_, index) => (
-                  <motion.div 
-                    key={index} 
-                    variants={itemVariants}
-                    whileHover={{ 
-                      scale: 1.05,
-                      transition: { type: "spring", stiffness: 300 }
-                    }}
-                  >
-                    <ServiceCardSkeleton />
-                  </motion.div>
-                ))}
-              </>
+              [...Array(4)].map((_, index) => (
+                <motion.div 
+                  key={index} 
+                  variants={itemVariants}
+                  whileHover={{ 
+                    scale: 1.05,
+                    transition: { type: "spring", stiffness: 300 }
+                  }}
+                >
+                  <ServiceCardSkeleton />
+                </motion.div>
+              ))
             ) : (
-              <>
-                {services.map((service, index) => (
-                  <motion.div 
-                    key={index} 
-                    variants={itemVariants}
-                    whileHover={{ 
-                      scale: 1.05,
-                      transition: { type: "spring", stiffness: 300 }
-                    }}
-                    className="h-full"
-                  >
-                    <ServiceCard
-                      icon={service.icon}
-                      title={service.title}
-                      description={service.description}
-                      tooltip={service.tooltip}
-                    />
-                  </motion.div>
-                ))}
-              </>
+              coreServices.map((service) => (
+                <motion.div 
+                  key={service.id} 
+                  variants={itemVariants}
+                  whileHover={{ 
+                    scale: 1.05,
+                    transition: { type: "spring", stiffness: 300 }
+                  }}
+                  className="h-full"
+                >
+                  <ServiceCard
+                    icon={serviceIcons[service.name as keyof typeof serviceIcons] || <Bot className="w-6 h-6" />}
+                    title={service.name}
+                    description={service.description}
+                  />
+                </motion.div>
+              ))
             )}
           </motion.div>
         </div>
       </section>
 
-      {/* Additional Services Section */}
       <section className="py-20 bg-background border-t border-border/40">
         <div className="container">
           <motion.div 
@@ -262,38 +236,52 @@ const Services = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            {additionalServices.map((service, index) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -5 }}
-              >
-                <Card className="h-full border-primary/10 hover:border-primary/30 transition-colors duration-300">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
+            {isLoading ? (
+              [...Array(6)].map((_, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  viewport={{ once: true }}
+                >
+                  <ServiceCardSkeleton />
+                </motion.div>
+              ))
+            ) : (
+              additionalServices.map((service, index) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -5 }}
+                >
+                  <Card className="h-full border-primary/10 hover:border-primary/30 transition-colors duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg mb-1">{service.name}</h3>
+                          <p className="text-muted-foreground text-sm">{service.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">{service.name}</h3>
-                        <p className="text-muted-foreground text-sm">{service.description}</p>
+                      <div className="mt-4 flex justify-end">
+                        <Button variant="ghost" size="sm" className="group" asChild>
+                          <Link href="/pricing" className="flex items-center gap-1">
+                            View Pricing
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                          </Link>
+                        </Button>
                       </div>
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <Button variant="ghost" size="sm" className="group" asChild>
-                        <Link href="/pricing" className="flex items-center gap-1">
-                          Learn More
-                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </div>
       </section>
@@ -319,17 +307,15 @@ const Services = () => {
         </div>
       </motion.section>
 
-      {/* Waitlist Dialog */}
       <WaitlistDialog 
         open={showWaitlist} 
         onOpenChange={setShowWaitlist}
       />
 
-      {/* Demo Dialog - Using the same WaitlistDialog component with a special demo mode */}
       <WaitlistDialog 
         open={showDemoDialog} 
         onOpenChange={handleDemoDialogChange}
-        isDemo={true} // Added prop to indicate this is for demo scheduling
+        isDemo={true}
       />
     </motion.div>
   );
