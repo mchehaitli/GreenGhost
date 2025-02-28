@@ -546,13 +546,16 @@ export default function AdminPortal() {
                 </TableHeader>
                 <TableBody>
                   {filteredEntries.map((entry) => (
-                    <TableRow key={entry.id}>
+                    <TableRow 
+                      key={entry.id}
+                      className="transition-colors duration-200 hover:bg-primary/5 group"
+                    >
                       <TableCell className="font-medium">
                         <div>
                           <Input
                             value={unsavedChanges[entry.id]?.email ?? entry.email}
                             onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                            className="mb-1"
+                            className="mb-1 transition-all duration-200 group-hover:border-primary/50"
                           />
                           <div className="text-sm text-muted-foreground">
                             {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
@@ -563,35 +566,35 @@ export default function AdminPortal() {
                         <Input
                           value={unsavedChanges[entry.id]?.first_name ?? entry.first_name ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'first_name', e.target.value)}
-                          className="max-w-[150px]"
+                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           value={unsavedChanges[entry.id]?.last_name ?? entry.last_name ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'last_name', e.target.value)}
-                          className="max-w-[150px]"
+                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           value={unsavedChanges[entry.id]?.phone_number ?? entry.phone_number ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'phone_number', e.target.value)}
-                          className="max-w-[150px]"
+                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           value={unsavedChanges[entry.id]?.street_address ?? entry.street_address ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'street_address', e.target.value)}
-                          className="max-w-[200px]"
+                          className="max-w-[200px] transition-all duration-200 group-hover:border-primary/50"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           value={unsavedChanges[entry.id]?.city ?? entry.city ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'city', e.target.value)}
-                          className="max-w-[150px]"
+                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
                           disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
@@ -599,7 +602,7 @@ export default function AdminPortal() {
                         <Input
                           value={unsavedChanges[entry.id]?.state ?? entry.state ?? ''}
                           onChange={(e) => handleFieldChange(entry.id, 'state', e.target.value)}
-                          className="max-w-[80px]"
+                          className="max-w-[80px] transition-all duration-200 group-hover:border-primary/50"
                           disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
@@ -614,7 +617,7 @@ export default function AdminPortal() {
                                 handleCityStateFromZip(zip, entry.id);
                               }
                             }}
-                            className="max-w-[100px]"
+                            className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
                           />
                           {loadingZips[entry.id] && (
                             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -632,30 +635,11 @@ export default function AdminPortal() {
                                 setCurrentEntryId(entry.id);
                                 setShowNotesDialog(true);
                               }}
+                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Notes for {entry.email}</DialogTitle>
-                            </DialogHeader>
-                            <Textarea
-                              value={currentNotes}
-                              onChange={(e) => setCurrentNotes(e.target.value)}
-                              placeholder="Add notes here..."
-                              className="min-h-[200px]"
-                            />
-                            <div className="flex justify-end gap-2 mt-4">
-                              <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
-                                Cancel
-                              </Button>
-                              <Button onClick={saveNotes}>
-                                <Save className="h-4 w-4 mr-2" />
-                                Save Notes
-                              </Button>
-                            </div>
-                          </DialogContent>
                         </Dialog>
                       </TableCell>
                       <TableCell>
@@ -664,6 +648,7 @@ export default function AdminPortal() {
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDelete(entry.id)}
+                            className="transition-all duration-200 group-hover:bg-destructive/90"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
