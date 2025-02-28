@@ -23,9 +23,6 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
-  Plus,
-  DollarSign,
-  Edit,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -47,35 +44,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-type Service = {
-  id: number;
-  name: string;
-  description: string;
-  price_per_sqft: number;
-  category: 'core' | 'additional';
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-};
 
 type WaitlistEntry = {
   id: number;
@@ -119,9 +91,6 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -204,77 +173,6 @@ export default function AdminPortal() {
         title: "Failed to delete entry",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
-      });
-    },
-  });
-
-  const {
-    data: services = [],
-    isLoading: servicesLoading,
-  } = useQuery<Service[]>({
-    queryKey: ['services'],
-    queryFn: async () => {
-      const res = await fetch('/api/services');
-      if (!res.ok) throw new Error('Failed to fetch services');
-      return res.json();
-    },
-  });
-
-  const createServiceMutation = useMutation({
-    mutationFn: async (newService: Omit<Service, 'id' | 'created_at' | 'updated_at' | 'active'>) => {
-      const res = await fetch('/api/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newService),
-      });
-      if (!res.ok) throw new Error('Failed to create service');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      setShowServiceDialog(false);
-      setEditingService(null);
-      toast({
-        title: "Service created",
-        description: "New service has been added successfully.",
-      });
-    },
-  });
-
-  const updateServiceMutation = useMutation({
-    mutationFn: async (service: Partial<Service> & { id: number }) => {
-      const res = await fetch(`/api/services/${service.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(service),
-      });
-      if (!res.ok) throw new Error('Failed to update service');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      setShowServiceDialog(false);
-      setEditingService(null);
-      toast({
-        title: "Service updated",
-        description: "Service has been updated successfully.",
-      });
-    },
-  });
-
-  const deleteServiceMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/services/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete service');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      toast({
-        title: "Service deleted",
-        description: "Service has been deleted successfully.",
       });
     },
   });
@@ -533,46 +431,6 @@ export default function AdminPortal() {
     }
   };
 
-  const handleCreateService = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const serviceData = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      price_per_sqft: parseFloat(formData.get('price_per_sqft') as string),
-      category: formData.get('category') as 'core' | 'additional',
-    };
-
-    if (editingService) {
-      updateServiceMutation.mutate({ id: editingService.id, ...serviceData });
-    } else {
-      createServiceMutation.mutate(serviceData);
-    }
-  };
-
-  const handleEditService = (service: Service) => {
-    setEditingService(service);
-    setShowServiceDialog(true);
-  };
-
-  const handleDeleteService = (id: number) => {
-    if (confirm('Are you sure you want to delete this service?')) {
-      deleteServiceMutation.mutate(id);
-    }
-  };
-
-  const filteredServices = services.filter(service => {
-    if (!serviceSearchTerm) return service.active;
-    const searchLower = serviceSearchTerm.toLowerCase();
-    return (
-      service.active &&
-      (service.name.toLowerCase().includes(searchLower) ||
-       service.description.toLowerCase().includes(searchLower) ||
-       service.category.toLowerCase().includes(searchLower))
-    );
-  });
-
-
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -619,12 +477,7 @@ export default function AdminPortal() {
             <UserPlus className="w-4 h-4 mr-2" />
             Waitlist Entries
           </TabsTrigger>
-          <TabsTrigger value="pricing">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Pricing
-          </TabsTrigger>
           <TabsTrigger value="email-templates">
-            <FileText className="w-4 h-4 mr-2" />
             Email Templates
           </TabsTrigger>
           <TabsTrigger value="settings">
@@ -902,179 +755,6 @@ export default function AdminPortal() {
               </Button>
             </div>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="pricing" className="space-y-4">
-          <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay 
-              isLoading={servicesLoading} 
-              text="Loading services..."
-            />
-
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold">Pricing Management</h2>
-                  <p className="text-muted-foreground">Manage your service prices and offerings</p>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Search services..."
-                        value={serviceSearchTerm}
-                        onChange={(e) => setServiceSearchTerm(e.target.value)}
-                        className="pl-10 w-[200px]"
-                      />
-                    </div>
-                    <Button onClick={() => {
-                      setEditingService(null);
-                      setShowServiceDialog(true);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Service
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Service Name</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Price ($/sqft)</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredServices.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            {servicesLoading ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading services...
-                              </div>
-                            ) : (
-                              'No services found'
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredServices.map((service) => (
-                          <TableRow key={service.id}>
-                            <TableCell className="font-medium">{service.name}</TableCell>
-                            <TableCell>{service.description}</TableCell>
-                            <TableCell>
-                              <Badge variant={service.category === 'core' ? 'default' : 'secondary'}>
-                                {service.category}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              ${service.price_per_sqft.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditService(service)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteService(service.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-          </Card>
-
-          <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingService ? 'Edit Service' : 'Add New Service'}
-                </DialogTitle>
-              </DialogHeader>
-
-              <form onSubmit={handleCreateService}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Service Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={editingService?.name}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      defaultValue={editingService?.description}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="price_per_sqft">Price per Square Foot</Label>
-                    <Input
-                      id="price_per_sqft"
-                      name="price_per_sqft"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={editingService?.price_per_sqft}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select name="category" defaultValue={editingService?.category || 'additional'}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="core">Core Service</SelectItem>
-                        <SelectItem value="additional">Additional Service</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowServiceDialog(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingService ? 'Save Changes' : 'Add Service'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </TabsContent>
 
         <TabsContent value="email-templates">
