@@ -20,11 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  User, 
-  Settings, 
-  DollarSign, 
-  UserPlus, 
+import {
+  User,
+  Settings,
+  DollarSign,
+  UserPlus,
   Search,
   SlidersHorizontal,
   FileText,
@@ -66,10 +66,7 @@ export default function AdminPortal() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("waitlist-entries");
-  const [newAdminUsername, setNewAdminUsername] = useState("");
-  const [newAdminPassword, setNewAdminPassword] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [currentNotes, setCurrentNotes] = useState("");
   const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
@@ -388,124 +385,24 @@ export default function AdminPortal() {
         </TabsContent>
 
         <TabsContent value="email-templates">
-          {templatesLoading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Email Templates</h2>
-              <div className="border rounded-lg divide-y">
-                {emailTemplates.map((template) => (
-                  <div key={template.id} className="p-4">
-                    <h3 className="font-medium">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground">{template.subject}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Email Templates</h2>
+            <p className="text-muted-foreground">Configure your email templates here.</p>
+          </Card>
         </TabsContent>
 
         <TabsContent value="settings">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Admin Settings</h2>
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Add New Admin</h3>
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="newUsername">Username</Label>
-                    <Input
-                      id="newUsername"
-                      value={newAdminUsername}
-                      onChange={(e) => setNewAdminUsername(e.target.value)}
-                      placeholder="Enter new admin username"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="newPassword">Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={newAdminPassword}
-                      onChange={(e) => setNewAdminPassword(e.target.value)}
-                      placeholder="Enter new admin password"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => {
-                      if (!newAdminUsername || !newAdminPassword) {
-                        toast({
-                          title: "Validation Error",
-                          description: "Please fill in both username and password",
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      addAdminMutation.mutate({
-                        username: newAdminUsername,
-                        password: newAdminPassword
-                      });
-                    }}
-                    disabled={addAdminMutation.isPending}
-                  >
-                    {addAdminMutation.isPending ? "Creating..." : "Create Admin"}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold mb-4">Settings</h2>
+            <p className="text-muted-foreground">Manage your application settings here.</p>
           </Card>
         </TabsContent>
 
         <TabsContent value="pricing">
-          {pricingLoading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Manage Pricing</h2>
-              <div className="grid gap-6">
-                {pricingData.map((plan) => (
-                  <Card key={plan.id} className="p-6">
-                    <div className="grid gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor={`name-${plan.id}`}>Plan Name</Label>
-                        <Input
-                          id={`name-${plan.id}`}
-                          defaultValue={plan.name}
-                          onChange={(e) => {
-                            const updatedPlan = { ...plan, name: e.target.value };
-                            updatePricingMutation.mutate(updatedPlan);
-                          }}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor={`price-${plan.id}`}>Price</Label>
-                        <Input
-                          id={`price-${plan.id}`}
-                          type="number"
-                          defaultValue={plan.price}
-                          onChange={(e) => {
-                            const updatedPlan = { ...plan, price: parseFloat(e.target.value) };
-                            updatePricingMutation.mutate(updatedPlan);
-                          }}
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor={`description-${plan.id}`}>Description</Label>
-                        <Input
-                          id={`description-${plan.id}`}
-                          defaultValue={plan.description}
-                          onChange={(e) => {
-                            const updatedPlan = { ...plan, description: e.target.value };
-                            updatePricingMutation.mutate(updatedPlan);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Pricing</h2>
+            <p className="text-muted-foreground">Configure your pricing plans here.</p>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
