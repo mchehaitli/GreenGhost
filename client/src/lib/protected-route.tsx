@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation, Redirect } from 'wouter';
-import { useAuth } from './auth';
+import { useAuth } from '@/hooks/use-auth';
 import { LoadingSpinner } from '../components/ui/loading-spinner';
 
 interface ProtectedRouteProps {
