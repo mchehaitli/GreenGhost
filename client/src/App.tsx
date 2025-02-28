@@ -11,19 +11,15 @@ import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
-import AdminPortal from "./pages/admin/AdminPortal";
+import AdminPortalNew from "./pages/admin/AdminPortalNew";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Pricing from "@/pages/Pricing";
-import AIReview from "@/pages/AIReview";
-import CaptureScreenshots from "@/pages/CaptureScreenshots";
+import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
-import Login from "@/pages/Login";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -42,17 +38,8 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/admin">
-        <ProtectedRoute component={AdminPortal} />
-      </Route>
-      {/* Protected routes - only accessible through admin portal */}
-      <Route path="/admin/ai-review">
-        <ProtectedRoute component={AIReview} />
-      </Route>
-      <Route path="/admin/capture">
-        <ProtectedRoute component={CaptureScreenshots} />
+        <ProtectedRoute component={AdminPortalNew} />
       </Route>
       <Route component={NotFound} />
     </Switch>

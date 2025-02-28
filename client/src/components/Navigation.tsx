@@ -35,7 +35,7 @@ const Navigation = () => {
     e.preventDefault();
     setShowWaitlist(true);
   };
-  
+
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     await logout();
@@ -74,7 +74,7 @@ const Navigation = () => {
                 </Link>
               </div>
             ))}
-            
+
             {user ? (
               <>
                 <div onClick={scrollToTop} className="cursor-pointer">
@@ -181,7 +181,6 @@ const Navigation = () => {
                     <Button 
                       variant="outline" 
                       onClick={(e) => {
-                        e.preventDefault();
                         setOpen(false);
                         handleLogout(e);
                       }}
@@ -195,7 +194,6 @@ const Navigation = () => {
                     <Button 
                       variant="outline" 
                       onClick={(e) => {
-                        e.preventDefault();
                         setOpen(false);
                         setShowWaitlist(true);
                       }}
