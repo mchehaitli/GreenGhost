@@ -65,6 +65,7 @@ type WaitlistEntry = {
 };
 
 type SortDirection = 'asc' | 'desc';
+type SortField = 'created_at' | 'zip_code';
 
 let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   '75033': {city: 'Frisco', state: 'TX'},
@@ -87,6 +88,7 @@ export default function AdminPortal() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -438,14 +440,28 @@ export default function AdminPortal() {
     }
   };
 
-  const handleSort = () => {
-    setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
   };
 
   const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const dateA = new Date(a.created_at).getTime();
-    const dateB = new Date(b.created_at).getTime();
-    return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+    const modifier = sortDirection === 'asc' ? 1 : -1;
+
+    if (sortField === 'created_at') {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return (dateA - dateB) * modifier;
+    } else {
+      // ZIP code sorting
+      const zipA = a.zip_code || '';
+      const zipB = b.zip_code || '';
+      return zipA.localeCompare(zipB) * modifier;
+    }
   });
 
   const handleViewDetails = (entry: WaitlistEntry) => {
@@ -570,16 +586,30 @@ export default function AdminPortal() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
-                    <TableHead>ZIP Code</TableHead>
                     <TableHead 
-                      onClick={handleSort}
+                      onClick={() => handleSort('zip_code')}
+                      className="cursor-pointer hover:text-primary transition-colors duration-200"
+                    >
+                      ZIP Code
+                      {sortField === 'zip_code' && (
+                        sortDirection === 'asc' ? (
+                          <ChevronUp className="ml-2 h-4 w-4 inline" />
+                        ) : (
+                          <ChevronDown className="ml-2 h-4 w-4 inline" />
+                        )
+                      )}
+                    </TableHead>
+                    <TableHead 
+                      onClick={() => handleSort('created_at')}
                       className="cursor-pointer hover:text-primary transition-colors duration-200"
                     >
                       Sign-up Date/Time
-                      {sortDirection === 'asc' ? (
-                        <ChevronUp className="ml-2 h-4 w-4 inline" />
-                      ) : (
-                        <ChevronDown className="ml-2 h-4 w-4 inline" />
+                      {sortField === 'created_at' && (
+                        sortDirection === 'asc' ? (
+                          <ChevronUp className="ml-2 h-4 w-4 inline" />
+                        ) : (
+                          <ChevronDown className="ml-2 h-4 w-4 inline" />
+                        )
                       )}
                     </TableHead>
                     <TableHead className="w-[200px]">Actions</TableHead>
