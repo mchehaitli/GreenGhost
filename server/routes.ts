@@ -1,8 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
-import { waitlist } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { users } from "../db/schema";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
@@ -13,6 +12,24 @@ export function registerRoutes(app: Express): Server {
   app.use('/api', authRoutes);
   app.use('/api', waitlistRoutes);
   app.use('/api', emailTemplateRoutes);
+
+  // Test endpoint to verify database connection
+  app.get('/api/test/db', async (req, res) => {
+    try {
+      // Simple query to test database connection
+      const allUsers = await db.select().from(users);
+      res.json({ 
+        message: 'Database connection successful',
+        userCount: allUsers.length 
+      });
+    } catch (error) {
+      console.error('Database test failed:', error);
+      res.status(500).json({ 
+        error: 'Database connection failed',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Add email preview routes with API prefix
   app.post('/api/email/preview/:type', async (req, res) => {

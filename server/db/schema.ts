@@ -15,6 +15,6 @@ export const insertUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-// Type for user selections from database
+// Types for user selections from database
 export type SelectUser = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

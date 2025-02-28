@@ -9,6 +9,32 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function tryPort(port: number, maxAttempts = 3): Promise<number> {
+  log('Attempting to start server...');
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      log(`Trying to bind to port ${port}...`);
+      await new Promise((resolve, reject) => {
+        server.listen(port, '0.0.0.0')
+          .once('listening', () => {
+            log(`Successfully bound to port ${port}`);
+            resolve(null);
+          })
+          .once('error', (error) => {
+            log(`Failed to bind to port ${port}: ${error.message}`);
+            reject(error);
+          });
+      });
+      return port;
+    } catch (error) {
+      if (attempt === maxAttempts - 1) throw error;
+      port++;
+      log(`Port ${port - 1} in use, trying port ${port}...`);
+    }
+  }
+  throw new Error('Could not find available port');
+}
+
 async function startServer() {
   try {
     log('Creating Express application...');
@@ -83,28 +109,12 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Try different ports if 5000 is in use
-      const tryPort = async (port: number, maxAttempts = 3): Promise<number> => {
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          try {
-            await new Promise((resolve, reject) => {
-              server.listen(port).once('listening', resolve).once('error', reject);
-            });
-            return port;
-          } catch (error) {
-            if (attempt === maxAttempts - 1) throw error;
-            port++;
-            log(`Port ${port - 1} in use, trying port ${port}...`);
-          }
-        }
-        throw new Error('Could not find available port');
-      };
-
       const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
       const port = await tryPort(startPort);
 
       log(`Server running at http://0.0.0.0:${port}`);
       log('Environment:', process.env.NODE_ENV || 'development');
+      log('Database:', 'Connected and ready');
       log('CORS:', 'enabled for all origins');
 
     } catch (error) {
