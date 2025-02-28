@@ -104,7 +104,6 @@ export default function AdminPortal() {
         const results = await Promise.all(
           entries.map(async (entry) => {
             console.log('Sending update request:', entry);
-
             const response = await fetch(`/api/waitlist/${entry.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
@@ -342,94 +341,28 @@ export default function AdminPortal() {
           title: "No entries to update",
           description: "All entries with ZIP codes already have city and state information.",
         });
-        setIsAutoPopulating(false);
         return;
       }
 
       for (const entry of entriesToUpdate) {
         if (!entry.zip_code) continue;
 
-        // Validate ZIP code format
-        if (!/^\d{5}$/.test(entry.zip_code)) {
-          failCount++;
-          failedZips.push(`${entry.zip_code} (Invalid format)`);
-          continue;
-        }
-
         try {
-          setLoadingZips(prev => ({ ...prev, [entry.id]: true }));
-
-          // Add delay between requests to avoid rate limiting
-          if (successCount + failCount > 0) {
-            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
-          }
-
-          // Check if this is a known problematic ZIP code
-          if (knownZipCodeMappings[entry.zip_code]) {
-            const mapping = knownZipCodeMappings[entry.zip_code];
-            await updateEntryMutation.mutateAsync([{
-              id: entry.id, 
-              city: mapping.city, 
-              state: mapping.state
-            }]);
-            successCount++;
-            continue;
-          }
-
-          // Try API with retries and exponential backoff
-          let retries = 3;
-          let response;
-          while (retries >= 0) {
-            try {
-              response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
-              console.log(`ZIP API response for ${entry.zip_code}:`, {
-                status: response.status,
-                statusText: response.statusText
-              });
-
-              if (response.ok) break;
-
-              // If we get rate limited, wait longer
-              if (response.status === 429) {
-                const backoffTime = Math.pow(2, 3 - retries) * 2000; // Exponential backoff
-                console.log(`Rate limited, waiting ${backoffTime}ms before retry`);
-                await new Promise(resolve => setTimeout(resolve, backoffTime));
-              } else {
-                await new Promise(resolve => setTimeout(resolve, 3000));
-              }
-
-              retries--;
-              if (retries < 0) {
-                throw new Error(`ZIP code lookup failed after all retries: ${response.statusText}`);
-              }
-            } catch (fetchError) {
-              console.error(`Fetch error for ZIP ${entry.zip_code}:`, fetchError);
-              if (retries < 0) throw fetchError;
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              retries--;
-            }
-          }
-
-          if (!response?.ok) {
-            throw new Error('Failed to get response from ZIP API');
-          }
-
-          const data = await response.json();
-          console.log('ZIP API data for', entry.zip_code, ':', data);
-
-          if (data && data.places && data.places[0]) {
-            const place = data.places[0];
-            await updateEntryMutation.mutateAsync([{id: entry.id, city: place['place name'], state: place['state abbreviation']}]);
+          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
+          if (success) {
             successCount++;
           } else {
-            throw new Error('No location data found');
+            failCount++;
+            failedZips.push(entry.zip_code);
+          }
+          // Add delay between requests
+          if (successCount + failCount < entriesToUpdate.length) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
         } catch (error) {
           failCount++;
-          failedZips.push(`${entry.zip_code} (${error instanceof Error ? error.message : 'Unknown error'})`);
-          console.error(`Error processing ZIP code ${entry.zip_code}:`, error);
-        } finally {
-          setLoadingZips(prev => ({ ...prev, [entry.id]: false }));
+          failedZips.push(entry.zip_code);
+          console.error(`Error processing ZIP ${entry.zip_code}:`, error);
         }
       }
 
@@ -697,6 +630,7 @@ export default function AdminPortal() {
                               onClick={() => {
                                 setCurrentNotes(entry.notes || '');
                                 setCurrentEntryId(entry.id);
+                                setShowNotesDialog(true);
                               }}
                             >
                               <FileText className="h-4 w-4" />
@@ -784,6 +718,7 @@ export default function AdminPortal() {
           </Card>
         </TabsContent>
       </Tabs>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
