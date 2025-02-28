@@ -23,7 +23,7 @@ async function startServer() {
     app.use(cors({
       origin: true,
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
 
@@ -40,29 +40,26 @@ async function startServer() {
       next();
     });
 
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error('Error:', err);
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ error: message });
+    });
+
     try {
       log('Setting up authentication...');
-      setupAuth(app);
+      await setupAuth(app);
       log('Authentication setup complete');
 
       log('Registering routes...');
       const server = registerRoutes(app);
       log('Routes registered successfully');
 
-      // Error handling middleware
-      app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-        console.error('Error:', err);
-        const status = err.status || err.statusCode || 500;
-        const message = err.message || "Internal Server Error";
-        res.status(status).json({ error: message });
-      });
-
       if (process.env.NODE_ENV === 'production') {
         log('Setting up static file serving...');
-        app.use(express.static(path.resolve(__dirname, '../dist/public')));
-        app.get('*', (_req, res) => {
-          res.sendFile(path.resolve(__dirname, '../dist/public/index.html'));
-        });
+        serveStatic(app);
       } else {
         log('Setting up Vite development server...');
         await setupVite(app, server);
