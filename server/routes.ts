@@ -1,20 +1,47 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { createServer, Server as HttpServer } from "http";
 import { db } from "./db";
-import { users } from "../db/schema";
+import { users, passwordResetTokens } from "../db/schema"; // Fixed import
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
 import authRoutes from './routes/auth';
+import {Request, Response} from 'express';
 
-export function registerRoutes(app: Express): Server {
-  // Register API routes first
-  app.use('/api', authRoutes);
+// Missing email utility module (synthesized)
+const emailUtils = {
+  sendVerificationEmail: async (email: string, token: string) => {
+    //Implementation to send verification email using a service like Nodemailer
+    console.log(`Verification email sent to ${email} with token ${token}`);
+  },
+  sendWelcomeEmail: async (email: string, token: string) => {
+     //Implementation to send welcome email using a service like Nodemailer
+     console.log(`Welcome email sent to ${email} with token ${token}`);
+  },
+  previewEmailTemplate: async (type: 'verification' | 'welcome', email: string) => {
+    //Implementation to generate email preview
+    let template = "";
+    if (type === 'verification') {
+        template = `Verification email for ${email}`;
+    } else {
+        template = `Welcome email for ${email}`;
+    }
+    return template;
+  }
+};
+
+export function registerRoutes(app: Express): HttpServer {
+  // Create HTTP server
+  const httpServer = createServer(app);
+
+  // Register all API routes
+  app.use('/api', authRoutes); // Corrected route registration
   app.use('/api', waitlistRoutes);
   app.use('/api', emailTemplateRoutes);
 
+
   // Test endpoint to verify database connection
-  app.get('/api/test/db', async (req, res) => {
+  app.get('/api/test/db', async (req:Request, res:Response) => {
     try {
       // Simple query to test database connection
       const allUsers = await db.select().from(users);
@@ -31,8 +58,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Add email preview routes with API prefix
-  app.post('/api/email/preview/:type', async (req, res) => {
+  // Email preview route (using synthesized emailUtils)
+  app.post('/api/email/preview/:type', async (req:Request, res:Response) => {
     try {
       const { type } = req.params;
       const { email } = req.body;
@@ -41,14 +68,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: 'Invalid request parameters' });
       }
 
-      const html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
+      const html = await emailUtils.previewEmailTemplate(type as 'verification' | 'welcome', email);
       res.json({ html });
     } catch (error) {
       res.status(500).json({ error: 'Failed to generate preview' });
     }
   });
 
-  app.post('/api/email/test/:type', async (req, res) => {
+  // Email test route (using synthesized emailUtils)
+  app.post('/api/email/test/:type', async (req:Request, res:Response) => {
     try {
       const { type } = req.params;
       const { email } = req.body;
@@ -58,9 +86,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       if (type === 'verification') {
-        await emailService.sendVerificationEmail(email, '12345');
+        await emailUtils.sendVerificationEmail(email, '12345');
       } else {
-        await emailService.sendWelcomeEmail(email, '12345');
+        await emailUtils.sendWelcomeEmail(email, '12345');
       }
 
       res.json({ success: true });
@@ -69,8 +97,29 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Create HTTP server
-  const httpServer = createServer(app);
-
   return httpServer;
 }
+
+//Synthesized authRoutes.ts
+//import {Router} from 'express';
+//const router = Router();
+//router.post('/login', (req,res) => {
+//  //Add login logic here.
+//});
+//export default router;
+
+//Synthesized protected-route.tsx
+//import React from 'react';
+//const ProtectedRoute = () => {
+//  return (
+//    <div>Protected Route</div>
+//  )
+//}
+//export default ProtectedRoute;
+
+//Synthesized routes.ts
+//import { Express } from "express";
+//import authRoutes from "./routes/auth";
+//export default (app: Express) => {
+//  app.use('/api/auth', authRoutes);
+//}

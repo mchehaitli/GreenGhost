@@ -111,6 +111,8 @@ async function startServer() {
 
       const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
       const port = await tryPort(startPort);
+      
+      return server;
 
       log(`Server running at http://0.0.0.0:${port}`);
       log('Environment:', process.env.NODE_ENV || 'development');
