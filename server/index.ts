@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from 'cors';
+import { createServer, Server as HttpServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
@@ -9,7 +10,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function tryPort(port: number, maxAttempts = 3): Promise<number> {
+async function tryPort(port: number, server: HttpServer, maxAttempts = 3): Promise<number> {
   log('Attempting to start server...');
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -110,7 +111,12 @@ async function startServer() {
       }
 
       const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-      const port = await tryPort(startPort);
+      const port = await tryPort(startPort, server);
+      
+      log(`Server running at http://0.0.0.0:${port}`);
+      log('Environment:', process.env.NODE_ENV || 'development');
+      log('Database:', 'Connected and ready');
+      log('CORS:', 'enabled for all origins');
       
       return server;
 
