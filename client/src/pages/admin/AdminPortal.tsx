@@ -23,6 +23,7 @@ import {
   UserPlus,
   ChevronUp,
   ChevronDown,
+  Eye,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -87,6 +88,8 @@ export default function AdminPortal() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -445,6 +448,11 @@ export default function AdminPortal() {
     return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
+  const handleViewDetails = (entry: WaitlistEntry) => {
+    setSelectedEntry(entry);
+    setShowDetailsDialog(true);
+  };
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -516,6 +524,7 @@ export default function AdminPortal() {
               isLoading={isAutoPopulating}
               text="Auto-populating locations..."
             />
+
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4 flex-1">
                 <div className="relative flex-1 max-w-sm">
@@ -556,19 +565,12 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <div className="rounded-md border relative">
+            <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
-                    <TableHead>First Name</TableHead>
-                    <TableHead>Last Name</TableHead>
-                    <TableHead>Phone Number</TableHead>
-                    <TableHead>Street Address</TableHead>
-                    <TableHead>City</TableHead>
-                    <TableHead>State</TableHead>
                     <TableHead>ZIP Code</TableHead>
-                    <TableHead>Notes</TableHead>
                     <TableHead 
                       onClick={handleSort}
                       className="cursor-pointer hover:text-primary transition-colors duration-200"
@@ -580,7 +582,7 @@ export default function AdminPortal() {
                         <ChevronDown className="ml-2 h-4 w-4 inline" />
                       )}
                     </TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead className="w-[200px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -594,50 +596,6 @@ export default function AdminPortal() {
                           value={unsavedChanges[entry.id]?.email ?? entry.email}
                           onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
                           className="transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.first_name ?? entry.first_name ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'first_name', e.target.value)}
-                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.last_name ?? entry.last_name ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'last_name', e.target.value)}
-                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.phone_number ?? entry.phone_number ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'phone_number', e.target.value)}
-                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.street_address ?? entry.street_address ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'street_address', e.target.value)}
-                          className="max-w-[200px] transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.city ?? entry.city ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'city', e.target.value)}
-                          className="max-w-[150px] transition-all duration-200 group-hover:border-primary/50"
-                          disabled={loadingZips[entry.id]}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={unsavedChanges[entry.id]?.state ?? entry.state ?? ''}
-                          onChange={(e) => handleFieldChange(entry.id, 'state', e.target.value)}
-                          className="max-w-[80px] transition-all duration-200 group-hover:border-primary/50"
-                          disabled={loadingZips[entry.id]}
                         />
                       </TableCell>
                       <TableCell>
@@ -658,42 +616,20 @@ export default function AdminPortal() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setCurrentNotes(entry.notes || '');
-                                setCurrentEntryId(entry.id);
-                                setShowNotesDialog(true);
-                              }}
-                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit Notes</DialogTitle>
-                            </DialogHeader>
-                            <Textarea
-                              value={currentNotes}
-                              onChange={(e) => setCurrentNotes(e.target.value)}
-                            />
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => setShowNotesDialog(false)}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={saveNotes}>Save</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetails(entry)}
+                            className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
                           <Button
                             variant="destructive"
                             size="sm"
@@ -709,6 +645,102 @@ export default function AdminPortal() {
                 </TableBody>
               </Table>
             </div>
+
+            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Customer Details</DialogTitle>
+                </DialogHeader>
+                {selectedEntry && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label>First Name</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Last Name</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Phone Number</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Street Address</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>City</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'city', e.target.value)}
+                          className="mt-1"
+                          disabled={loadingZips[selectedEntry.id]}
+                        />
+                      </div>
+                      <div>
+                        <Label>State</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
+                          className="mt-1"
+                          disabled={loadingZips[selectedEntry.id]}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Notes</Label>
+                      <Textarea
+                        value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
+                        onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
+                        className="mt-1"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                )}
+                <AlertDialogFooter>
+                  <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <div className="fixed bottom-8 right-8">
               <Button 
