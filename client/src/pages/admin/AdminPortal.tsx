@@ -88,6 +88,9 @@ export default function AdminPortal() {
 
   const updateEntryMutation = useMutation({
     mutationFn: async (entry: Partial<WaitlistEntry>) => {
+      if (!entry.id) {
+        throw new Error('Entry ID is required for updates');
+      }
       const response = await fetch(`/api/waitlist/${entry.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -103,6 +106,7 @@ export default function AdminPortal() {
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
     },
     onError: (error) => {
+      console.error('Update entry error:', error);
       toast({
         title: "Failed to update entry",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -149,19 +153,22 @@ export default function AdminPortal() {
   const handleCityStateFromZip = async (zip: string, entryId: number) => {
     // Only process if it's a valid 5-digit ZIP code
     if (!/^\d{5}$/.test(zip)) {
-      return;
+      return false;
     }
 
     try {
       setLoadingZips(prev => ({ ...prev, [entryId]: true }));
+      console.log(`Fetching data for ZIP: ${zip}`);
 
       const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      console.log(`ZIP API response status: ${response.status}`);
 
       if (!response.ok) {
         throw new Error(`ZIP code lookup failed: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('ZIP API response data:', data);
 
       if (data && data.places && data.places[0]) {
         const place = data.places[0];
