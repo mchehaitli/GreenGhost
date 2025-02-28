@@ -10,13 +10,9 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { subscriptionPlans } from "@/lib/subscription-plans";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const Home = () => {
-  const allPlans = subscriptionPlans.sort((a, b) => (a.price || 0) - (b.price || 0));
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -177,70 +173,6 @@ export const Home = () => {
                 </CardContent>
               </Card>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Updated Pricing Section */}
-      <section className="py-20 bg-background border-t border-border/40">
-        <div className="container max-w-7xl">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Simple, Affordable Plans</h2>
-            <p className="text-muted-foreground">
-              Choose a plan that works for you. All plans include our automated service system
-              with one dedicated representative and robotic maintenance equipment.
-            </p>
-          </div>
-
-          {/* Subscription Tiers Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {allPlans.map((plan, index) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="h-full"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="h-full"
-                >
-                  <Card className={`h-full flex flex-col ${plan.id === 'alacarte' ? 'bg-primary/5 border-primary/20' : ''}`}>
-                    <CardHeader>
-                      <CardTitle className="text-center">
-                        <span className={`text-xl font-bold ${plan.id === 'alacarte' ? 'text-primary' : ''}`}>
-                          {plan.name}
-                        </span>
-                      </CardTitle>
-                      <div className="text-center mt-2">
-                        <span className="text-3xl font-bold text-primary">${plan.price}</span>
-                        <span className="text-sm text-muted-foreground ml-1">/month</span>
-                      </div>
-                      <CardDescription className="text-center mt-2">
-                        {plan.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col">
-                      <ul className="space-y-2 flex-1 mb-6">
-                        {plan.features.slice(0, 4).map((feature, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Button asChild className="w-full mt-auto">
-                        <Link href="/waitlist">
-                          Join Waitlist
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
