@@ -3,20 +3,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
-
-// UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Search,
+  MapPin,
+  FileText,
+  Save,
+  Loader2,
+  Trash2,
+  Download,
+  User,
+  Settings,
+  DollarSign,
+  UserPlus,
+  ChevronUp,
+  ChevronDown,
+  Eye,
+} from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,26 +45,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-
-// Icons
-import {
-  Search,
-  MapPin,
-  FileText,
-  Save,
-  Loader2,
-  Trash2,
-  Download,
-  User,
-  Settings,
-  DollarSign,
-  UserPlus,
-  ChevronUp,
-  ChevronDown,
-  Eye,
-} from 'lucide-react';
 
 type WaitlistEntry = {
   id: number;
@@ -756,7 +750,7 @@ export default function AdminPortal() {
                     </div>
                   </div>
                 )}
-                <DialogFooter className="flex-col sm:flex-row gap-2">
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                   <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
                     Close
                   </Button>
@@ -776,7 +770,7 @@ export default function AdminPortal() {
                       </>
                     )}
                   </Button>
-                </DialogFooter>
+                </AlertDialogFooter>
               </DialogContent>
             </Dialog>
 
@@ -811,221 +805,9 @@ export default function AdminPortal() {
         </TabsContent>
 
         <TabsContent value="settings">
-          <Card className="p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">Platform Settings</h2>
-
-            <Tabs defaultValue="general" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="email">Email</TabsTrigger>
-                <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
-                <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                <TabsTrigger value="api">API Configuration</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="general">
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label>Platform Name</Label>
-                      <Input 
-                        placeholder="GreenGhost Tech"
-                        defaultValue="GreenGhost Tech"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Support Email</Label>
-                      <Input 
-                        type="email"
-                        placeholder="support@greenghosttech.com"
-                        defaultValue="support@greenghosttech.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Business Hours</Label>
-                      <Input 
-                        placeholder="Mon-Fri 9AM-5PM CST"
-                        defaultValue="Mon-Fri 9AM-5PM CST"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Service Area ZIP Codes (comma-separated)</Label>
-                      <Textarea 
-                        placeholder="75033, 75034, 75035"
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="email">
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label>Email Sender Name</Label>
-                      <Input 
-                        placeholder="GreenGhost Tech Support"
-                        defaultValue="GreenGhost Tech Support"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Verification Email Subject</Label>
-                      <Input 
-                        placeholder="Verify Your Email - GreenGhost Tech"
-                        defaultValue="Verify Your Email - GreenGhost Tech"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Welcome Email Subject</Label>
-                      <Input 
-                        placeholder="Welcome to GreenGhost Tech!"
-                        defaultValue="Welcome to GreenGhost Tech!"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email Footer Text</Label>
-                      <Textarea 
-                        className="min-h-[100px]"
-                        placeholder="© 2025 GreenGhost Tech. All rights reserved."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="waitlist">
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label>Verification Code Timeout (seconds)</Label>
-                      <Input 
-                        type="number"
-                        defaultValue="90"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Auto-cleanup Unverified Entries After (hours)</Label>
-                      <Input 
-                        type="number"
-                        defaultValue="24"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max Retries for ZIP Code Validation</Label>
-                      <Input 
-                        type="number"
-                        defaultValue="3"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="auto-populate" />
-                      <Label htmlFor="auto-populate">
-                        Auto-populate city/state on ZIP code entry
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="appearance">
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label>Primary Color</Label>
-                      <Input 
-                        type="color"
-                        defaultValue="#22c55e"
-                        className="h-10 p-1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Logo (SVG or PNG)</Label>
-                      <Input 
-                        type="file"
-                        accept=".svg,.png"
-                        className="cursor-pointer"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Theme Mode</Label>
-                      <Select defaultValue="system">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select theme mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="light">Light</SelectItem>
-                          <SelectItem value="dark">Dark</SelectItem>
-                          <SelectItem value="system">System</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Font Size Scale</Label>
-                      <Select defaultValue="default">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select font size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="small">Small</SelectItem>
-                          <SelectItem value="default">Default</SelectItem>
-                          <SelectItem value="large">Large</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="api">
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label>Gmail SMTP User</Label>
-                      <Input 
-                        type="email"
-                        placeholder="your-email@gmail.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Gmail App Password</Label>
-                      <Input 
-                        type="password"
-                        placeholder="••••••••••••••••"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>ZIP Code API Key</Label>
-                      <Input 
-                        type="password"
-                        placeholder="Enter API key"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Google Maps API Key</Label>
-                      <Input 
-                        type="password"
-                        placeholder="Enter API key"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            <div className="flex justify-end mt-6">
-              <Button 
-                onClick={() => {
-                  toast({
-                    title: "Settings saved",
-                    description: "Your changes have been saved successfully.",
-                  });
-                }}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Settings
-              </Button>
-            </div>
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Settings</h2>
+            <p className="text-muted-foreground">Manage your application settings here.</p>
           </Card>
         </TabsContent>
 
