@@ -46,9 +46,117 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
+
+// SwipeableRow component to handle gestures
+const SwipeableRow = ({ 
+  entry, 
+  onDelete, 
+  onViewDetails, 
+  unsavedChanges, 
+  onFieldChange, 
+  loadingZips,
+  handleCityStateFromZip 
+}) => {
+  const [offset, setOffset] = useState(0);
+  const bind = useGesture({
+    onDrag: ({ movement: [mx], down }) => {
+      if (down) {
+        setOffset(Math.min(Math.max(mx, -200), 0));
+      } else {
+        if (offset <= -150) {
+          onDelete(entry.id);
+        } else if (offset <= -75) {
+          onViewDetails(entry);
+        }
+        setOffset(0);
+      }
+    }
+  }, {
+    drag: {
+      axis: 'x',
+      bounds: { left: -200, right: 0 },
+    }
+  });
+
+  return (
+    <TableRow 
+      className="transition-colors duration-200 hover:bg-primary/5 group relative overflow-hidden"
+      style={{
+        transform: `translateX(${offset}px)`,
+        transition: 'transform 0.2s ease-out'
+      }}
+      {...bind()}
+    >
+      {/* Background action indicators */}
+      <div 
+        className="absolute inset-y-0 right-0 flex items-center justify-end px-4 bg-destructive"
+        style={{ 
+          width: '200px', 
+          transform: `translateX(${offset + 200}px)`,
+          opacity: Math.min(Math.abs(offset / 200), 1)
+        }}
+      >
+        <div className="flex items-center gap-2 text-white">
+          <Eye className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
+        </div>
+      </div>
+
+      <TableCell className="font-medium">
+        <Input
+          value={unsavedChanges[entry.id]?.email ?? entry.email}
+          onChange={(e) => onFieldChange(entry.id, 'email', e.target.value)}
+          className="transition-all duration-200 group-hover:border-primary/50"
+        />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Input
+            value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
+            onChange={(e) => {
+              const zip = e.target.value;
+              onFieldChange(entry.id, 'zip_code', zip);
+              if (zip.length === 5) {
+                handleCityStateFromZip(zip, entry.id);
+              }
+            }}
+            className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
+          />
+          {loadingZips[entry.id] && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+        {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewDetails(entry)}
+            className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => onDelete(entry.id)}
+            className="transition-all duration-200 group-hover:bg-destructive/90"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 type WaitlistEntry = {
   id: number;
@@ -92,7 +200,7 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [rowStates, setRowStates] = useState<Record<number, { offset: number }>>({});
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -470,29 +578,6 @@ export default function AdminPortal() {
     setShowDetailsDialog(true);
   };
 
-  const handleRowSwipe = (entry: WaitlistEntry, movement: number) => {
-    setRowStates(prev => ({
-      ...prev,
-      [entry.id]: { offset: Math.min(Math.max(movement, -200), 0) }
-    }));
-  };
-
-  const handleSwipeEnd = (entry: WaitlistEntry) => {
-    const offset = rowStates[entry.id]?.offset || 0;
-    if (offset <= -150) {
-      // Delete action
-      handleDelete(entry.id);
-    } else if (offset <= -75) {
-      // View details action
-      handleViewDetails(entry);
-    }
-    // Reset position
-    setRowStates(prev => ({
-      ...prev,
-      [entry.id]: { offset: 0 }
-    }));
-  };
-
 
   if (authLoading) {
     return (
@@ -643,90 +728,16 @@ export default function AdminPortal() {
                   </TableHeader>
                   <TableBody>
                     {sortedEntries.map((entry) => (
-                      <TableRow 
+                      <SwipeableRow
                         key={entry.id}
-                        className="transition-colors duration-200 hover:bg-primary/5 group relative overflow-hidden"
-                        style={{
-                          transform: `translateX(${rowStates[entry.id]?.offset || 0}px)`,
-                          transition: 'transform 0.2s ease-out'
-                        }}
-                        {...useGesture({
-                          onDrag: ({ movement: [mx], down }) => {
-                            if (down) handleRowSwipe(entry, mx);
-                            else handleSwipeEnd(entry);
-                          },
-                        }, {
-                          drag: {
-                            axis: 'x',
-                            bounds: { left: -200, right: 0 },
-                          }
-                        })}
-                      >
-                        {/* Background action indicators */}
-                        <div 
-                          className="absolute inset-y-0 right-0 flex items-center justify-end px-4 bg-destructive"
-                          style={{ 
-                            width: '200px', 
-                            transform: `translateX(${(rowStates[entry.id]?.offset || 0) + 200}px)`,
-                            opacity: Math.min(Math.abs((rowStates[entry.id]?.offset || 0) / 200), 1)
-                          }}
-                        >
-                          <div className="flex items-center gap-2 text-white">
-                            <Eye className="h-4 w-4" />
-                            <Trash2 className="h-4 w-4" />
-                          </div>
-                        </div>
-
-                        <TableCell className="font-medium">
-                          <Input
-                            value={unsavedChanges[entry.id]?.email ?? entry.email}
-                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                            className="transition-all duration-200 group-hover:border-primary/50"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
-                              onChange={(e) => {
-                                const zip = e.target.value;
-                                handleFieldChange(entry.id, 'zip_code', zip);
-                                if (zip.length === 5) {
-                                  handleCityStateFromZip(zip, entry.id);
-                                }
-                              }}
-                              className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
-                            />
-                            {loadingZips[entry.id] && (
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetails(entry)}
-                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(entry.id)}
-                              className="transition-all duration-200 group-hover:bg-destructive/90"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                        entry={entry}
+                        onDelete={handleDelete}
+                        onViewDetails={handleViewDetails}
+                        unsavedChanges={unsavedChanges}
+                        onFieldChange={handleFieldChange}
+                        loadingZips={loadingZips}
+                        handleCityStateFromZip={handleCityStateFromZip}
+                      />
                     ))}
                   </TableBody>
                 </Table>
