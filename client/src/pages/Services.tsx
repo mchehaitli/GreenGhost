@@ -18,16 +18,16 @@ import WaitlistDialog from "@/components/WaitlistDialog"; // Added import
 
 // Additional services array - copied from PricingCalculator.tsx
 const additionalServices = [
-  { id: "edging", name: "Edging & Trimming", pricePerSqft: 0.05, description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
-  { id: "fertilization", name: "Fertilization", pricePerSqft: 0.08, description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
-  { id: "weedControl", name: "Weed Control", pricePerSqft: 0.07, description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
-  { id: "leafRemoval", name: "Leaf Removal", pricePerSqft: 0.06, description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
-  { id: "soilTesting", name: "Soil Analysis & Treatment", pricePerSqft: 0.04, description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
-  { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06, description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
-  { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08, description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
-  { id: "mulching", name: "Mulching Service", pricePerSqft: 0.05, description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
-  { id: "hardscaping", name: "Hardscape Cleaning", pricePerSqft: 0.06, description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
-  { id: "seasonalCleanup", name: "Seasonal Cleanup", pricePerSqft: 0.08, description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
+  { id: "edging", name: "Edging & Trimming", description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
+  { id: "fertilization", name: "Fertilization", description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
+  { id: "weedControl", name: "Weed Control", description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
+  { id: "leafRemoval", name: "Leaf Removal", description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
+  { id: "soilTesting", name: "Soil Analysis & Treatment", description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
+  { id: "aerationService", name: "Lawn Aeration", description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
+  { id: "gardenMaintenance", name: "Garden Bed Maintenance", description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
+  { id: "mulching", name: "Mulching Service", description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
+  { id: "hardscaping", name: "Hardscape Cleaning", description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
+  { id: "seasonalCleanup", name: "Seasonal Cleanup", description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
 ];
 
 const Services = () => {
@@ -282,12 +282,9 @@ const Services = () => {
                         <p className="text-muted-foreground text-sm">{service.description}</p>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-between items-center">
-                      <span className="text-sm text-primary font-medium">
-                        ${service.pricePerSqft.toFixed(2)}/sq ft
-                      </span>
+                    <div className="mt-4 flex justify-end">
                       <Button variant="ghost" size="sm" className="group" asChild>
-                        <Link href="/waitlist" className="flex items-center gap-1">
+                        <Link href="/pricing" className="flex items-center gap-1">
                           Learn More
                           <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                         </Link>

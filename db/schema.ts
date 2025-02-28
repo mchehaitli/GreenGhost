@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -52,17 +52,6 @@ export const emailSegments = pgTable("email_segments", {
   zip_codes: text("zip_codes").array(),
   sent_at: timestamp("sent_at").defaultNow().notNull(),
   total_recipients: serial("total_recipients").notNull(),
-});
-
-// Add new services table
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  price_per_sqft: decimal("price_per_sqft", { precision: 10, scale: 2 }).notNull(),
-  category: text("category").notNull(), // 'core' or 'additional'
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Relations
@@ -122,8 +111,3 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
-
-// Add types
-export const selectServiceSchema = createSelectSchema(services);
-export type InsertService = typeof services.$inferInsert;
-export type SelectService = typeof services.$inferSelect;
