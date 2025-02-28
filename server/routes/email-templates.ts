@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { emailTemplates, emailSegments, waitlist, insertEmailTemplateSchema } from '../../db/schema';
+import { emailTemplates, emailSegments, waitlist } from '../../db/schema';
 import { eq, inArray } from 'drizzle-orm';
-import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
 import emailService from '../services/email';
+import { insertEmailTemplateSchema } from '../../db/schema';
 
 const router = Router();
 
 // Get all email templates
-router.get('/api/email-templates', requireAuth, async (_req, res) => {
+router.get('/api/email-templates', async (_req, res) => {
   try {
     const templates = await db.query.emailTemplates.findMany({
       orderBy: (emailTemplates, { desc }) => [desc(emailTemplates.created_at)]
@@ -23,7 +23,7 @@ router.get('/api/email-templates', requireAuth, async (_req, res) => {
 });
 
 // Create new email template
-router.post('/api/email-templates', requireAuth, async (req, res) => {
+router.post('/api/email-templates', async (req, res) => {
   try {
     const validatedData = insertEmailTemplateSchema.parse(req.body);
     const [template] = await db.insert(emailTemplates).values(validatedData).returning();
@@ -38,7 +38,7 @@ router.post('/api/email-templates', requireAuth, async (req, res) => {
 });
 
 // Update email template
-router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
+router.patch('/api/email-templates/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -65,7 +65,7 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
 });
 
 // Delete email template
-router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
+router.delete('/api/email-templates/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -80,7 +80,7 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
 });
 
 // Send email to segment
-router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
+router.post('/api/email-templates/:id/send', async (req, res) => {
   try {
     const templateId = parseInt(req.params.id);
     if (isNaN(templateId)) {

@@ -1,22 +1,27 @@
-import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 
-// User table definition
-export const users = pgTable('users', {
+// Waitlist table definition (keeping only what's needed for the public site)
+export const waitlist = pgTable('waitlist', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
-  username: text('username').notNull().unique(),
-  password: text('password').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
+  zip_code: text('zip_code').notNull(),
+  verified: boolean('verified').notNull().default(false),
+  created_at: timestamp('created_at').defaultNow(),
+  expires_at: timestamp('expires_at'),
 });
 
-// Zod schema for user creation/validation
-export const insertUserSchema = z.object({
+// Zod schema for waitlist validation
+export const insertWaitlistSchema = z.object({
   email: z.string().email("Invalid email format"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  zip_code: z.string().min(5, "Invalid ZIP code"),
 });
 
-// Types for user selections from database
-export type SelectUser = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
+export const verificationSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  code: z.string().min(6, "Invalid verification code"),
+});
+
+// Types for waitlist selections from database
+export type SelectWaitlist = typeof waitlist.$inferSelect;
+export type InsertWaitlist = typeof waitlist.$inferInsert;

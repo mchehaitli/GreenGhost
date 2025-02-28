@@ -1,10 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from 'cors';
 import { createServer, Server as HttpServer } from "http";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from "./auth";
-import { errorHandler } from "./middleware/error-handler";
+import { registerRoutes, log } from "./routes";
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -76,16 +73,15 @@ async function startServer() {
     });
 
     try {
-      log('Setting up authentication...');
-      setupAuth(app);
-      log('Authentication setup complete');
-
       log('Registering routes...');
       const server = registerRoutes(app);
       log('Routes registered successfully');
 
       // Add error handling middleware
-      app.use(errorHandler);
+      app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+        log('Error:', err.message);
+        res.status(500).json({ error: 'Internal server error' });
+      });
 
       // Setup Vite or static files after API routes,
       // but only for non-API routes
@@ -105,25 +101,24 @@ async function startServer() {
           res.sendFile(path.resolve(__dirname, '../dist/public/index.html'));
         });
       } else {
-        log('Setting up Vite development server...');
-        await setupVite(app, server);
-        log('Vite development server setup complete');
+        // Temporarily disabled Vite for testing
+        app.get('*', (req, res) => {
+          if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+          }
+          res.send('Server running in test mode - Vite disabled');
+        });
       }
 
       const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
       const port = await tryPort(startPort, server);
-      
-      log(`Server running at http://0.0.0.0:${port}`);
-      log('Environment:', process.env.NODE_ENV || 'development');
-      log('Database:', 'Connected and ready');
-      log('CORS:', 'enabled for all origins');
-      
-      return server;
 
       log(`Server running at http://0.0.0.0:${port}`);
       log('Environment:', process.env.NODE_ENV || 'development');
       log('Database:', 'Connected and ready');
       log('CORS:', 'enabled for all origins');
+
+      return server;
 
     } catch (error) {
       log('Error during server initialization:', error instanceof Error ? error.message : 'Unknown error');
