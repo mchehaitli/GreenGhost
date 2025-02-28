@@ -21,6 +21,8 @@ import {
   Settings,
   DollarSign,
   UserPlus,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -60,6 +62,8 @@ type WaitlistEntry = {
   notes?: string;
 };
 
+type SortDirection = 'asc' | 'desc';
+
 let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   '75033': {city: 'Frisco', state: 'TX'},
   // Add any other problematic ZIP codes here
@@ -81,6 +85,7 @@ export default function AdminPortal() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -429,6 +434,16 @@ export default function AdminPortal() {
     }
   };
 
+  const handleSort = () => {
+    setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+  };
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -532,7 +547,7 @@ export default function AdminPortal() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email / Sign-up Time</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>First Name</TableHead>
                     <TableHead>Last Name</TableHead>
                     <TableHead>Phone Number</TableHead>
@@ -541,26 +556,32 @@ export default function AdminPortal() {
                     <TableHead>State</TableHead>
                     <TableHead>ZIP Code</TableHead>
                     <TableHead>Notes</TableHead>
+                    <TableHead 
+                      onClick={handleSort}
+                      className="cursor-pointer hover:text-primary transition-colors duration-200"
+                    >
+                      Sign-up Date/Time
+                      {sortDirection === 'asc' ? (
+                        <ChevronUp className="ml-2 h-4 w-4 inline" />
+                      ) : (
+                        <ChevronDown className="ml-2 h-4 w-4 inline" />
+                      )}
+                    </TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEntries.map((entry) => (
+                  {sortedEntries.map((entry) => (
                     <TableRow 
                       key={entry.id}
                       className="transition-colors duration-200 hover:bg-primary/5 group"
                     >
                       <TableCell className="font-medium">
-                        <div>
-                          <Input
-                            value={unsavedChanges[entry.id]?.email ?? entry.email}
-                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                            className="mb-1 transition-all duration-200 group-hover:border-primary/50"
-                          />
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                          </div>
-                        </div>
+                        <Input
+                          value={unsavedChanges[entry.id]?.email ?? entry.email}
+                          onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
+                          className="transition-all duration-200 group-hover:border-primary/50"
+                        />
                       </TableCell>
                       <TableCell>
                         <Input
@@ -640,7 +661,23 @@ export default function AdminPortal() {
                               <FileText className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Notes</DialogTitle>
+                            </DialogHeader>
+                            <Textarea
+                              value={currentNotes}
+                              onChange={(e) => setCurrentNotes(e.target.value)}
+                            />
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setShowNotesDialog(false)}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={saveNotes}>Save</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </DialogContent>
                         </Dialog>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
