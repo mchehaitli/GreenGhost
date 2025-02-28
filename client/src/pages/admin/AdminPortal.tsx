@@ -215,6 +215,7 @@ export default function AdminPortal() {
     setIsAutoPopulating(true);
     let successCount = 0;
     let failCount = 0;
+    let failedZips: string[] = [];
 
     try {
       const entriesToUpdate = filteredAndSortedEntries.filter(
@@ -235,18 +236,27 @@ export default function AdminPortal() {
         // Validate ZIP code format
         if (!/^\d{5}$/.test(entry.zip_code)) {
           failCount++;
+          failedZips.push(`${entry.zip_code} (Invalid format)`);
           continue;
         }
 
         try {
           setLoadingZips(prev => ({ ...prev, [entry.id]: true }));
+
+          // Add delay between requests to avoid rate limiting
+          if (successCount + failCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+          }
+
           const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+          console.log(`ZIP API response for ${entry.zip_code}:`, response.status);
 
           if (!response.ok) {
             throw new Error(`ZIP code lookup failed: ${response.statusText}`);
           }
 
           const data = await response.json();
+          console.log('ZIP API data for', entry.zip_code, ':', data);
 
           if (data && data.places && data.places[0]) {
             const place = data.places[0];
@@ -257,22 +267,26 @@ export default function AdminPortal() {
             });
             successCount++;
           } else {
-            failCount++;
+            throw new Error('No location data found');
           }
         } catch (error) {
           failCount++;
+          failedZips.push(`${entry.zip_code} (${error instanceof Error ? error.message : 'Unknown error'})`);
           console.error(`Error processing ZIP code ${entry.zip_code}:`, error);
         } finally {
           setLoadingZips(prev => ({ ...prev, [entry.id]: false }));
         }
+      }
 
-        // Add delay between requests to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      let description = `Successfully updated ${successCount} entries.`;
+      if (failCount > 0) {
+        description += `\nFailed entries: ${failedZips.join(', ')}`;
       }
 
       toast({
         title: "Auto-population Complete",
-        description: `Successfully updated ${successCount} entries. ${failCount} entries failed.`,
+        description: description,
+        duration: 5000,
         variant: successCount > 0 ? "default" : "destructive"
       });
     } catch (error) {
