@@ -46,10 +46,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-
-type SortField = 'created_at' | 'zip_code';
-type SortDirection = 'asc' | 'desc';
-
 type WaitlistEntry = {
   id: number;
   email: string;
@@ -80,16 +76,11 @@ export default function AdminPortal() {
   const [currentNotes, setCurrentNotes] = useState("");
   const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
   const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
-  const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
-    field: 'created_at',
-    direction: 'desc'
-  });
   const [isAutoPopulating, setIsAutoPopulating] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
-
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -198,13 +189,6 @@ export default function AdminPortal() {
     }
   };
 
-  const handleSort = (field: SortField) => {
-    setSortConfig(current => ({
-      field,
-      direction: current.field === field && current.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
   const handleDelete = (id: number) => {
     setEntryToDelete(id);
     setDeleteDialogOpen(true);
@@ -218,33 +202,16 @@ export default function AdminPortal() {
     setEntryToDelete(null);
   };
 
-  const filteredAndSortedEntries = [...waitlistEntries]
-    .filter(entry => {
-      if (!searchTerm) return true;
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        entry.email.toLowerCase().includes(searchLower) ||
-        entry.first_name?.toLowerCase().includes(searchLower) ||
-        entry.last_name?.toLowerCase().includes(searchLower) ||
-        entry.zip_code?.includes(searchTerm)
-      );
-    })
-    .sort((a, b) => {
-      const { field, direction } = sortConfig;
-      const modifier = direction === 'asc' ? 1 : -1;
-
-      if (field === 'created_at') {
-        return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * modifier;
-      }
-
-      if (field === 'zip_code') {
-        const zipA = a.zip_code || '';
-        const zipB = b.zip_code || '';
-        return zipA.localeCompare(zipB) * modifier;
-      }
-
-      return 0;
-    });
+  const filteredEntries = waitlistEntries.filter(entry => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      entry.email.toLowerCase().includes(searchLower) ||
+      entry.first_name?.toLowerCase().includes(searchLower) ||
+      entry.last_name?.toLowerCase().includes(searchLower) ||
+      entry.zip_code?.includes(searchTerm)
+    );
+  });
 
   const handleCityStateFromZip = async (zip: string, entryId: number) => {
     // Only process if it's a valid 5-digit ZIP code
@@ -366,7 +333,7 @@ export default function AdminPortal() {
     let failedZips: string[] = [];
 
     try {
-      const entriesToUpdate = filteredAndSortedEntries.filter(
+      const entriesToUpdate = filteredEntries.filter(
         entry => entry.zip_code && (!entry.city || !entry.state)
       );
 
@@ -396,7 +363,6 @@ export default function AdminPortal() {
           if (successCount + failCount > 0) {
             await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
           }
-          
 
           // Check if this is a known problematic ZIP code
           if (knownZipCodeMappings[entry.zip_code]) {
@@ -500,7 +466,7 @@ export default function AdminPortal() {
   const handleExportToExcel = () => {
     try {
       const workbook = XLSX.utils.book_new();
-      const excelData = filteredAndSortedEntries.map(entry => ({
+      const excelData = filteredEntries.map(entry => ({
         'Email': entry.email,
         'Sign-up Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a"),
         'First Name': entry.first_name || '',
@@ -537,15 +503,6 @@ export default function AdminPortal() {
       </div>
     );
   }
-
-  const getSortIcon = (field: SortField) => {
-    if (sortConfig.field !== field) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return sortConfig.direction === 'asc' ?
-      <ChevronUp className="ml-2 h-4 w-4" /> :
-      <ChevronDown className="ml-2 h-4 w-4" />;
-  };
 
   return (
     <div className="container py-10">
@@ -642,32 +599,20 @@ export default function AdminPortal() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort('created_at')}
-                    >
-                      Email / Sign-up Time
-                      {getSortIcon('created_at')}
-                    </TableHead>
+                    <TableHead>Email / Sign-up Time</TableHead>
                     <TableHead>First Name</TableHead>
                     <TableHead>Last Name</TableHead>
                     <TableHead>Phone Number</TableHead>
                     <TableHead>Street Address</TableHead>
                     <TableHead>City</TableHead>
                     <TableHead>State</TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort('zip_code')}
-                    >
-                      ZIP Code
-                      {getSortIcon('zip_code')}
-                    </TableHead>
+                    <TableHead>ZIP Code</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedEntries.map((entry) => (
+                  {filteredEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
                         <div>
