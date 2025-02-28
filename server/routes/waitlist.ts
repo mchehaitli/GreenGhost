@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { log } from '../vite';
 import { requireAuth } from '../auth';
 import emailService from '../services/email';
+import { format, subHours, startOfDay, startOfMonth, startOfYear } from 'date-fns';
 
 const router = Router();
 
@@ -295,6 +296,78 @@ router.get('/api/waitlist', requireAuth, async (_req, res) => {
     return res.status(500).json({
       error: 'Server error',
       details: 'Failed to fetch entries'
+    });
+  }
+});
+
+// Analytics route (admin only)
+router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
+  try {
+    const now = new Date();
+    const oneHourAgo = subHours(now, 1);
+    const startOfToday = startOfDay(now);
+    const startOfThisMonth = startOfMonth(now);
+    const startOfThisYear = startOfYear(now);
+
+    // Get all entries within the last year
+    const entries = await db.query.waitlist.findMany({
+      where: eq(waitlist.verified, true),
+      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
+    });
+
+    // Calculate statistics
+    const hourly = {
+      total: entries.filter(entry => new Date(entry.created_at) >= oneHourAgo).length,
+      breakdown: Array.from({ length: 24 }, (_, i) => {
+        const hour = i;
+        const count = entries.filter(entry => {
+          const entryDate = new Date(entry.created_at);
+          return entryDate.getHours() === hour;
+        }).length;
+        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
+        return { hour, count, percentage };
+      })
+    };
+
+    const daily = {
+      total: entries.filter(entry => new Date(entry.created_at) >= startOfToday).length,
+      breakdown: Array.from({ length: 7 }, (_, i) => {
+        const date = format(new Date(now.getTime() - i * 24 * 60 * 60 * 1000), 'MMM dd');
+        const count = entries.filter(entry => 
+          format(new Date(entry.created_at), 'MMM dd') === date
+        ).length;
+        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
+        return { date, count, percentage };
+      })
+    };
+
+    const monthly = {
+      total: entries.filter(entry => new Date(entry.created_at) >= startOfThisMonth).length,
+      breakdown: Array.from({ length: 12 }, (_, i) => {
+        const month = format(new Date(now.getFullYear(), i), 'MMMM');
+        const count = entries.filter(entry => 
+          format(new Date(entry.created_at), 'MMMM') === month
+        ).length;
+        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
+        return { month, count, percentage };
+      })
+    };
+
+    const yearly = {
+      total: entries.filter(entry => new Date(entry.created_at) >= startOfThisYear).length
+    };
+
+    return res.json({
+      hourly,
+      daily,
+      monthly,
+      yearly
+    });
+  } catch (error) {
+    log('Error fetching analytics:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({
+      error: 'Server error',
+      details: 'Failed to fetch analytics data'
     });
   }
 });

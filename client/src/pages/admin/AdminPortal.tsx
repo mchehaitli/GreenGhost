@@ -23,6 +23,7 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
+  BarChart,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -106,6 +107,21 @@ export default function AdminPortal() {
     queryFn: () => fetch('/api/waitlist').then(res => res.json()),
     enabled: activeTab === "waitlist-entries" && !!user,
   });
+
+  // Add new query for analytics data
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading
+  } = useQuery({
+    queryKey: ['waitlist-analytics'],
+    queryFn: async () => {
+      const res = await fetch('/api/waitlist/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      return res.json();
+    },
+    enabled: activeTab === "waitlist-analytics"
+  });
+
 
   const updateEntryMutation = useMutation({
     mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
@@ -477,7 +493,12 @@ export default function AdminPortal() {
             <UserPlus className="w-4 h-4 mr-2" />
             Waitlist Entries
           </TabsTrigger>
+          <TabsTrigger value="waitlist-analytics">
+            <BarChart className="w-4 h-4 mr-2" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="email-templates">
+            <FileText className="w-4 h-4 mr-2" />
             Email Templates
           </TabsTrigger>
           <TabsTrigger value="settings">
@@ -638,102 +659,6 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-              <DialogContent className="w-[calc(100%-2rem)] md:w-[800px] max-w-2xl p-4 md:p-6">
-                <DialogHeader>
-                  <DialogTitle>Customer Details</DialogTitle>
-                </DialogHeader>
-                {selectedEntry && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label>First Name</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Last Name</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Phone Number</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Street Address</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>City</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'city', e.target.value)}
-                          className="mt-1"
-                          disabled={loadingZips[selectedEntry.id]}
-                        />
-                      </div>
-                      <div>
-                        <Label>State</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
-                          onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
-                          className="mt-1"
-                          disabled={loadingZips[selectedEntry.id]}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <Label>Notes</Label>
-                      <Textarea
-                        value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
-                        onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
-                        className="mt-1"
-                        rows={4}
-                      />
-                    </div>
-                  </div>
-                )}
-                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                  <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
-                    Close
-                  </Button>
-                  <Button 
-                    onClick={handleSaveChanges}
-                    disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </AlertDialogFooter>
-              </DialogContent>
-            </Dialog>
-
             <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
               <Button 
                 onClick={handleSaveChanges}
@@ -753,6 +678,119 @@ export default function AdminPortal() {
                   </>
                 )}
               </Button>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="waitlist-analytics" className="space-y-4">
+          <Card className="p-4 md:p-6 relative">
+            <LoadingOverlay 
+              isLoading={analyticsLoading} 
+              text="Loading analytics..."
+            />
+
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Waitlist Analytics</h2>
+                <p className="text-muted-foreground">Track signup trends across different time periods.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">Last Hour</h3>
+                  <p className="text-2xl font-bold mt-2">{analyticsData?.hourly?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">Today</h3>
+                  <p className="text-2xl font-bold mt-2">{analyticsData?.daily?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">This Month</h3>
+                  <p className="text-2xl font-bold mt-2">{analyticsData?.monthly?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">This Year</h3>
+                  <p className="text-2xl font-bold mt-2">{analyticsData?.yearly?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Hourly Breakdown</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Hour</TableHead>
+                          <TableHead>Signups</TableHead>
+                          <TableHead>Percentage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analyticsData?.hourly?.breakdown?.map((hour: any) => (
+                          <TableRow key={hour.hour}>
+                            <TableCell>{hour.hour}:00</TableCell>
+                            <TableCell>{hour.count}</TableCell>
+                            <TableCell>{hour.percentage}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Daily Breakdown</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Signups</TableHead>
+                          <TableHead>Percentage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analyticsData?.daily?.breakdown?.map((day: any) => (
+                          <TableRow key={day.date}>
+                            <TableCell>{day.date}</TableCell>
+                            <TableCell>{day.count}</TableCell>
+                            <TableCell>{day.percentage}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Monthly Breakdown</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Month</TableHead>
+                          <TableHead>Signups</TableHead>
+                          <TableHead>Percentage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analyticsData?.monthly?.breakdown?.map((month: any) => (
+                          <TableRow key={month.month}>
+                            <TableCell>{month.month}</TableCell>
+                            <TableCell>{month.count}</TableCell>
+                            <TableCell>{month.percentage}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>
