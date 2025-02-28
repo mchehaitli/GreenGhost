@@ -11,20 +11,27 @@ import Services from "@/pages/Services";
 import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
-import AdminPortalNew from "./pages/admin/AdminPortalNew";
+import AdminPortal from "./pages/admin/AdminPortal";
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Pricing from "@/pages/Pricing";
-import Login from "@/pages/Login";
+import AIReview from "@/pages/AIReview";
+import CaptureScreenshots from "@/pages/CaptureScreenshots";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
+import Login from "@/pages/Login";
 import { ProtectedRoute } from "@/lib/protected-route";
+
+// Helper for protected routes that preserves component type
+const ProtectedRouteWrapper = ({ component }: { component: React.ComponentType }) => (
+  <ProtectedRoute component={component} />
+);
 
 function Router() {
   const [location] = useLocation();
-
+  
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -39,7 +46,14 @@ function Router() {
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
       <Route path="/admin">
-        <ProtectedRoute component={AdminPortalNew} />
+        <ProtectedRouteWrapper component={AdminPortal} />
+      </Route>
+      {/* Protected routes - only accessible through admin portal */}
+      <Route path="/admin/ai-review">
+        <ProtectedRouteWrapper component={AIReview} />
+      </Route>
+      <Route path="/admin/capture">
+        <ProtectedRouteWrapper component={CaptureScreenshots} />
       </Route>
       <Route component={NotFound} />
     </Switch>

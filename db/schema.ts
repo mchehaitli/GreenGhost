@@ -7,7 +7,6 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
@@ -31,16 +30,6 @@ export const verificationTokens = pgTable("verification_tokens", {
   token: text("token").notNull(),
   expires_at: timestamp("expires_at").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-  used: boolean("used").default(false).notNull(),
-});
-
-// New table for password reset tokens
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  userId: serial("user_id").notNull(),
-  token: text("token").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
   used: boolean("used").default(false).notNull(),
 });
 
@@ -70,13 +59,6 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
   }),
 }));
 
-export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [passwordResetTokens.userId],
-    references: [users.id],
-  }),
-}));
-
 export const emailSegmentsRelations = relations(emailSegments, ({ one }) => ({
   template: one(emailTemplates, {
     fields: [emailSegments.template_id],
@@ -87,7 +69,6 @@ export const emailSegmentsRelations = relations(emailSegments, ({ one }) => ({
 // Zod schemas for validation
 export const insertUserSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 

@@ -5,6 +5,7 @@ import { eq, and, lt } from 'drizzle-orm';
 import { sendVerificationEmail, sendWelcomeEmail, verifyCode } from '../services/email';
 import { log } from '../vite';
 import { fromZodError } from 'zod-validation-error';
+import { requireAuth } from '../auth';
 
 const router = Router();
 
@@ -29,24 +30,8 @@ const cleanupExpiredEntries = async () => {
 // Run cleanup every minute
 setInterval(cleanupExpiredEntries, 60 * 1000);
 
-// Get all waitlist entries (no auth required now)
-router.get('/api/waitlist', async (_req, res) => {
-  try {
-    const entries = await db.query.waitlist.findMany({
-      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
-    });
-    return res.json(entries);
-  } catch (error) {
-    log('Error fetching waitlist entries:', error instanceof Error ? error.message : 'Unknown error');
-    return res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch entries'
-    });
-  }
-});
-
 // Delete waitlist entry (admin only)
-router.delete('/api/waitlist/:id', async (req, res) => {
+router.delete('/api/waitlist/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -62,7 +47,7 @@ router.delete('/api/waitlist/:id', async (req, res) => {
 });
 
 // Update waitlist entry (admin only)
-router.patch('/api/waitlist/:id', async (req, res) => {
+router.patch('/api/waitlist/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -280,5 +265,20 @@ router.post('/api/waitlist/verify', async (req, res) => {
   }
 });
 
+// Get all waitlist entries (admin only)
+router.get('/api/waitlist', requireAuth, async (_req, res) => {
+  try {
+    const entries = await db.query.waitlist.findMany({
+      orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
+    });
+    return res.json(entries);
+  } catch (error) {
+    log('Error fetching waitlist entries:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({
+      error: 'Server error',
+      details: 'Failed to fetch entries'
+    });
+  }
+});
 
 export default router;

@@ -1,37 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from 'cors';
-import { createServer, Server as HttpServer } from "http";
-import { registerRoutes, log } from "./routes";
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from "./auth";
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-async function tryPort(port: number, server: HttpServer, maxAttempts = 3): Promise<number> {
-  log('Attempting to start server...');
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      log(`Trying to bind to port ${port}...`);
-      await new Promise((resolve, reject) => {
-        server.listen(port, '0.0.0.0')
-          .once('listening', () => {
-            log(`Successfully bound to port ${port}`);
-            resolve(null);
-          })
-          .once('error', (error) => {
-            log(`Failed to bind to port ${port}: ${error.message}`);
-            reject(error);
-          });
-      });
-      return port;
-    } catch (error) {
-      if (attempt === maxAttempts - 1) throw error;
-      port++;
-      log(`Port ${port - 1} in use, trying port ${port}...`);
-    }
-  }
-  throw new Error('Could not find available port');
-}
 
 async function startServer() {
   try {
@@ -52,15 +27,8 @@ async function startServer() {
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
 
-    // Parse JSON and URL-encoded bodies
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
-
-    // API route handler - ensure JSON responses for /api routes
-    app.use('/api', (req, res, next) => {
-      res.setHeader('Content-Type', 'application/json');
-      next();
-    });
 
     // Request logging middleware
     app.use((req, res, next) => {
@@ -73,52 +41,77 @@ async function startServer() {
     });
 
     try {
+      log('Setting up authentication...');
+      setupAuth(app);
+      log('Authentication setup complete');
+
       log('Registering routes...');
       const server = registerRoutes(app);
       log('Routes registered successfully');
 
-      // Add error handling middleware
-      app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-        log('Error:', err.message);
-        res.status(500).json({ error: 'Internal server error' });
+      // Error handling middleware
+      app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+        console.error('Error:', err);
+        const status = err.status || err.statusCode || 500;
+        const message = err.message || "Internal Server Error";
+        res.status(status).json({ error: message });
       });
 
-      // Setup Vite or static files after API routes,
-      // but only for non-API routes
       if (process.env.NODE_ENV === 'production') {
         log('Setting up static file serving...');
-        app.use((req, res, next) => {
-          if (req.path.startsWith('/api/')) {
-            return next();
-          }
-          express.static(path.resolve(__dirname, '../dist/public'))(req, res, next);
-        });
-
-        app.get('*', (req, res, next) => {
-          if (req.path.startsWith('/api/')) {
-            return next();
-          }
+        app.use(express.static(path.resolve(__dirname, '../dist/public')));
+        app.get('*', (_req, res) => {
           res.sendFile(path.resolve(__dirname, '../dist/public/index.html'));
         });
       } else {
-        // Temporarily disabled Vite for testing
-        app.get('*', (req, res) => {
-          if (req.path.startsWith('/api/')) {
-            return res.status(404).json({ error: 'API endpoint not found' });
-          }
-          res.send('Server running in test mode - Vite disabled');
-        });
+        log('Setting up Vite development server...');
+        await setupVite(app, server);
+        log('Vite development server setup complete');
       }
 
+      // Try different ports if 5000 is in use
+      const tryPort = async (port: number, maxAttempts = 3): Promise<number> => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            await new Promise((resolve, reject) => {
+              server.listen(port).once('listening', resolve).once('error', reject);
+            });
+            return port;
+          } catch (error) {
+            if (attempt === maxAttempts - 1) throw error;
+            port++;
+            log(`Port ${port - 1} in use, trying port ${port}...`);
+          }
+        }
+        throw new Error('Could not find available port');
+      };
+
       const startPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-      const port = await tryPort(startPort, server);
+      const port = await tryPort(startPort);
 
       log(`Server running at http://0.0.0.0:${port}`);
       log('Environment:', process.env.NODE_ENV || 'development');
-      log('Database:', 'Connected and ready');
       log('CORS:', 'enabled for all origins');
 
-      return server;
+      // Handle server errors
+      server.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.syscall !== 'listen') {
+          throw error;
+        }
+
+        switch (error.code) {
+          case 'EACCES':
+            console.error(`Port ${port} requires elevated privileges`);
+            process.exit(1);
+            break;
+          case 'EADDRINUSE':
+            console.error(`Port ${port} is already in use`);
+            process.exit(1);
+            break;
+          default:
+            throw error;
+        }
+      });
 
     } catch (error) {
       log('Error during server initialization:', error instanceof Error ? error.message : 'Unknown error');

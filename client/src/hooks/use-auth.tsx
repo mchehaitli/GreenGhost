@@ -32,19 +32,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     queryFn: async () => {
+      console.log("Fetching user auth data...");
       try {
         const response = await fetch("/api/user", {
           credentials: 'include'
         });
 
+        console.log(`Auth response status: ${response.status}`);
+
         if (!response.ok) {
           if (response.status === 401) {
+            console.log("User not authenticated");
             return null;
           }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const userData = await response.json();
+        console.log("User authenticated:", userData);
         return userData;
       } catch (err) {
         console.error("Auth query error:", err);
@@ -56,6 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+  
+  // Log authentication state changes for debugging
+  useEffect(() => {
+    console.log("Auth state:", { 
+      status, 
+      isLoading, 
+      isError, 
+      user: user ? `User ${user.username}` : 'No user'
+    });
+  }, [status, isLoading, isError, user]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
@@ -64,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({
+          username: credentials.username,
+          password: credentials.password
+        }),
         credentials: 'include'
       });
 
@@ -75,12 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return response.json();
     },
-    onSuccess: async (data) => {
-      // Update the user data in the cache
-      queryClient.setQueryData(["/api/user"], data);
-      // Refetch to ensure we have the latest data
-      await refetch();
-
+    onSuccess: () => {
+      refetch();
       toast({
         title: "Logged in successfully",
         description: "Welcome back!",
@@ -107,11 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
-      // Clear the user data from the cache
-      queryClient.setQueryData(["/api/user"], null);
-      // Refetch to ensure we have the latest data
       refetch();
-
       toast({
         title: "Logged out successfully",
       });
