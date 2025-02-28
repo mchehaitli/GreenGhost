@@ -590,27 +590,31 @@ export default function AdminPortal() {
                       onClick={() => handleSort('zip_code')}
                       className="cursor-pointer hover:text-primary transition-colors duration-200"
                     >
-                      ZIP Code
-                      {sortField === 'zip_code' && (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="ml-2 h-4 w-4 inline" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4 inline" />
-                        )
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span>ZIP Code</span>
+                        {sortField === 'zip_code' && (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="ml-2 h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                          )
+                        )}
+                      </div>
                     </TableHead>
                     <TableHead 
                       onClick={() => handleSort('created_at')}
                       className="cursor-pointer hover:text-primary transition-colors duration-200"
                     >
-                      Sign-up Date/Time
-                      {sortField === 'created_at' && (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="ml-2 h-4 w-4 inline" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4 inline" />
-                        )
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span>Sign-up Date/Time</span>
+                        {sortField === 'created_at' && (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="ml-2 h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                          )
+                        )}
+                      </div>
                     </TableHead>
                     <TableHead className="w-[200px]">Actions</TableHead>
                   </TableRow>
