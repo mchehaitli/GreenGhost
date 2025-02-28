@@ -573,6 +573,21 @@ export default function AdminPortal() {
     }
   };
 
+  // Update the care plans query
+  const {
+    data: plans,
+    isLoading: plansLoading,
+    error: plansError
+  } = useQuery({
+    queryKey: ['care-plans'],
+    queryFn: async () => {
+      const response = await fetch('/api/care-plans');
+      if (!response.ok) {
+        throw new Error('Failed to fetch care plans');
+      }
+      return response.json();
+    },
+  });
 
   const updatePlanMutation = useMutation({
     mutationFn: async ({ id, price }: { id: number; price: number }) => {
@@ -581,7 +596,7 @@ export default function AdminPortal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base_price: price }),
       });
-      if (!res.ok) throw new Error('Failed to update plan price');
+      if (!res.ok) throw new Error('Failed to update price');
       return res.json();
     },
     onSuccess: () => {
@@ -617,17 +632,6 @@ export default function AdminPortal() {
     }
   };
 
-  const {
-    data: plans,
-    isLoading: plansLoading,
-  } = useQuery<CarePlan[]>({
-    queryKey: ['care-plans'],
-    queryFn: async () => {
-      const res = await fetch('/api/care-plans');
-      if (!res.ok) throw new Error('Failed to fetch care plans');
-      return res.json();
-    },
-  });
 
   const fetchPlans = async () => {
     try {
@@ -891,8 +895,7 @@ export default function AdminPortal() {
                       </div>
                       <div>
                         <Label>Phone Number</Label>
-                        <Input
-                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
+                        <Input                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
                           onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
                           className="mt-1"
                         />
