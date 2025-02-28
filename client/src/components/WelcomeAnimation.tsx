@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import confetti from "canvas-confetti";
 
 interface WelcomeAnimationProps {
-  email?: string; // Made email optional
   onComplete: () => void;
 }
 
-const WelcomeAnimation = ({ email, onComplete }: WelcomeAnimationProps) => {
+const WelcomeAnimation = ({ onComplete }: WelcomeAnimationProps) => {
   useEffect(() => {
     // Trigger confetti effect
     confetti({
@@ -56,7 +55,7 @@ const WelcomeAnimation = ({ email, onComplete }: WelcomeAnimationProps) => {
           >
             <h2 className="text-2xl font-bold">Welcome to GreenGhost Tech!</h2>
             <p className="text-muted-foreground">
-              Thank you for joining our waitlist{email ? <> , <span className="text-primary font-medium">{email}</span></> : ""}!
+              Thank you for joining our waitlist!
             </p>
             <p className="text-sm text-muted-foreground">
               You're now entered for a chance to win a full year of FREE automated lawn maintenance!
