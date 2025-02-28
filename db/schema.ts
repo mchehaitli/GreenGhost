@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -65,17 +65,6 @@ export const services = pgTable("services", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Add care plans table with proper validation
-export const carePlans = pgTable("care_plans", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  base_price: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
-  features: jsonb("features").notNull().$type<string[]>(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // Relations
 export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
   waitlist: one(waitlist, {
@@ -113,22 +102,6 @@ export const insertEmailTemplateSchema = z.object({
   html_content: z.string().min(1, "Email content is required"),
 });
 
-// Add validation schemas for care plans
-export const insertCarePlanSchema = z.object({
-  name: z.string().min(1, "Plan name is required"),
-  description: z.string().min(1, "Plan description is required"),
-  base_price: z.number().positive("Price must be positive"),
-  features: z.array(z.string()).min(1, "At least one feature is required"),
-});
-
-// Update the validation schema for care plan updates
-export const updateCarePlanSchema = z.object({
-  base_price: z.number().positive("Price must be positive").or(
-    z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format").transform(val => parseFloat(val))
-  ),
-});
-
-
 // Export types
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -154,7 +127,3 @@ export type SelectEmailSegment = typeof emailSegments.$inferSelect;
 export const selectServiceSchema = createSelectSchema(services);
 export type InsertService = typeof services.$inferInsert;
 export type SelectService = typeof services.$inferSelect;
-
-export const selectCarePlanSchema = createSelectSchema(carePlans);
-export type InsertCarePlan = typeof carePlans.$inferInsert;
-export type SelectCarePlan = typeof carePlans.$inferSelect;

@@ -67,16 +67,6 @@ type WaitlistEntry = {
 type SortDirection = 'asc' | 'desc';
 type SortField = 'created_at' | 'zip_code';
 
-type CarePlan = {
-  id: number;
-  name: string;
-  description: string;
-  base_price: number;
-  features: string[];
-  created_at: string;
-  updated_at: string;
-};
-
 let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   '75033': {city: 'Frisco', state: 'TX'},
   // Add any other problematic ZIP codes here
@@ -114,9 +104,6 @@ export default function AdminPortal() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [unsavedPricingChanges, setUnsavedPricingChanges] = useState<Record<number, number>>({});
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
-  const [unsavedPlanPrices, setUnsavedPlanPrices] = useState<Record<number, number>>({});
-  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
-
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -573,100 +560,6 @@ export default function AdminPortal() {
     }
   };
 
-  // Update the care plans query
-  const {
-    data: plans,
-    isLoading: plansLoading,
-    error: plansError
-  } = useQuery({
-    queryKey: ['care-plans'],
-    queryFn: async () => {
-      const response = await fetch('/api/care-plans');
-      if (!response.ok) {
-        throw new Error('Failed to fetch care plans');
-      }
-      return response.json();
-    },
-  });
-
-  const updatePlanMutation = useMutation({
-    mutationFn: async ({ id, price }: { id: number; price: number }) => {
-      const res = await fetch(`/api/care-plans/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base_price: price }),
-      });
-      if (!res.ok) throw new Error('Failed to update price');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['care-plans'] });
-      toast({
-        title: "Plan price updated",
-        description: "Care plan price has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update plan price",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleUpdatePlan = async (id: number) => {
-    setIsUpdatingPlan(true);
-    try {
-      const price = unsavedPlanPrices[id];
-      if (price === undefined) return;
-
-      const response = await fetch(`/api/care-plans/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base_price: price }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update plan price');
-      }
-
-      // Invalidate both care plans and subscription plans queries
-      await queryClient.invalidateQueries({ queryKey: ['care-plans'] });
-      // Add this to ensure the pricing page gets updated
-      await queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
-    } finally {
-      setIsUpdatingPlan(false);
-    }
-  };
-
-
-  const fetchPlans = async () => {
-    try {
-      const response = await fetch('/api/plans');
-      if (!response.ok) {
-        throw new Error('Failed to fetch plans');
-      }
-      const data = await response.json();
-      setPlans(data);
-    } catch (error) {
-      console.error("Error fetching plans:", error);
-      toast({
-        title: "Failed to fetch plans",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'pricing') {
-      fetchPlans();
-    }
-  }, [activeTab]);
-
-
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -878,6 +771,102 @@ export default function AdminPortal() {
               </div>
             </div>
 
+            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+              <DialogContent className="w-[calc(100%-2rem)] md:w-[800px] max-w-2xl p-4 md:p-6">
+                <DialogHeader>
+                  <DialogTitle>Customer Details</DialogTitle>
+                </DialogHeader>
+                {selectedEntry && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label>First Name</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Last Name</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Phone Number</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Street Address</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>City</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'city', e.target.value)}
+                          className="mt-1"
+                          disabled={loadingZips[selectedEntry.id]}
+                        />
+                      </div>
+                      <div>
+                        <Label>State</Label>
+                        <Input
+                          value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
+                          onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
+                          className="mt-1"
+                          disabled={loadingZips[selectedEntry.id]}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Notes</Label>
+                      <Textarea
+                        value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
+                        onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
+                        className="mt-1"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                )}
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+                    Close
+                  </Button>
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
               <Button 
                 onClick={handleSaveChanges}
@@ -918,162 +907,105 @@ export default function AdminPortal() {
         <TabsContent value="pricing" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
             <LoadingOverlay 
-              isLoading={servicesLoading || plansLoading} 
-              text="Loading pricing data..."
+              isLoading={servicesLoading} 
+              text="Loading services..."
             />
             <LoadingOverlay 
-              isLoading={isUpdatingPrice || isUpdatingPlan} 
+              isLoading={isUpdatingPrice} 
               text="Updating prices..."
             />
 
-            <div className="flex flex-col gap-6">
-              {/* Care Plans Section */}
+            <div className="flex flex-col gap-4">
               <div>
-                <h2 className="text-xl font-semibold mb-2">Care Plans</h2>
-                <p className="text-muted-foreground mb-4">Manage your main care plan pricing.</p>
+                <h2 className="text-xl font-semibold">Pricing Management</h2>
+                <p className="text-muted-foreground">Update service prices per square foot.</p>
+              </div>
 
-                <div className="grid md:grid-cols-3 gap-4 mb-6">
-                  {plans?.map((plan) => (
-                    <Card key={plan.id} className="p-4">
-                      <div className="flex flex-col gap-3">
-                        <div>
-                          <h3 className="font-semibold text-lg">{plan.name}</h3>
-                          <p className="text-sm text-muted-foreground">{plan.description}</p>
-                        </div>
-                        <div>
-                          <Label>Base Price ($)</Label>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={unsavedPlanPrices[plan.id] ?? plan.base_price}
-                              onChange={(e) => {
-                                const value = parseFloat(e.target.value);
-                                if (!isNaN(value) && value >= 0) {
-                                  setUnsavedPlanPrices(prev => ({
-                                    ...prev,
-                                    [plan.id]: value
-                                  }));
+              <div className="overflow-x-auto">
+                <div className="rounded-md border min-w-[800px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Service Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="w-[150px]">Price ($/sqft)</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services?.map((service) => (
+                        <TableRow 
+                          key={service.id}
+                          className="transition-colors duration-200 hover:bg-primary/5 group"
+                        >
+                          <TableCell className="font-medium">{service.name}</TableCell>
+                          <TableCell>{service.description}</TableCell>
+                          <TableCell>{service.category}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={
+                                  unsavedPricingChanges[service.id] !== undefined 
+                                    ? unsavedPricingChanges[service.id] 
+                                    : service.price_per_sqft
                                 }
-                              }}
-                              className="transition-all duration-200"
-                            />
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  if (!isNaN(value) && value >= 0) {
+                                    setUnsavedPricingChanges(prev => ({
+                                      ...prev,
+                                      [service.id]: value
+                                    }));
+                                  }
+                                }}
+                                className="transition-all duration-200 group-hover:border-primary/50"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleUpdatePlan(plan.id)}
-                              disabled={unsavedPlanPrices[plan.id] === undefined}
-                              className="shrink-0"
+                              onClick={() => handleUpdateService(service.id)}
+                              disabled={unsavedPricingChanges[service.id] === undefined}
+                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
                             >
-                              <Save className="h-4 w-4" />
+                              {updateServiceMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4" />
+                              )}
                             </Button>
-                          </div>
-                        </div>
-                        <div className="text-sm">
-                          <strong>Features:</strong>
-                          <ul className="list-disc list-inside mt-1 text-muted-foreground">
-                            {plan.features.map((feature, idx) => (
-                              <li key={idx}>{feature}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 
-              {/* Services Section */}
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Additional Services</h2>
-                <p className="text-muted-foreground mb-4">Update service prices per square foot.</p>
-
-                <div className="overflow-x-auto">
-                  <div className="rounded-md border min-w-[800px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Service Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead className="w-[150px]">Price ($/sqft)</TableHead>
-                          <TableHead className="w-[100px]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {services?.map((service) => (
-                          <TableRow 
-                            key={service.id}
-                            className="transition-colors duration-200 hover:bg-primary/5 group"
-                          >
-                            <TableCell className="font-medium">{service.name}</TableCell>
-                            <TableCell>{service.description}</TableCell>
-                            <TableCell>{service.category}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={
-                                    unsavedPricingChanges[service.id] !== undefined 
-                                      ? unsavedPricingChanges[service.id] 
-                                      : service.price_per_sqft
-                                  }
-                                  onChange={(e) => {
-                                    const value = parseFloat(e.target.value);
-                                    if (!isNaN(value) && value >= 0) {
-                                      setUnsavedPricingChanges(prev => ({
-                                        ...prev,
-                                        [service.id]: value
-                                      }));
-                                    }
-                                  }}
-                                  className="transition-all duration-200 group-hover:border-primary/50"
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleUpdateService(service.id)}
-                                disabled={unsavedPricingChanges[service.id] === undefined}
-                                className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                              >
-                                {updateServiceMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Save className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-4">
-                  <Button
-                    onClick={handleSaveAllPricing}
-                    disabled={Object.keys(unsavedPricingChanges).length === 0 || isUpdatingPrice}
-                    size="lg"
-                    className="relative"
-                  >
-                    {isUpdatingPrice ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save All Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
+              <div className="flex justify-end mt-4">
+                <Button
+                  onClick={handleSaveAllPricing}
+                  disabled={Object.keys(unsavedPricingChanges).length === 0 || isUpdatingPrice}
+                  size="lg"
+                  className="relative"
+                >
+                  {isUpdatingPrice ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save All Changes
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </Card>
