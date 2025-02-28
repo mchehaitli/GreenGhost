@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -32,7 +32,8 @@ import {
   ArrowUpDown,
   ChevronUp,
   ChevronDown,
-  Loader2
+  Loader2,
+  MapPin
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -68,6 +69,7 @@ export default function AdminPortal() {
     field: 'created_at',
     direction: 'desc'
   });
+  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -160,15 +162,12 @@ export default function AdminPortal() {
 
       if (data && data.places && data.places[0]) {
         const place = data.places[0];
-        updateEntryMutation.mutate({
+        await updateEntryMutation.mutateAsync({
           id: entryId,
           city: place['place name'],
           state: place['state abbreviation'],
         });
-        toast({
-          title: "Location Updated",
-          description: `Found ${place['place name']}, ${place['state abbreviation']}`,
-        });
+        return true;
       } else {
         throw new Error('No location data found for this ZIP code');
       }
@@ -178,8 +177,55 @@ export default function AdminPortal() {
         description: error instanceof Error ? error.message : "Please enter city and state manually",
         variant: "destructive"
       });
+      return false;
     } finally {
       setLoadingZips(prev => ({ ...prev, [entryId]: false }));
+    }
+  };
+
+  const handleAutoPopulateAll = async () => {
+    setIsAutoPopulating(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      const entriesToUpdate = filteredAndSortedEntries.filter(
+        entry => entry.zip_code && (!entry.city || !entry.state)
+      );
+
+      if (entriesToUpdate.length === 0) {
+        toast({
+          title: "No entries to update",
+          description: "All entries with ZIP codes already have city and state information.",
+        });
+        return;
+      }
+
+      for (const entry of entriesToUpdate) {
+        if (entry.zip_code) {
+          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
+          if (success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      toast({
+        title: "Auto-population Complete",
+        description: `Successfully updated ${successCount} entries. ${failCount} entries failed.`,
+        variant: successCount > 0 ? "default" : "destructive"
+      });
+    } catch (error) {
+      toast({
+        title: "Auto-population Failed",
+        description: "An error occurred while updating locations.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAutoPopulating(false);
     }
   };
 
@@ -205,8 +251,8 @@ export default function AdminPortal() {
     if (sortConfig.field !== field) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
-    return sortConfig.direction === 'asc' ? 
-      <ChevronUp className="ml-2 h-4 w-4" /> : 
+    return sortConfig.direction === 'asc' ?
+      <ChevronUp className="ml-2 h-4 w-4" /> :
       <ChevronDown className="ml-2 h-4 w-4" />;
   };
 
@@ -276,13 +322,30 @@ export default function AdminPortal() {
                   <SlidersHorizontal className="h-4 w-4" />
                 </Button>
               </div>
+              <Button
+                onClick={handleAutoPopulateAll}
+                disabled={isAutoPopulating}
+                className="ml-4"
+              >
+                {isAutoPopulating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Auto Populate City/State
+                  </>
+                )}
+              </Button>
             </div>
 
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead 
+                    <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort('created_at')}
                     >
@@ -295,7 +358,7 @@ export default function AdminPortal() {
                     <TableHead>Street Address</TableHead>
                     <TableHead>City</TableHead>
                     <TableHead>State</TableHead>
-                    <TableHead 
+                    <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort('zip_code')}
                     >
