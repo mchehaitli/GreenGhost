@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PricingCalculator from "@/components/PricingCalculator";
 
 const plans = [
@@ -79,7 +79,7 @@ const Pricing = () => {
       <section className="py-20">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <motion.h1 
+            <motion.h1
               className="text-4xl font-bold mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -87,7 +87,7 @@ const Pricing = () => {
             >
               Simple, Transparent Pricing
             </motion.h1>
-            <motion.p 
+            <motion.p
               className="text-xl text-muted-foreground"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -139,8 +139,8 @@ const Pricing = () => {
                         </li>
                       ))}
                     </ul>
-                    <Button 
-                      asChild 
+                    <Button
+                      asChild
                       className="w-full mt-auto"
                       variant={plan.popular ? "outline" : "outline"}
                     >
@@ -179,8 +179,7 @@ const Pricing = () => {
                     <CardContent className="p-6">
                       <div className="flex flex-col gap-4">
                         <div>
-                          <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
-                          <p className="text-muted-foreground text-sm">{service.description}</p>
+                          <h3 className="text-xl font-semibold">{service.name}</h3>
                         </div>
                         <div className="mt-auto pt-4 border-t border-border/50">
                           <div className="flex items-baseline gap-1">
