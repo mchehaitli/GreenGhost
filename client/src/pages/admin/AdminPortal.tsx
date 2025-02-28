@@ -65,6 +65,11 @@ type WaitlistEntry = {
   notes?: string;
 };
 
+let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
+  '75033': {city: 'Frisco', state: 'TX'},
+  // Add any other problematic ZIP codes here
+};
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -257,12 +262,18 @@ export default function AdminPortal() {
       setLoadingZips(prev => ({ ...prev, [entryId]: true }));
       console.log(`Fetching data for ZIP: ${zip}`);
 
+      // Check if this is a known problematic ZIP code
+      if (knownZipCodeMappings[zip]) {
+        console.log('Using fallback data for known ZIP:', zip);
+        await updateEntryMutation.mutateAsync([{id: entryId, city: knownZipCodeMappings[zip].city, state: knownZipCodeMappings[zip].state}]);
+        return true;
+      }
+
       // Try API with retries and exponential backoff
       let retries = 3;
       let response;
       while (retries >= 0) {
         try {
-          // Try an alternative API if the primary one fails
           response = await fetch(`https://api.zippopotam.us/us/${zip}`);
           console.log(`ZIP API response for ${zip}:`, {
             status: response.status,
@@ -282,13 +293,6 @@ export default function AdminPortal() {
 
           retries--;
           if (retries < 0) {
-            // For specific ZIP codes that might be having issues with the API
-            // Try fallback data for known problematic ZIPs
-            if (zip === '75033') {
-              console.log('Using fallback data for known ZIP:', zip);
-              await updateEntryMutation.mutateAsync([{id: entryId, city: 'Frisco', state: 'TX'}]);
-              return true;
-            }
             throw new Error(`ZIP code lookup failed after all retries: ${response?.statusText || 'Unknown error'}`);
           }
         } catch (fetchError) {
@@ -361,10 +365,6 @@ export default function AdminPortal() {
     let successCount = 0;
     let failCount = 0;
     let failedZips: string[] = [];
-    let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
-      '75033': {city: 'Frisco', state: 'TX'},
-      // Add any other problematic ZIP codes here
-    };
 
     try {
       const entriesToUpdate = filteredAndSortedEntries.filter(
