@@ -4,6 +4,7 @@ import { z } from 'zod';
 // User table definition
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
   username: text('username').notNull().unique(),
   password: text('password').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
@@ -11,6 +12,7 @@ export const users = pgTable('users', {
 
 // Zod schema for user creation/validation
 export const insertUserSchema = z.object({
+  email: z.string().email("Invalid email format"),
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
