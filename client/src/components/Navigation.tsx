@@ -193,7 +193,7 @@ const Navigation = () => {
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={(e) => {
+                      onClick={() => {
                         setOpen(false);
                         setShowWaitlist(true);
                       }}
