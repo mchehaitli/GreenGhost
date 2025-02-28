@@ -636,8 +636,8 @@ const WaitlistPage = () => {
       accessorKey: "created_at",
       header: "Created At",
       cell: ({ row }) => {
-        const date = new Date(row.original.created_at);
-        return format(date, "MMM dd, yyyy 'at' h:mm:ss a");
+        const date = new Date(row.getValue("created_at"));
+        return format(date, "PPpp"); // This format will show date and time in a detailed format
       },
     },
     {
