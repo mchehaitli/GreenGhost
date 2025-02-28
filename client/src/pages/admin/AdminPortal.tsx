@@ -91,18 +91,26 @@ export default function AdminPortal() {
       if (!entry.id) {
         throw new Error('Entry ID is required for updates');
       }
+
+      console.log('Updating entry:', entry); // Debug log
+
       const response = await fetch(`/api/waitlist/${entry.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
       });
+
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to update entry');
+        console.error('Update failed:', responseData); // Debug log
+        throw new Error(responseData.error || 'Failed to update entry');
       }
-      return response.json();
+
+      return responseData;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Update successful:', data); // Debug log
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
     },
     onError: (error) => {
@@ -172,12 +180,17 @@ export default function AdminPortal() {
 
       if (data && data.places && data.places[0]) {
         const place = data.places[0];
-        await updateEntryMutation.mutateAsync({
-          id: entryId,
-          city: place['place name'],
-          state: place['state abbreviation'],
-        });
-        return true;
+        try {
+          await updateEntryMutation.mutateAsync({
+            id: entryId,
+            city: place['place name'],
+            state: place['state abbreviation'],
+          });
+          return true;
+        } catch (error) {
+          console.error('Failed to update entry with ZIP data:', error);
+          throw error;
+        }
       } else {
         throw new Error('No location data found for this ZIP code');
       }

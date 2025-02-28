@@ -54,21 +54,43 @@ router.patch('/api/waitlist/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid ID' });
     }
 
-    const { email, name, phone_number, address, notes } = req.body;
+    const { 
+      email, 
+      first_name, 
+      last_name, 
+      phone_number, 
+      street_address, 
+      city, 
+      state, 
+      zip_code, 
+      notes 
+    } = req.body;
+
+    console.log('Updating waitlist entry:', { id, ...req.body }); // Debug log
 
     await db.update(waitlist)
       .set({
         email,
-        name,
+        first_name,
+        last_name,
         phone_number,
-        address,
+        street_address,
+        city,
+        state,
+        zip_code,
         notes,
       })
       .where(eq(waitlist.id, id));
 
-    return res.sendStatus(200);
+    const updatedEntry = await db.query.waitlist.findFirst({
+      where: eq(waitlist.id, id)
+    });
+
+    console.log('Updated entry:', updatedEntry); // Debug log
+
+    return res.json(updatedEntry);
   } catch (error) {
-    log('Error updating waitlist entry:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error updating waitlist entry:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(500).json({ error: 'Failed to update entry' });
   }
 });
