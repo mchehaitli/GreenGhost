@@ -478,13 +478,13 @@ export default function AdminPortal() {
   }
 
   return (
-    <div className="container py-10">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container py-4 md:py-10 px-4 md:px-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Portal</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Admin Portal</h1>
           <p className="text-muted-foreground mt-1">Manage your platform content and settings</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
           <Badge variant="outline" className="flex gap-1 px-3 py-1">
             <User className="w-3 h-3" /> {user?.username}
           </Badge>
@@ -509,8 +509,8 @@ export default function AdminPortal() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
           <TabsTrigger value="waitlist-entries">
             <UserPlus className="w-4 h-4 mr-2" />
             Waitlist Entries
@@ -527,7 +527,7 @@ export default function AdminPortal() {
         </TabsList>
 
         <TabsContent value="waitlist-entries" className="space-y-4">
-          <Card className="p-6 relative">
+          <Card className="p-4 md:p-6 relative">
             <LoadingOverlay 
               isLoading={waitlistLoading} 
               text="Loading entries..."
@@ -541,9 +541,9 @@ export default function AdminPortal() {
               text="Auto-populating locations..."
             />
 
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="relative flex-1 max-w-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div className="w-full md:w-auto">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search entries..."
@@ -553,7 +553,7 @@ export default function AdminPortal() {
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
                 <Button
                   variant="outline"
                   onClick={handleExportToExcel}
@@ -581,112 +581,110 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead 
-                      onClick={() => handleSort('zip_code')}
-                      className="cursor-pointer hover:text-primary transition-colors duration-200"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>ZIP Code</span>
+            <div className="overflow-x-auto">
+              <div className="rounded-md border min-w-[800px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead 
+                        onClick={() => handleSort('zip_code')}
+                        className="cursor-pointer hover:text-primary transition-colors duration-200"
+                      >
+                        ZIP Code
                         {sortField === 'zip_code' && (
                           sortDirection === 'asc' ? (
-                            <ChevronUp className="ml-2 h-4 w-4" />
+                            <ChevronUp className="ml-2 h-4 w-4 inline-block" />
                           ) : (
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                            <ChevronDown className="ml-2 h-4 w-4 inline-block" />
                           )
                         )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      onClick={() => handleSort('created_at')}
-                      className="cursor-pointer hover:text-primary transition-colors duration-200"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>Sign-up Date/Time</span>
+                      </TableHead>
+                      <TableHead 
+                        onClick={() => handleSort('created_at')}
+                        className="cursor-pointer hover:text-primary transition-colors duration-200"
+                      >
+                        Sign-up Date/Time
                         {sortField === 'created_at' && (
                           sortDirection === 'asc' ? (
-                            <ChevronUp className="ml-2 h-4 w-4" />
+                            <ChevronUp className="ml-2 h-4 w-4 inline-block" />
                           ) : (
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                            <ChevronDown className="ml-2 h-4 w-4 inline-block" />
                           )
                         )}
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[200px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedEntries.map((entry) => (
-                    <TableRow 
-                      key={entry.id}
-                      className="transition-colors duration-200 hover:bg-primary/5 group"
-                    >
-                      <TableCell className="font-medium">
-                        <Input
-                          value={unsavedChanges[entry.id]?.email ?? entry.email}
-                          onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                          className="transition-all duration-200 group-hover:border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
-                            onChange={(e) => {
-                              const zip = e.target.value;
-                              handleFieldChange(entry.id, 'zip_code', zip);
-                              if (zip.length === 5) {
-                                handleCityStateFromZip(zip, entry.id);
-                              }
-                            }}
-                            className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
-                          />
-                          {loadingZips[entry.id] && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewDetails(entry)}
-                            className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(entry.id)}
-                            className="transition-all duration-200 group-hover:bg-destructive/90"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead className="w-[200px]">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedEntries.map((entry) => (
+                      <TableRow 
+                        key={entry.id}
+                        className="transition-colors duration-200 hover:bg-primary/5 group"
+                      >
+                        <TableCell className="font-medium">
+                          <Input
+                            value={unsavedChanges[entry.id]?.email ?? entry.email}
+                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
+                            className="transition-all duration-200 group-hover:border-primary/50"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
+                              onChange={(e) => {
+                                const zip = e.target.value;
+                                handleFieldChange(entry.id, 'zip_code', zip);
+                                if (zip.length === 5) {
+                                  handleCityStateFromZip(zip, entry.id);
+                                }
+                              }}
+                              className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
+                            />
+                            {loadingZips[entry.id] && (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col md:flex-row items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewDetails(entry)}
+                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(entry.id)}
+                              className="transition-all duration-200 group-hover:bg-destructive/90"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100%-2rem)] md:w-[800px] max-w-2xl p-4 md:p-6">
                 <DialogHeader>
                   <DialogTitle>Customer Details</DialogTitle>
                 </DialogHeader>
                 {selectedEntry && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-4">
                       <div>
                         <Label>First Name</Label>
@@ -752,7 +750,7 @@ export default function AdminPortal() {
                     </div>
                   </div>
                 )}
-                <AlertDialogFooter>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                   <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
                     Close
                   </Button>
@@ -776,7 +774,7 @@ export default function AdminPortal() {
               </DialogContent>
             </Dialog>
 
-            <div className="fixed bottom-8 right-8">
+            <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
               <Button 
                 onClick={handleSaveChanges}
                 disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
