@@ -9,10 +9,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useGesture } from '@use-gesture/react';
 import {
   Search,
   MapPin,
-  FileText,
   Save,
   Loader2,
   Trash2,
@@ -92,6 +92,7 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [rowStates, setRowStates] = useState<Record<number, { offset: number }>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -469,6 +470,30 @@ export default function AdminPortal() {
     setShowDetailsDialog(true);
   };
 
+  const handleRowSwipe = (entry: WaitlistEntry, movement: number) => {
+    setRowStates(prev => ({
+      ...prev,
+      [entry.id]: { offset: Math.min(Math.max(movement, -200), 0) }
+    }));
+  };
+
+  const handleSwipeEnd = (entry: WaitlistEntry) => {
+    const offset = rowStates[entry.id]?.offset || 0;
+    if (offset <= -150) {
+      // Delete action
+      handleDelete(entry.id);
+    } else if (offset <= -75) {
+      // View details action
+      handleViewDetails(entry);
+    }
+    // Reset position
+    setRowStates(prev => ({
+      ...prev,
+      [entry.id]: { offset: 0 }
+    }));
+  };
+
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -620,8 +645,38 @@ export default function AdminPortal() {
                     {sortedEntries.map((entry) => (
                       <TableRow 
                         key={entry.id}
-                        className="transition-colors duration-200 hover:bg-primary/5 group"
+                        className="transition-colors duration-200 hover:bg-primary/5 group relative overflow-hidden"
+                        style={{
+                          transform: `translateX(${rowStates[entry.id]?.offset || 0}px)`,
+                          transition: 'transform 0.2s ease-out'
+                        }}
+                        {...useGesture({
+                          onDrag: ({ movement: [mx], down }) => {
+                            if (down) handleRowSwipe(entry, mx);
+                            else handleSwipeEnd(entry);
+                          },
+                        }, {
+                          drag: {
+                            axis: 'x',
+                            bounds: { left: -200, right: 0 },
+                          }
+                        })}
                       >
+                        {/* Background action indicators */}
+                        <div 
+                          className="absolute inset-y-0 right-0 flex items-center justify-end px-4 bg-destructive"
+                          style={{ 
+                            width: '200px', 
+                            transform: `translateX(${(rowStates[entry.id]?.offset || 0) + 200}px)`,
+                            opacity: Math.min(Math.abs((rowStates[entry.id]?.offset || 0) / 200), 1)
+                          }}
+                        >
+                          <div className="flex items-center gap-2 text-white">
+                            <Eye className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
+                          </div>
+                        </div>
+
                         <TableCell className="font-medium">
                           <Input
                             value={unsavedChanges[entry.id]?.email ?? entry.email}
@@ -650,8 +705,8 @@ export default function AdminPortal() {
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                           {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col md:flex-row items-center gap-2">
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
@@ -826,8 +881,7 @@ export default function AdminPortal() {
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the waitlist entry and all associated data.
             </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
+          </AlertDialogHeader>          <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
