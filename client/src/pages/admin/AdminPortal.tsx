@@ -10,12 +10,40 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Settings, DollarSign, UserPlus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  User, 
+  Settings, 
+  DollarSign, 
+  UserPlus, 
+  Search,
+  SlidersHorizontal,
+  FileText,
+  Save
+} from 'lucide-react';
+import { format } from 'date-fns';
 
 type WaitlistEntry = {
   id: number;
   email: string;
   created_at: string;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  notes?: string;
 };
 
 type EmailTemplate = {
@@ -40,6 +68,11 @@ export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState("waitlist-entries");
   const [newAdminUsername, setNewAdminUsername] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [currentNotes, setCurrentNotes] = useState("");
+  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,70 +86,71 @@ export default function AdminPortal() {
   } = useQuery<WaitlistEntry[]>({
     queryKey: ['waitlist'],
     queryFn: () => fetch('/api/waitlist').then(res => res.json()),
-    enabled: activeTab === "waitlist-entries" && !!user, // Changed key
+    enabled: activeTab === "waitlist-entries" && !!user,
   });
 
-  const {
-    data: emailTemplates = [],
-    isLoading: templatesLoading,
-  } = useQuery<EmailTemplate[]>({
-    queryKey: ['email-templates'],
-    queryFn: () => fetch('/api/email-templates').then(res => res.json()),
-    enabled: activeTab === "email-templates" && !!user,
-  });
-
-  const {
-    data: pricingData = [],
-    isLoading: pricingLoading,
-  } = useQuery<PricingData[]>({
-    queryKey: ['pricing'],
-    queryFn: () => fetch('/api/pricing').then(res => res.json()),
-    enabled: activeTab === "pricing" && !!user,
-  });
-
-  const addAdminMutation = useMutation({
-    mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await fetch('/api/admin/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-      if (!response.ok) throw new Error('Failed to create admin');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Admin created successfully" });
-      setNewAdminUsername("");
-      setNewAdminPassword("");
-    },
-    onError: () => {
-      toast({
-        title: "Failed to create admin",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const updatePricingMutation = useMutation({
-    mutationFn: async (data: PricingData) => {
-      const response = await fetch(`/api/pricing/${data.id}`, {
+  const updateEntryMutation = useMutation({
+    mutationFn: async (entry: Partial<WaitlistEntry>) => {
+      const response = await fetch(`/api/waitlist/${entry.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(entry),
       });
-      if (!response.ok) throw new Error('Failed to update pricing');
+      if (!response.ok) throw new Error('Failed to update entry');
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing'] });
-      toast({ title: "Pricing updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      toast({ title: "Entry updated successfully" });
     },
     onError: () => {
       toast({
-        title: "Failed to update pricing",
+        title: "Failed to update entry",
         variant: "destructive"
       });
     },
+  });
+
+  const handleCityStateFromZip = async (zip: string, entryId: number) => {
+    try {
+      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      const data = await response.json();
+      if (data && data.places && data.places[0]) {
+        const place = data.places[0];
+        updateEntryMutation.mutate({
+          id: entryId,
+          city: place['place name'],
+          state: place['state abbreviation'],
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to fetch location data",
+        description: "Please enter city and state manually",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveNotes = () => {
+    if (currentEntryId) {
+      updateEntryMutation.mutate({
+        id: currentEntryId,
+        notes: currentNotes,
+      });
+      setShowNotesDialog(false);
+    }
+  };
+
+  const filteredEntries = waitlistEntries.filter(entry => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      entry.email.toLowerCase().includes(searchLower) ||
+      entry.first_name?.toLowerCase().includes(searchLower) ||
+      entry.last_name?.toLowerCase().includes(searchLower) ||
+      entry.zip_code?.includes(searchTerm)
+    );
   });
 
   if (authLoading) {
@@ -178,8 +212,178 @@ export default function AdminPortal() {
 
         <TabsContent value="waitlist-entries" className="space-y-4">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Waitlist Entries</h2>
-            <p className="text-muted-foreground">Ready for your customization requirements.</p>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search entries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button variant="outline" size="icon">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>First Name</TableHead>
+                    <TableHead>Last Name</TableHead>
+                    <TableHead>Phone Number</TableHead>
+                    <TableHead>Street Address</TableHead>
+                    <TableHead>City</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>ZIP Code</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          {entry.email}
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.first_name || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              first_name: e.target.value,
+                            });
+                          }}
+                          className="max-w-[150px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.last_name || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              last_name: e.target.value,
+                            });
+                          }}
+                          className="max-w-[150px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.phone_number || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              phone_number: e.target.value,
+                            });
+                          }}
+                          className="max-w-[150px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.street_address || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              street_address: e.target.value,
+                            });
+                          }}
+                          className="max-w-[200px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.city || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              city: e.target.value,
+                            });
+                          }}
+                          className="max-w-[150px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.state || ''}
+                          onChange={(e) => {
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              state: e.target.value,
+                            });
+                          }}
+                          className="max-w-[80px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={entry.zip_code || ''}
+                          onChange={(e) => {
+                            const zip = e.target.value;
+                            updateEntryMutation.mutate({
+                              id: entry.id,
+                              zip_code: zip,
+                            });
+                            if (zip.length === 5) {
+                              handleCityStateFromZip(zip, entry.id);
+                            }
+                          }}
+                          className="max-w-[100px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setCurrentNotes(entry.notes || '');
+                                setCurrentEntryId(entry.id);
+                              }}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Notes for {entry.email}</DialogTitle>
+                            </DialogHeader>
+                            <Textarea
+                              value={currentNotes}
+                              onChange={(e) => setCurrentNotes(e.target.value)}
+                              placeholder="Add notes here..."
+                              className="min-h-[200px]"
+                            />
+                            <div className="flex justify-end gap-2 mt-4">
+                              <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
+                                Cancel
+                              </Button>
+                              <Button onClick={saveNotes}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Save Notes
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         </TabsContent>
 
