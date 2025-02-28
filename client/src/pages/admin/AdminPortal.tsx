@@ -172,21 +172,37 @@ export default function AdminPortal() {
       setLoadingZips(prev => ({ ...prev, [entryId]: true }));
       console.log(`Fetching data for ZIP: ${zip}`);
 
-      // Try API with retries
-      let retries = 2;
+      // Try API with retries and exponential backoff
+      let retries = 3;
       let response;
       while (retries >= 0) {
-        response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-        console.log(`ZIP API response status: ${response.status}`);
+        try {
+          response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+          console.log(`ZIP API response for ${zip}:`, {
+            status: response.status,
+            statusText: response.statusText
+          });
 
-        if (response.ok) break;
+          if (response.ok) break;
 
-        if (retries > 0) {
-          // Wait longer between retries
+          // If we get rate limited, wait longer
+          if (response.status === 429) {
+            const backoffTime = Math.pow(2, 3 - retries) * 2000; // Exponential backoff
+            console.log(`Rate limited, waiting ${backoffTime}ms before retry`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+
+          retries--;
+          if (retries < 0) {
+            throw new Error(`ZIP code lookup failed after all retries: ${response.statusText}`);
+          }
+        } catch (fetchError) {
+          console.error(`Fetch error for ZIP ${zip}:`, fetchError);
+          if (retries < 0) throw fetchError;
           await new Promise(resolve => setTimeout(resolve, 3000));
           retries--;
-        } else {
-          throw new Error(`ZIP code lookup failed after retries: ${response.statusText}`);
         }
       }
 
@@ -263,20 +279,37 @@ export default function AdminPortal() {
             await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
           }
 
-          // Try API with retries
-          let retries = 2;
+          // Try API with retries and exponential backoff
+          let retries = 3;
           let response;
           while (retries >= 0) {
-            response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
-            console.log(`ZIP API response for ${entry.zip_code}:`, response.status);
+            try {
+              response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+              console.log(`ZIP API response for ${entry.zip_code}:`, {
+                status: response.status,
+                statusText: response.statusText
+              });
 
-            if (response.ok) break;
+              if (response.ok) break;
 
-            if (retries > 0) {
+              // If we get rate limited, wait longer
+              if (response.status === 429) {
+                const backoffTime = Math.pow(2, 3 - retries) * 2000; // Exponential backoff
+                console.log(`Rate limited, waiting ${backoffTime}ms before retry`);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
+              } else {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+
+              retries--;
+              if (retries < 0) {
+                throw new Error(`ZIP code lookup failed after all retries: ${response.statusText}`);
+              }
+            } catch (fetchError) {
+              console.error(`Fetch error for ZIP ${entry.zip_code}:`, fetchError);
+              if (retries < 0) throw fetchError;
               await new Promise(resolve => setTimeout(resolve, 3000));
               retries--;
-            } else {
-              throw new Error(`ZIP code lookup failed after retries: ${response.statusText}`);
             }
           }
 
