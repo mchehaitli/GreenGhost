@@ -19,7 +19,6 @@ import {
   Download,
   User,
   Settings,
-  DollarSign,
   UserPlus,
   ChevronUp,
   ChevronDown,
@@ -46,7 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 
@@ -72,16 +71,6 @@ let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   // Add any other problematic ZIP codes here
 };
 
-type Service = {
-  id: number;
-  name: string;
-  description: string;
-  price_per_sqft: number;
-  category: string;
-  created_at: string;
-  updated_at: string;
-};
-
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -102,8 +91,6 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [unsavedPricingChanges, setUnsavedPricingChanges] = useState<Record<number, number>>({});
-  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -126,7 +113,6 @@ export default function AdminPortal() {
       try {
         const results = await Promise.all(
           entries.map(async (entry) => {
-            console.log('Sending update request:', entry);
             const response = await fetch(`/api/waitlist/${entry.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
@@ -136,7 +122,6 @@ export default function AdminPortal() {
             const responseData = await response.json();
 
             if (!response.ok) {
-              console.error('Update failed:', responseData);
               throw new Error(responseData.details || responseData.error || 'Failed to update entry');
             }
 
@@ -157,7 +142,6 @@ export default function AdminPortal() {
       });
     },
     onError: (error) => {
-      console.error('Update entries error:', error);
       toast({
         title: "Failed to save changes",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -235,8 +219,36 @@ export default function AdminPortal() {
     );
   });
 
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    const modifier = sortDirection === 'asc' ? 1 : -1;
+
+    if (sortField === 'created_at') {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return (dateA - dateB) * modifier;
+    } else {
+      // ZIP code sorting
+      const zipA = a.zip_code || '';
+      const zipB = b.zip_code || '';
+      return zipA.localeCompare(zipB) * modifier;
+    }
+  });
+
+  const handleViewDetails = (entry: WaitlistEntry) => {
+    setSelectedEntry(entry);
+    setShowDetailsDialog(true);
+  };
+
   const handleCityStateFromZip = async (zip: string, entryId: number) => {
-    // Only process if it's a valid 5-digit ZIP code
     if (!/^\d{5}$/.test(zip)) {
       toast({
         title: "Invalid ZIP Code",
@@ -248,32 +260,25 @@ export default function AdminPortal() {
 
     try {
       setLoadingZips(prev => ({ ...prev, [entryId]: true }));
-      console.log(`Fetching data for ZIP: ${zip}`);
 
-      // Check if this is a known problematic ZIP code
       if (knownZipCodeMappings[zip]) {
-        console.log('Using fallback data for known ZIP:', zip);
-        await updateEntryMutation.mutateAsync([{id: entryId, city: knownZipCodeMappings[zip].city, state: knownZipCodeMappings[zip].state}]);
+        await updateEntryMutation.mutateAsync([{
+          id: entryId,
+          city: knownZipCodeMappings[zip].city,
+          state: knownZipCodeMappings[zip].state
+        }]);
         return true;
       }
 
-      // Try API with retries and exponential backoff
       let retries = 3;
       let response;
       while (retries >= 0) {
         try {
           response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-          console.log(`ZIP API response for ${zip}:`, {
-            status: response.status,
-            statusText: response.statusText
-          });
-
           if (response.ok) break;
 
-          // If we get rate limited, wait longer
           if (response.status === 429) {
-            const backoffTime = Math.pow(2, 3 - retries) * 2000; // Exponential backoff
-            console.log(`Rate limited, waiting ${backoffTime}ms before retry`);
+            const backoffTime = Math.pow(2, 3 - retries) * 2000;
             await new Promise(resolve => setTimeout(resolve, backoffTime));
           } else {
             await new Promise(resolve => setTimeout(resolve, 3000));
@@ -284,7 +289,6 @@ export default function AdminPortal() {
             throw new Error(`ZIP code lookup failed after all retries: ${response?.statusText || 'Unknown error'}`);
           }
         } catch (fetchError) {
-          console.error(`Fetch error for ZIP ${zip}:`, fetchError);
           if (retries < 0) throw fetchError;
           await new Promise(resolve => setTimeout(resolve, 3000));
           retries--;
@@ -295,41 +299,27 @@ export default function AdminPortal() {
         throw new Error('Failed to get response from ZIP API');
       }
 
-      let data;
-      try {
-        data = await response.json();
-        console.log('ZIP API response data for', zip, ':', data);
-      } catch (jsonError) {
-        console.error('Error parsing JSON response:', jsonError);
-        throw new Error('Failed to parse ZIP API response');
-      }
+      const data = await response.json();
 
       if (data && data.places && data.places.length > 0 && data.places[0]) {
         const place = data.places[0];
         if (place['place name'] && place['state abbreviation']) {
-          try {
-            await updateEntryMutation.mutateAsync([{
-              id: entryId, 
-              city: place['place name'], 
-              state: place['state abbreviation']
-            }]);
-            toast({
-              title: "ZIP Code Validated",
-              description: `Updated to ${place['place name']}, ${place['state abbreviation']}`,
-              variant: "default"
-            });
-            return true;
-          } catch (error) {
-            console.error('Failed to update entry with ZIP data:', error);
-            throw error;
-          }
+          await updateEntryMutation.mutateAsync([{
+            id: entryId,
+            city: place['place name'],
+            state: place['state abbreviation']
+          }]);
+          toast({
+            title: "ZIP Code Validated",
+            description: `Updated to ${place['place name']}, ${place['state abbreviation']}`,
+            variant: "default"
+          });
+          return true;
         } else {
           throw new Error('Invalid location data format in API response');
         }
       } else {
-        // Check if we have the "post code" field but not "places"
         if (data && data['post code'] === zip) {
-          // Some API responses might have a different format
           throw new Error('API returned data but in an unexpected format');
         } else {
           throw new Error('No location data found for this ZIP code');
@@ -378,14 +368,12 @@ export default function AdminPortal() {
             failCount++;
             failedZips.push(entry.zip_code);
           }
-          // Add delay between requests
           if (successCount + failCount < entriesToUpdate.length) {
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
         } catch (error) {
           failCount++;
           failedZips.push(entry.zip_code);
-          console.error(`Error processing ZIP ${entry.zip_code}:`, error);
         }
       }
 
@@ -401,7 +389,6 @@ export default function AdminPortal() {
         variant: successCount > 0 ? "default" : "destructive"
       });
     } catch (error) {
-      console.error('Error in handleAutoPopulateAll:', error);
       toast({
         title: "Auto-population Failed",
         description: "An error occurred while updating locations.",
@@ -409,13 +396,6 @@ export default function AdminPortal() {
       });
     } finally {
       setIsAutoPopulating(false);
-    }
-  };
-
-  const saveNotes = () => {
-    if (currentEntryId) {
-      updateEntryMutation.mutateAsync([{id: currentEntryId, notes: currentNotes}]);
-      setShowNotesDialog(false);
     }
   };
 
@@ -443,120 +423,11 @@ export default function AdminPortal() {
         description: "Waitlist entries have been exported to Excel.",
       });
     } catch (error) {
-      console.error('Export error:', error);
       toast({
         title: "Export Failed",
         description: "Failed to export waitlist entries.",
         variant: "destructive"
       });
-    }
-  };
-
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1;
-
-    if (sortField === 'created_at') {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return (dateA - dateB) * modifier;
-    } else {
-      // ZIP code sorting
-      const zipA = a.zip_code || '';
-      const zipB = b.zip_code || '';
-      return zipA.localeCompare(zipB) * modifier;
-    }
-  });
-
-  const handleViewDetails = (entry: WaitlistEntry) => {
-    setSelectedEntry(entry);
-    setShowDetailsDialog(true);
-  };
-
-  const {
-    data: services,
-    isLoading: servicesLoading,
-  } = useQuery<Service[]>({
-    queryKey: ['services'],
-    queryFn: async () => {
-      const res = await fetch('/api/services');
-      if (!res.ok) throw new Error('Failed to fetch services');
-      return res.json();
-    },
-  });
-
-  const updateServiceMutation = useMutation({
-    mutationFn: async ({ id, price }: { id: number; price: number }) => {
-      const res = await fetch(`/api/services/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price_per_sqft: price }),
-      });
-      if (!res.ok) throw new Error('Failed to update price');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      toast({
-        title: "Price updated",
-        description: "Service price has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update price",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleUpdateService = async (id: number) => {
-    const newPrice = unsavedPricingChanges[id];
-    if (newPrice === undefined) return;
-
-    setIsUpdatingPrice(true);
-    try {
-      await updateServiceMutation.mutateAsync({ id, price: newPrice });
-      setUnsavedPricingChanges(prev => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
-    } finally {
-      setIsUpdatingPrice(false);
-    }
-  };
-
-  const handleSaveAllPricing = async () => {
-    setIsUpdatingPrice(true);
-    try {
-      await Promise.all(
-        Object.entries(unsavedPricingChanges).map(([id, price]) =>
-          updateServiceMutation.mutateAsync({ id: Number(id), price })
-        )
-      );
-      setUnsavedPricingChanges({});
-      toast({
-        title: "All prices updated",
-        description: "All service prices have been updated successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to update prices",
-        description: "Some price updates failed. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdatingPrice(false);
     }
   };
 
@@ -605,10 +476,6 @@ export default function AdminPortal() {
           <TabsTrigger value="waitlist-entries">
             <UserPlus className="w-4 h-4 mr-2" />
             Waitlist Entries
-          </TabsTrigger>
-          <TabsTrigger value="pricing">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Pricing
           </TabsTrigger>
           <TabsTrigger value="email-templates">
             Email Templates
@@ -900,117 +767,9 @@ export default function AdminPortal() {
         <TabsContent value="settings">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Settings</h2>
-            <p className="text-muted-foreground">Manage your application settings here.</p>
+            <p className="text-muted-foreground">Configure your application settings here.</p>
           </Card>
         </TabsContent>
-
-        <TabsContent value="pricing" className="space-y-4">
-          <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay 
-              isLoading={servicesLoading} 
-              text="Loading services..."
-            />
-            <LoadingOverlay 
-              isLoading={isUpdatingPrice} 
-              text="Updating prices..."
-            />
-
-            <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">Pricing Management</h2>
-                <p className="text-muted-foreground">Update service prices per square foot.</p>
-              </div>
-
-              <div className="overflow-x-auto">
-                <div className="rounded-md border min-w-[800px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Service Name</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="w-[150px]">Price ($/sqft)</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services?.map((service) => (
-                        <TableRow 
-                          key={service.id}
-                          className="transition-colors duration-200 hover:bg-primary/5 group"
-                        >
-                          <TableCell className="font-medium">{service.name}</TableCell>
-                          <TableCell>{service.description}</TableCell>
-                          <TableCell>{service.category}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={
-                                  unsavedPricingChanges[service.id] !== undefined 
-                                    ? unsavedPricingChanges[service.id] 
-                                    : service.price_per_sqft
-                                }
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  if (!isNaN(value) && value >= 0) {
-                                    setUnsavedPricingChanges(prev => ({
-                                      ...prev,
-                                      [service.id]: value
-                                    }));
-                                  }
-                                }}
-                                className="transition-all duration-200 group-hover:border-primary/50"
-                              />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUpdateService(service.id)}
-                              disabled={unsavedPricingChanges[service.id] === undefined}
-                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                            >
-                              {updateServiceMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Save className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-4">
-                <Button
-                  onClick={handleSaveAllPricing}
-                  disabled={Object.keys(unsavedPricingChanges).length === 0 || isUpdatingPrice}
-                  size="lg"
-                  className="relative"
-                >
-                  {isUpdatingPrice ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save All Changes
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
       </Tabs>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1018,7 +777,7 @@ export default function AdminPortal() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the waitlist entry and all associated data.
+              This action cannot be undone. This will permanently delete the waitlist entry.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
