@@ -69,54 +69,14 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Fixed port handling
-      const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+      // Always use port 5000
+      const port = 5000;
 
-      let isListening = false;
-      let retries = 0;
-      const maxRetries = 3;
-
-      while (!isListening && retries < maxRetries) {
-        try {
-          await new Promise<void>((resolve, reject) => {
-            const cleanup = () => {
-              server.removeListener('error', onError);
-              server.removeListener('listening', onListening);
-            };
-
-            const onError = (error: NodeJS.ErrnoException) => {
-              cleanup();
-              if (error.code === 'EADDRINUSE') {
-                log(`Port ${port + retries} is in use`);
-                reject(new Error(`Port ${port + retries} is already in use`));
-              } else {
-                reject(error);
-              }
-            };
-
-            const onListening = () => {
-              cleanup();
-              resolve();
-            };
-
-            server.once('error', onError);
-            server.once('listening', onListening);
-
-            server.listen(port + retries, '0.0.0.0');
-          });
-
-          isListening = true;
-          log(`Server running at http://0.0.0.0:${port + retries}`);
-          log('Environment:', process.env.NODE_ENV || 'development');
-          log('CORS:', 'enabled for all origins');
-
-        } catch (error) {
-          if (retries === maxRetries - 1) {
-            throw new Error(`Could not find an available port after ${maxRetries} attempts`);
-          }
-          retries++;
-        }
-      }
+      server.listen(port, '0.0.0.0', () => {
+        log(`Server running at http://0.0.0.0:${port}`);
+        log('Environment:', process.env.NODE_ENV || 'development');
+        log('CORS:', 'enabled for all origins');
+      });
 
     } catch (error) {
       log('Error during server initialization:', error instanceof Error ? error.message : 'Unknown error');
