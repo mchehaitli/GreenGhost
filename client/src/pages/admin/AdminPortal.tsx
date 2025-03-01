@@ -25,6 +25,9 @@ import {
   ChevronDown,
   Eye,
   BarChart,
+  Mail,
+  CheckCircle,
+  Users
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -47,9 +50,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type WaitlistEntry = {
   id: number;
@@ -93,6 +99,13 @@ export default function AdminPortal() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
+  const [selectAllRecipients, setSelectAllRecipients] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
+  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | null>(null);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -448,6 +461,46 @@ export default function AdminPortal() {
     }
   };
 
+  const filteredWaitlistEntries = recipientSearchTerm
+    ? waitlistEntries.filter(entry =>
+        entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
+      )
+    : waitlistEntries;
+
+  const handleSendEmails = async () => {
+    try {
+      setIsSendingEmails(true);
+      const recipients = Array.from(selectedRecipients);
+
+      const response = await fetch('/api/email/send-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template: selectedTemplate as string, //Type assertion to remove type error
+          recipients: recipients
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send emails');
+      }
+
+      toast({
+        title: "Success",
+        description: `Sent ${recipients.length} email${recipients.length > 1 ? 's' : ''} successfully.`,
+      });
+      setSendEmailDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send emails",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingEmails(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -799,11 +852,20 @@ export default function AdminPortal() {
         <TabsContent value="email-templates">
           <Card className="p-4 md:p-6 relative">
             <div className="flex flex-col gap-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
-                <p className="text-muted-foreground">
-                  Manage automated email templates for different events in your application.
-                </p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
+                  <p className="text-muted-foreground">
+                    Manage automated email templates for different events in your application.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setSendEmailDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  Send Custom Email
+                </Button>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -835,7 +897,7 @@ export default function AdminPortal() {
                 </Card>
 
                 <Card className="p-4">
-                  <h3 className="text-lg font-medium mb-4">Verification Email</h3>
+                  <h3 className="text-lgfont-medium mb-4">Verification Email</h3>
                   <EmailTemplateEditor
                     initialData={{
                       name: "Verification Email",
@@ -874,6 +936,131 @@ export default function AdminPortal() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Send Custom Email</DialogTitle>
+            <DialogDescription>
+              Send a custom email to selected waitlist subscribers
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="selectAll"
+                checked={selectAllRecipients}
+                onCheckedChange={(checked) => {
+                  setSelectAllRecipients(!!checked);
+                  if (checked) {
+                    setSelectedRecipients(new Set(waitlistEntries.map(e => e.email)));
+                  } else {
+                    setSelectedRecipients(new Set());
+                  }
+                }}
+              />
+              <label
+                htmlFor="selectAll"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Select All Recipients ({waitlistEntries.length})
+              </label>
+            </div>
+
+            {!selectAllRecipients && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search subscribers..."
+                    value={recipientSearchTerm}
+                    onChange={(e) => setRecipientSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                  <div className="space-y-2">
+                    {filteredWaitlistEntries.map((entry) => (
+                      <div key={entry.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`recipient-${entry.id}`}
+                          checked={selectedRecipients.has(entry.email)}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedRecipients);
+                            if (checked) {
+                              newSelected.add(entry.email);
+                            } else {
+                              newSelected.delete(entry.email);
+                            }
+                            setSelectedRecipients(newSelected);
+                          }}
+                        />
+                        <label
+                          htmlFor={`recipient-${entry.id}`}
+                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {entry.email}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                <div className="text-sm text-muted-foreground">
+                  Selected {selectedRecipients.size} of {waitlistEntries.length} subscribers
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Template</label>
+              <Select
+                value={selectedTemplate}
+                onValueChange={setSelectedTemplate}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="welcome">Welcome Email</SelectItem>
+                  <SelectItem value="verification">Verification Email</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSendEmailDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendEmails}
+              disabled={
+                isSendingEmails ||
+                selectedRecipients.size === 0 ||
+                !selectedTemplate
+              }
+            >
+              {isSendingEmails ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Email{selectedRecipients.size > 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
