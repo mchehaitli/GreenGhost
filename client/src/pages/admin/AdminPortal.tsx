@@ -56,6 +56,14 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { DatePicker } from "@/components/ui/date-picker";
+import { addDays, subDays, isWithinInterval } from 'date-fns';
 
 type WaitlistEntry = {
   id: number;
@@ -69,6 +77,18 @@ type WaitlistEntry = {
   state?: string;
   zip_code?: string;
   notes?: string;
+};
+
+type DateRange = {
+  from: Date;
+  to: Date;
+} | null;
+
+type SegmentationCriteria = {
+  dateRange: DateRange;
+  states: string[];
+  cities: string[];
+  zipCodes: string[];
 };
 
 type SortDirection = 'asc' | 'desc';
@@ -105,6 +125,12 @@ export default function AdminPortal() {
   const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | null>(null);
   const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
+    dateRange: null,
+    states: [],
+    cities: [],
+    zipCodes: [],
+  });
 
 
   useEffect(() => {
@@ -461,6 +487,49 @@ export default function AdminPortal() {
     }
   };
 
+  const getFilteredRecipients = () => {
+    return waitlistEntries.filter(entry => {
+      // Filter by search term if exists
+      if (recipientSearchTerm && !entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by date range
+      if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
+        const entryDate = new Date(entry.created_at);
+        if (!isWithinInterval(entryDate, {
+          start: segmentationCriteria.dateRange.from,
+          end: segmentationCriteria.dateRange.to
+        })) {
+          return false;
+        }
+      }
+
+      // Filter by state
+      if (segmentationCriteria.states.length > 0 && entry.state) {
+        if (!segmentationCriteria.states.includes(entry.state)) {
+          return false;
+        }
+      }
+
+      // Filter by city
+      if (segmentationCriteria.cities.length > 0 && entry.city) {
+        if (!segmentationCriteria.cities.includes(entry.city)) {
+          return false;
+        }
+      }
+
+      // Filter by ZIP code
+      if (segmentationCriteria.zipCodes.length > 0 && entry.zip_code) {
+        if (!segmentationCriteria.zipCodes.includes(entry.zip_code)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
   const filteredWaitlistEntries = recipientSearchTerm
     ? waitlistEntries.filter(entry =>
         entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
@@ -563,12 +632,12 @@ export default function AdminPortal() {
 
         <TabsContent value="waitlist-entries" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay 
-              isLoading={waitlistLoading} 
+            <LoadingOverlay
+              isLoading={waitlistLoading}
               text="Loading entries..."
             />
-            <LoadingOverlay 
-              isLoading={isSaving} 
+            <LoadingOverlay
+              isLoading={isSaving}
               text="Saving changes..."
             />
             <LoadingOverlay
@@ -622,7 +691,7 @@ export default function AdminPortal() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email</TableHead>
-                      <TableHead 
+                      <TableHead
                         onClick={() => handleSort('zip_code')}
                         className="cursor-pointer hover:text-primary transition-colors duration-200"
                       >
@@ -635,7 +704,7 @@ export default function AdminPortal() {
                           )
                         )}
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         onClick={() => handleSort('created_at')}
                         className="cursor-pointer hover:text-primary transition-colors duration-200"
                       >
@@ -653,7 +722,7 @@ export default function AdminPortal() {
                   </TableHeader>
                   <TableBody>
                     {sortedEntries.map((entry) => (
-                      <TableRow 
+                      <TableRow
                         key={entry.id}
                         className="transition-colors duration-200 hover:bg-primary/5 group"
                       >
@@ -714,7 +783,7 @@ export default function AdminPortal() {
             </div>
 
             <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
-              <Button 
+              <Button
                 onClick={handleSaveChanges}
                 disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
                 size="lg"
@@ -738,8 +807,8 @@ export default function AdminPortal() {
 
         <TabsContent value="waitlist-analytics" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay 
-              isLoading={analyticsLoading} 
+            <LoadingOverlay
+              isLoading={analyticsLoading}
               text="Loading analytics..."
             />
 
@@ -859,7 +928,7 @@ export default function AdminPortal() {
                     Manage automated email templates for different events in your application.
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => setSendEmailDialogOpen(true)}
                   className="flex items-center gap-2"
                 >
@@ -897,7 +966,7 @@ export default function AdminPortal() {
                 </Card>
 
                 <Card className="p-4">
-                  <h3 className="text-lgfont-medium mb-4">Verification Email</h3>
+                  <h3 className="text-lg font-medium mb-4">Verification Email</h3>
                   <EmailTemplateEditor
                     initialData={{
                       name: "Verification Email",
@@ -938,15 +1007,142 @@ export default function AdminPortal() {
       </Tabs>
 
       <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>Send Custom Email</DialogTitle>
             <DialogDescription>
-              Send a custom email to selected waitlist subscribers
+              Send a custom email to segmented waitlist subscribers
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4 space-y-4">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="segmentation">
+                <AccordionTrigger className="text-sm font-medium">
+                  Segmentation Criteria
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-2">
+                    {/* Date Range Selector */}
+                    <div className="space-y-2">
+                      <Label>Signup Date Range</Label>
+                      <div className="flex items-center gap-2">
+                        <DatePicker
+                          selected={segmentationCriteria.dateRange?.from}
+                          onSelect={(date) => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            dateRange: {
+                              from: date || new Date(),
+                              to: prev.dateRange?.to || new Date()
+                            }
+                          }))}
+                        />
+                        <span>to</span>
+                        <DatePicker
+                          selected={segmentationCriteria.dateRange?.to}
+                          onSelect={(date) => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            dateRange: {
+                              from: prev.dateRange?.from || new Date(),
+                              to: date || new Date()
+                            }
+                          }))}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            dateRange: null
+                          }))}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Location Filters */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>States</Label>
+                        <Select
+                          value={segmentationCriteria.states[0] || ''}
+                          onValueChange={(value) => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            states: value ? [value] : []
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from(new Set(waitlistEntries.map(e => e.state).filter(Boolean))).map(state => (
+                              <SelectItem key={state} value={state!}>{state}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Cities</Label>
+                        <Select
+                          value={segmentationCriteria.cities[0] || ''}
+                          onValueChange={(value) => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            cities: value ? [value] : []
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select city" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from(new Set(waitlistEntries.map(e => e.city).filter(Boolean))).map(city => (
+                              <SelectItem key={city} value={city!}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>ZIP Codes</Label>
+                        <Select
+                          value={segmentationCriteria.zipCodes[0] || ''}
+                          onValueChange={(value) => setSegmentationCriteria(prev => ({
+                            ...prev,
+                            zipCodes: value ? [value] : []
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select ZIP code" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from(new Set(waitlistEntries.map(e => e.zip_code).filter(Boolean))).map(zip => (
+                              <SelectItem key={zip} value={zip!}>{zip}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSegmentationCriteria({
+                          dateRange: null,
+                          states: [],
+                          cities: [],
+                          zipCodes: [],
+                        })}
+                      >
+                        Clear All Filters
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="selectAll"
@@ -954,7 +1150,7 @@ export default function AdminPortal() {
                 onCheckedChange={(checked) => {
                   setSelectAllRecipients(!!checked);
                   if (checked) {
-                    setSelectedRecipients(new Set(waitlistEntries.map(e => e.email)));
+                    setSelectedRecipients(new Set(getFilteredRecipients().map(e => e.email)));
                   } else {
                     setSelectedRecipients(new Set());
                   }
@@ -964,7 +1160,7 @@ export default function AdminPortal() {
                 htmlFor="selectAll"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Select All Recipients ({waitlistEntries.length})
+                Select All Filtered Recipients ({getFilteredRecipients().length})
               </label>
             </div>
 
@@ -982,7 +1178,7 @@ export default function AdminPortal() {
 
                 <ScrollArea className="h-[200px] border rounded-md p-2">
                   <div className="space-y-2">
-                    {filteredWaitlistEntries.map((entry) => (
+                    {getFilteredRecipients().map((entry) => (
                       <div key={entry.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`recipient-${entry.id}`}
@@ -1002,6 +1198,11 @@ export default function AdminPortal() {
                           className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
                           {entry.email}
+                          {entry.city && entry.state && (
+                            <span className="text-muted-foreground ml-2">
+                              ({entry.city}, {entry.state})
+                            </span>
+                          )}
                         </label>
                       </div>
                     ))}
@@ -1009,16 +1210,16 @@ export default function AdminPortal() {
                 </ScrollArea>
 
                 <div className="text-sm text-muted-foreground">
-                  Selected {selectedRecipients.size} of {waitlistEntries.length} subscribers
+                  Selected {selectedRecipients.size} of {getFilteredRecipients().length} filtered subscribers
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Template</label>
+              <Label>Email Template</Label>
               <Select
-                value={selectedTemplate}
-                onValueChange={setSelectedTemplate}
+                value={selectedTemplate || ''}
+                onValueChange={(value) => setSelectedTemplate(value as "welcome" | "verification")}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a template" />
@@ -1054,7 +1255,7 @@ export default function AdminPortal() {
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
-                  Send Email{selectedRecipients.size > 1 ? 's' : ''}
+                  Send Email{selectedRecipients.size > 1 ? 's' : ''} ({selectedRecipients.size})
                 </>
               )}
             </Button>
