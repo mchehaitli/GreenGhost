@@ -94,8 +94,8 @@ type SegmentationCriteria = {
 type SortDirection = 'asc' | 'desc';
 type SortField = 'created_at' | 'zip_code';
 
-let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
-  '75033': {city: 'Frisco', state: 'TX'},
+let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
+  '75033': { city: 'Frisco', state: 'TX' },
   // Add any other problematic ZIP codes here
 };
 
@@ -541,8 +541,8 @@ export default function AdminPortal() {
 
   const filteredWaitlistEntries = recipientSearchTerm
     ? waitlistEntries.filter(entry =>
-        entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
-      )
+      entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
+    )
     : waitlistEntries;
 
   const handleSendEmails = async () => {
@@ -874,7 +874,6 @@ export default function AdminPortal() {
                     </Table>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-medium mb-4">Daily Breakdown</h3>
                   <div className="overflow-x-auto">
@@ -915,7 +914,8 @@ export default function AdminPortal() {
                           <TableRow key={month.month}>
                             <TableCell>{month.month}</TableCell>
                             <TableCell>{month.count}</TableCell>
-                            <TableCell>{month.percentage}%</TableCell>                          </TableRow>
+                            <TableCell>{month.percentage}%</TableCell>
+                          </TableRow>
                         ))}
                       </TableBody>
                     </Table>
@@ -944,19 +944,14 @@ export default function AdminPortal() {
                     <Mail className="w-4 h-4" />
                     Send Custom Email
                   </Button>
-                  <Button
-                    variant="primary"
-                    onClick={() => setActiveTemplateTab('create')}
-                  >
-                    Create Template
-                  </Button>
                 </div>
               </div>
 
-              <Tabs defaultValue="system" className="w-full">
-                <TabsList>
+              <Tabs value={activeTemplateTab} onValueChange={setActiveTemplateTab} className="w-full">
+                <TabsList className="w-full flex justify-start space-x-2">
                   <TabsTrigger value="system">System Templates</TabsTrigger>
                   <TabsTrigger value="custom">Custom Templates</TabsTrigger>
+                  <TabsTrigger value="create">Create Template</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="system" className="space-y-4">
@@ -1018,13 +1013,13 @@ export default function AdminPortal() {
                     <LoadingSpinner />
                   ) : customTemplates?.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <p>No custom templates yet. Create your first template to get started.</p>
+                      <p>No custom templates yet.</p>
                       <Button
                         variant="outline"
                         className="mt-4"
                         onClick={() => setActiveTemplateTab("create")}
                       >
-                        Create Template
+                        Create Your First Template
                       </Button>
                     </div>
                   ) : (
@@ -1042,6 +1037,7 @@ export default function AdminPortal() {
                               if (!response.ok) {
                                 throw new Error('Failed to update template');
                               }
+                              queryClient.invalidateQueries({ queryKey: ['email-templates'] });
                             }}
                           />
                         </Card>
@@ -1072,6 +1068,10 @@ export default function AdminPortal() {
                         await queryClient.invalidateQueries({ queryKey: ['email-templates'] });
                         // Switch to custom templates tab
                         setActiveTemplateTab("custom");
+                        toast({
+                          title: "Success",
+                          description: "Template created successfully",
+                        });
                       }}
                     />
                   </Card>
