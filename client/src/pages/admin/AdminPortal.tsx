@@ -99,6 +99,13 @@ let knownZipCodeMappings: Record<string, {city: string, state: string}> = {
   // Add any other problematic ZIP codes here
 };
 
+type EmailTemplate = {
+  id: number;
+  name: string;
+  subject: string;
+  html_content: string;
+}
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -130,6 +137,12 @@ export default function AdminPortal() {
     states: [],
     cities: [],
     zipCodes: [],
+  });
+  const [activeTemplateTab, setActiveTemplateTab] = useState('system');
+  const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<EmailTemplate[]>({
+    queryKey: ['email-templates', 'custom'],
+    queryFn: () => fetch('/api/email-templates/custom').then(res => res.json()),
+    enabled: activeTab === 'email-templates' && activeTemplateTab === 'custom'
   });
 
 
@@ -264,7 +277,7 @@ export default function AdminPortal() {
     setEntryToDelete(null);
   };
 
-  const filteredEntries = waitlistEntries.filter(entry => {
+  const filteredEntries = getFilteredRecipients().filter(entry => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -489,11 +502,6 @@ export default function AdminPortal() {
 
   const getFilteredRecipients = () => {
     return waitlistEntries.filter(entry => {
-      // Filter by search term if exists
-      if (recipientSearchTerm && !entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())) {
-        return false;
-      }
-
       // Filter by date range
       if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
         const entryDate = new Date(entry.created_at);
@@ -506,22 +514,22 @@ export default function AdminPortal() {
       }
 
       // Filter by state
-      if (segmentationCriteria.states.length > 0 && entry.state) {
-        if (!segmentationCriteria.states.includes(entry.state)) {
+      if (segmentationCriteria.states.length > 0) {
+        if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
           return false;
         }
       }
 
       // Filter by city
-      if (segmentationCriteria.cities.length > 0 && entry.city) {
-        if (!segmentationCriteria.cities.includes(entry.city)) {
+      if (segmentationCriteria.cities.length > 0) {
+        if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
           return false;
         }
       }
 
       // Filter by ZIP code
-      if (segmentationCriteria.zipCodes.length > 0 && entry.zip_code) {
-        if (!segmentationCriteria.zipCodes.includes(entry.zip_code)) {
+      if (segmentationCriteria.zipCodes.length > 0) {
+        if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
           return false;
         }
       }
@@ -928,72 +936,147 @@ export default function AdminPortal() {
                     Manage automated email templates for different events in your application.
                   </p>
                 </div>
-                <Button
-                  onClick={() => setSendEmailDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Mail className="w-4 h-4" />
-                  Send Custom Email
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => setSendEmailDialogOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Send Custom Email
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => setActiveTemplateTab('create')}
+                  >
+                    Create Template
+                  </Button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-4">
-                  <h3 className="text-lg font-medium mb-4">Welcome Email</h3>
-                  <EmailTemplateEditor
-                    initialData={{
-                      name: "Welcome Email",
-                      subject: "Welcome to Our Waitlist!",
-                      html_content: `
-<h1>Welcome aboard!</h1>
-<p>Dear {firstName},</p>
-<p>Thank you for joining our waitlist! We're thrilled to have you as part of our growing community.</p>
-<p>We'll keep you updated on our progress and let you know as soon as we're ready to serve your area.</p>
-<p>Best regards,<br>The Team</p>
-                      `.trim()
-                    }}
-                    onSave={async (data) => {
-                      const response = await fetch('/api/email-templates/welcome', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                      });
-                      if (!response.ok) {
-                        throw new Error('Failed to save template');
-                      }
-                    }}
-                  />
-                </Card>
+              <Tabs defaultValue="system" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="system">System Templates</TabsTrigger>
+                  <TabsTrigger value="custom">Custom Templates</TabsTrigger>
+                </TabsList>
 
-                <Card className="p-4">
-                  <h3 className="text-lg font-medium mb-4">Verification Email</h3>
-                  <EmailTemplateEditor
-                    initialData={{
-                      name: "Verification Email",
-                      subject: "Verify Your Email Address",
-                      html_content: `
-<h1>Verify Your Email</h1>
-<p>Hello!</p>
-<p>Please use the following code to verify your email address:</p>
-<h2 style="font-size: 24px; color: #0066cc;">{verificationCode}</h2>
-<p>This code will expire in 90 seconds.</p>
-<p>If you didn't request this verification, please ignore this email.</p>
-<p>Best regards,<br>The Team</p>
-                      `.trim()
-                    }}
-                    onSave={async (data) => {
-                      const response = await fetch('/api/email-templates/verification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                      });
-                      if (!response.ok) {
-                        throw new Error('Failed to save template');
-                      }
-                    }}
-                  />
-                </Card>
-              </div>
+                <TabsContent value="system" className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="p-4">
+                      <h3 className="text-lg font-medium mb-4">Welcome Email</h3>
+                      <EmailTemplateEditor
+                        initialData={{
+                          name: "Welcome Email",
+                          subject: "Welcome to Our Platform",
+                          html_content: `
+                            <h1>Welcome {firstName}!</h1>
+                            <p>Thank you for joining our waitlist. We're excited to have you with us.</p>
+                            <p>We'll keep you updated on our progress and let you know when we're ready to launch.</p>
+                          `,
+                        }}
+                        onSave={async (data) => {
+                          const response = await fetch('/api/email-templates/welcome', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data),
+                          });
+                          if (!response.ok) {
+                            throw new Error('Failed to save template');
+                          }
+                        }}
+                      />
+                    </Card>
+
+                    <Card className="p-4">
+                      <h3 className="text-lg font-medium mb-4">Verification Email</h3>
+                      <EmailTemplateEditor
+                        initialData={{
+                          name: "Verification Email",
+                          subject: "Verify Your Email",
+                          html_content: `
+                            <h1>Hello {firstName}!</h1>
+                            <p>Your verification code is: {verificationCode}</p>
+                            <p>Enter this code to verify your email address.</p>
+                          `,
+                        }}
+                        onSave={async (data) => {
+                          const response = await fetch('/api/email-templates/verification', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data),
+                          });
+                          if (!response.ok) {
+                            throw new Error('Failed to save template');
+                          }
+                        }}
+                      />
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="custom" className="space-y-4">
+                  {customTemplatesLoading ? (
+                    <LoadingSpinner />
+                  ) : customTemplates?.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No custom templates yet. Create your first template to get started.</p>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => setActiveTemplateTab("create")}
+                      >
+                        Create Template
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {customTemplates?.map((template) => (
+                        <Card key={template.id} className="p-4">
+                          <EmailTemplateEditor
+                            initialData={template}
+                            onSave={async (data) => {
+                              const response = await fetch(`/api/email-templates/${template.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data),
+                              });
+                              if (!response.ok) {
+                                throw new Error('Failed to update template');
+                              }
+                            }}
+                          />
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="create">
+                  <Card className="p-4">
+                    <h3 className="text-lg font-medium mb-4">Create New Template</h3>
+                    <EmailTemplateEditor
+                      initialData={{
+                        name: "",
+                        subject: "",
+                        html_content: "",
+                      }}
+                      onSave={async (data) => {
+                        const response = await fetch('/api/email-templates', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(data),
+                        });
+                        if (!response.ok) {
+                          throw new Error('Failed to create template');
+                        }
+                        // Refresh custom templates list
+                        await queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                        // Switch to custom templates tab
+                        setActiveTemplateTab("custom");
+                      }}
+                    />
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
           </Card>
         </TabsContent>

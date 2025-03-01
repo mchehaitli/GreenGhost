@@ -1,12 +1,29 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { emailTemplates, emailSegments, waitlist, insertEmailTemplateSchema } from '../../db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, not, or } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
 
 const router = Router();
+
+// System template names that should be filtered out from custom templates
+const SYSTEM_TEMPLATE_NAMES = ['Welcome Email', 'Verification Email'];
+
+// Get custom email templates
+router.get('/api/email-templates/custom', requireAuth, async (_req, res) => {
+  try {
+    const templates = await db.query.emailTemplates.findMany({
+      where: not(inArray(emailTemplates.name, SYSTEM_TEMPLATE_NAMES)),
+      orderBy: (emailTemplates, { desc }) => [desc(emailTemplates.created_at)]
+    });
+    return res.json(templates);
+  } catch (error) {
+    log('Error fetching custom email templates:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to fetch custom templates' });
+  }
+});
 
 // Get all email templates
 router.get('/api/email-templates', requireAuth, async (_req, res) => {
@@ -25,6 +42,16 @@ router.get('/api/email-templates', requireAuth, async (_req, res) => {
 router.post('/api/email-templates', requireAuth, async (req, res) => {
   try {
     const validatedData = insertEmailTemplateSchema.parse(req.body);
+
+    // Check if template name already exists
+    const existingTemplate = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.name, validatedData.name)
+    });
+
+    if (existingTemplate) {
+      return res.status(400).json({ error: 'Template name already exists' });
+    }
+
     const [template] = await db.insert(emailTemplates).values(validatedData).returning();
     return res.status(201).json(template);
   } catch (error) {
@@ -45,6 +72,26 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
     }
 
     const validatedData = insertEmailTemplateSchema.parse(req.body);
+
+    // Check if template exists
+    const existingTemplate = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!existingTemplate) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Check if new name conflicts with another template
+    if (validatedData.name !== existingTemplate.name) {
+      const nameExists = await db.query.emailTemplates.findFirst({
+        where: eq(emailTemplates.name, validatedData.name)
+      });
+      if (nameExists) {
+        return res.status(400).json({ error: 'Template name already exists' });
+      }
+    }
+
     const [template] = await db.update(emailTemplates)
       .set({
         ...validatedData,
@@ -69,6 +116,19 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    // Check if it's a system template
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    if (SYSTEM_TEMPLATE_NAMES.includes(template.name)) {
+      return res.status(403).json({ error: 'Cannot delete system templates' });
     }
 
     await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
