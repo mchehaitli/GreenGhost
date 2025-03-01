@@ -106,6 +106,44 @@ type EmailTemplate = {
   html_content: string;
 }
 
+const getFilteredRecipients = () => {
+  return waitlistEntries.filter(entry => {
+    // Filter by date range
+    if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
+      const entryDate = new Date(entry.created_at);
+      if (!isWithinInterval(entryDate, {
+        start: segmentationCriteria.dateRange.from,
+        end: segmentationCriteria.dateRange.to
+      })) {
+        return false;
+      }
+    }
+
+    // Filter by state
+    if (segmentationCriteria.states.length > 0) {
+      if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
+        return false;
+      }
+    }
+
+    // Filter by city
+    if (segmentationCriteria.cities.length > 0) {
+      if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
+        return false;
+      }
+    }
+
+    // Filter by ZIP code
+    if (segmentationCriteria.zipCodes.length > 0) {
+      if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+};
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -500,43 +538,6 @@ export default function AdminPortal() {
     }
   };
 
-  const getFilteredRecipients = () => {
-    return waitlistEntries.filter(entry => {
-      // Filter by date range
-      if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
-        const entryDate = new Date(entry.created_at);
-        if (!isWithinInterval(entryDate, {
-          start: segmentationCriteria.dateRange.from,
-          end: segmentationCriteria.dateRange.to
-        })) {
-          return false;
-        }
-      }
-
-      // Filter by state
-      if (segmentationCriteria.states.length > 0) {
-        if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
-          return false;
-        }
-      }
-
-      // Filter by city
-      if (segmentationCriteria.cities.length > 0) {
-        if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
-          return false;
-        }
-      }
-
-      // Filter by ZIP code
-      if (segmentationCriteria.zipCodes.length > 0) {
-        if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  };
 
   const filteredWaitlistEntries = recipientSearchTerm
     ? waitlistEntries.filter(entry =>
@@ -914,8 +915,7 @@ export default function AdminPortal() {
                           <TableRow key={month.month}>
                             <TableCell>{month.month}</TableCell>
                             <TableCell>{month.count}</TableCell>
-                            <TableCell>{month.percentage}%</TableCell>
-                          </TableRow>
+                            <TableCell>{month.percentage}%</TableCell>                          </TableRow>
                         ))}
                       </TableBody>
                     </Table>
