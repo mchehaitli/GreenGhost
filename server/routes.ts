@@ -9,14 +9,10 @@ import pricingRoutes from './routes/pricing';
 import emailService from './services/email';
 
 export function registerRoutes(app: Express): Server {
-  // Register waitlist routes
-  app.use(waitlistRoutes);
-
-  // Register email template routes
-  app.use(emailTemplateRoutes);
-
-  // Register pricing routes
-  app.use(pricingRoutes);
+  // Register API routes
+  app.use('/api', waitlistRoutes);
+  app.use('/api', emailTemplateRoutes);
+  app.use('/api', pricingRoutes);
 
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
@@ -31,6 +27,7 @@ export function registerRoutes(app: Express): Server {
       const html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
       res.json({ html });
     } catch (error) {
+      console.error('Email preview error:', error);
       res.status(500).json({ error: 'Failed to generate preview' });
     }
   });
@@ -56,7 +53,7 @@ export function registerRoutes(app: Express): Server {
           if (template === 'welcome') {
             await emailService.sendWelcomeEmail(entry.email, entry.first_name);
           } else if (template === 'verification') {
-            await emailService.sendVerificationEmail(entry.email, '123456'); // Example verification code
+            await emailService.sendVerificationEmail(entry.email, '123456');
           }
         })
       );

@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -60,16 +60,9 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { DatePicker } from "@/components/ui/date-picker";
-import { addDays, subDays, isWithinInterval } from 'date-fns';
+import { isWithinInterval } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
-
 
 type WaitlistEntry = {
   id: number;
@@ -119,8 +112,8 @@ type Plan = {
 };
 
 type PlanFeature = {
-  id?: number; // Optional for new features
-  plan_id?: number; // Optional for new features  
+  id?: number;
+  plan_id?: number;
   feature: string;
   included: boolean;
   sort_order: number;
@@ -128,7 +121,6 @@ type PlanFeature = {
 
 let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
   '75033': { city: 'Frisco', state: 'TX' },
-  // Add any other problematic ZIP codes here
 };
 
 type EmailTemplate = {
@@ -136,7 +128,7 @@ type EmailTemplate = {
   name: string;
   subject: string;
   html_content: string;
-  thumbnail_url?: string; // Added thumbnail_url
+  thumbnail_url?: string;
 };
 
 type EmailHistoryEntry = {
@@ -928,78 +920,7 @@ const AdminPortal = () => {
     );
   };
 
-  const handleViewDetails = (entry: WaitlistEntry) => {
-    setSelectedEntry(entry);
-    setShowDetailsDialog(true);
-  };
 
-  const handleSaveChanges = () => {
-    const changes = Object.values(unsavedChanges).map(change => ({
-      id: change.id!,
-      ...change
-    }));
-    if (changes.length > 0) {
-      updateEntryMutation.mutate(changes);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    setEntryToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (entryToDelete) {
-      deleteEntryMutation.mutate(entryToDelete);
-    }
-    setDeleteDialogOpen(false);
-    setEntryToDelete(null);
-  };
-
-  const getFilteredRecipients = () => {
-    return waitlistEntries.filter(entry => {
-      if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
-        const entryDate = new Date(entry.created_at);
-        if (!isWithinInterval(entryDate, {
-          start: segmentationCriteria.dateRange.from,
-          end: segmentationCriteria.dateRange.to
-        })) {
-          return false;
-        }
-      }
-
-      if (segmentationCriteria.states.length > 0) {
-        if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
-          return false;
-        }
-      }
-
-      if (segmentationCriteria.cities.length > 0) {
-        if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
-          return false;
-        }
-      }
-
-      if (segmentationCriteria.zipCodes.length > 0) {
-        if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  };
-
-  const filteredEntries = getFilteredRecipients().filter(entry => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      entry.email.toLowerCase().includes(searchLower) ||
-      entry.first_name?.toLowerCase().includes(searchLower) ||
-      entry.last_name?.toLowerCase().includes(searchLower) ||
-      entry.zip_code?.includes(searchTerm)
-    );
-  });
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
