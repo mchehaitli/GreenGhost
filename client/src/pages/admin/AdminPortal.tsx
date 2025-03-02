@@ -27,8 +27,7 @@ import {
   BarChart,
   Mail,
   CheckCircle,
-  Users,
-  DollarSign
+  Users
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -65,20 +64,6 @@ import {
 } from "@/components/ui/accordion";
 import { DatePicker } from "@/components/ui/date-picker";
 import { addDays, subDays, isWithinInterval } from 'date-fns';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { insertServicePricingSchema } from "@db/schema";
-import * as z from 'zod';
-import type { InsertServicePricing } from "@db/schema";
 
 type WaitlistEntry = {
   id: number;
@@ -120,7 +105,7 @@ type EmailTemplate = {
   subject: string;
   html_content: string;
   thumbnail_url?: string; // Added thumbnail_url
-};
+}
 
 type EmailHistoryEntry = {
   id: number;
@@ -128,18 +113,6 @@ type EmailHistoryEntry = {
   sent_at: string;
   total_recipients: number;
   status: 'completed' | 'failed' | 'pending';
-};
-
-type ServicePricing = {
-  id: number;
-  name: string;
-  description: string;
-  base_price: number;
-  unit: string;
-  minimum_units: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 };
 
 
@@ -185,19 +158,7 @@ export default function AdminPortal() {
   const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
   const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
   const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
-  const [showPricingDialog, setShowPricingDialog] = useState(false);
-  const [selectedPricing, setSelectedPricing] = useState<ServicePricing | null>(null);
-  const form = useForm<InsertServicePricing>({
-    resolver: zodResolver(insertServicePricingSchema),
-    defaultValues: selectedPricing || {
-      name: "",
-      description: "",
-      base_price: 0,
-      unit: "",
-      minimum_units: 1,
-      is_active: true
-    }
-  });
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -235,20 +196,6 @@ export default function AdminPortal() {
     enabled: activeTab === 'email-history'
   });
 
-  const {
-    data: pricingData = [],
-    isLoading: pricingLoading
-  } = useQuery<ServicePricing[]>({
-    queryKey: ['pricing'],
-    queryFn: async () => {
-      const response = await fetch('/api/pricing');
-      if (!response.ok) {
-        throw new Error('Failed to fetch pricing data');
-      }
-      return response.json();
-    },
-    enabled: activeTab === "pricing"
-  });
 
   const updateEntryMutation = useMutation({
     mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
@@ -653,92 +600,6 @@ export default function AdminPortal() {
     }
   };
 
-  const createPricingMutation = useMutation({
-    mutationFn: async (data: Omit<ServicePricing, "id" | "created_at" | "updated_at">) => {
-      const response = await fetch('/api/pricing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to create pricing');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing'] });
-      setShowPricingDialog(false);
-      toast({
-        title: "Success",
-        description: "Pricing entry created successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create pricing entry",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const updatePricingMutation = useMutation({
-    mutationFn: async (data: ServicePricing) => {
-      const response = await fetch(`/api/pricing/${data.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to update pricing');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing'] });
-      setShowPricingDialog(false);
-      toast({
-        title: "Success",
-        description: "Pricing entry updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update pricing entry",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const togglePricingStatusMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/pricing/${id}/toggle`, {
-        method: 'POST',
-      });
-      if (!response.ok) throw new Error('Failed to toggle pricing status');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing'] });
-      toast({
-        title: "Success",
-        description: "Pricing status updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update pricing status",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof insertServicePricingSchema>) => {
-    if (selectedPricing) {
-      updatePricingMutation.mutate({...data, id: selectedPricing.id, created_at: selectedPricing.created_at, updated_at: new Date().toISOString()})
-    } else {
-      createPricingMutation.mutate(data);
-    }
-  };
-
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -800,10 +661,6 @@ export default function AdminPortal() {
           <TabsTrigger value="settings">
             <Settings className="w-4 h-4 mr-2" />
             Settings
-          </TabsTrigger>
-          <TabsTrigger value="pricing">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Pricing
           </TabsTrigger>
         </TabsList>
 
@@ -932,12 +789,12 @@ export default function AdminPortal() {
                           {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col md:flexrow items-center gap-2">
+                          <div className="flex flex-col md:flex-row items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewDetails(entry)}
-                              className="transition-all-200 group-hover:border-primary/50 group-hover:bg-primary/10"
+                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
@@ -1331,78 +1188,6 @@ export default function AdminPortal() {
             )}
           </Card>
         </TabsContent>
-        <TabsContent value="pricing" className="space-y-4">
-          <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay
-              isLoading={pricingLoading}
-              text="Loading pricing data..."
-            />
-
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Service Pricing</h2>
-              <Button onClick={() => {
-                setSelectedPricing(null);
-                setShowPricingDialog(true);
-              }}>
-                <DollarSign className="w-4 h-4 mr-2" />
-                Add New Price
-              </Button>
-            </div>
-
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pricingData.map((pricing) => (
-                    <TableRow key={pricing.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{pricing.name}</p>
-                          <p className="text-sm text-muted-foreground">{pricing.description}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        ${pricing.base_price} 
-                        {pricing.minimum_units > 1 && ` (min. ${pricing.minimum_units} ${pricing.unit}s)`}
-                      </TableCell>
-                      <TableCell>{pricing.unit}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={pricing.is_active ? "default" : "secondary"}
-                          className="cursor-pointer"
-                          onClick={() => togglePricingStatusMutation.mutate(pricing.id)}
-                        >
-                          {pricing.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPricing(pricing);
-                            setShowPricingDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
-        </TabsContent>
-
       </Tabs>
 
       <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
@@ -1577,7 +1362,7 @@ export default function AdminPortal() {
 
                 <ScrollArea className="h-[200px] border rounded-md p-2">
                   <div className="space-y-2">
-                    {filteredWaitlistEntries.map((entry) => (
+                    {getFilteredRecipients().map((entry) => (
                       <div key={entry.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`recipient-${entry.id}`}
@@ -1718,109 +1503,6 @@ export default function AdminPortal() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{selectedPricing ? 'Edit' : 'Add'} Pricing</DialogTitle>
-            <DialogDescription>
-              Set the pricing details for your service. Click save when you're done.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Service Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="base_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Base Price</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., sq ft, hour, session" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="minimum_units"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Minimum Units</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={createPricingMutation.isPending || updatePricingMutation.isPending}
-              >
-                {(createPricingMutation.isPending || updatePricingMutation.isPending) ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save'
-                )}
-              </Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }
