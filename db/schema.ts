@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -55,6 +55,19 @@ export const emailSegments = pgTable("email_segments", {
   status: text("status").default("completed").notNull(),
 });
 
+// New pricing tables
+export const servicePricing = pgTable("service_pricing", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  base_price: numeric("base_price").notNull(),
+  unit: text("unit").notNull(), // e.g., "per sq ft", "per hour", "flat rate"
+  minimum_units: integer("minimum_units").default(1).notNull(),
+  is_active: boolean("is_active").default(true).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
   waitlist: one(waitlist, {
@@ -92,6 +105,16 @@ export const insertEmailTemplateSchema = z.object({
   html_content: z.string().min(1, "Email content is required"),
 });
 
+// Add new schema
+export const insertServicePricingSchema = z.object({
+  name: z.string().min(1, "Service name is required"),
+  description: z.string().min(1, "Description is required"),
+  base_price: z.number().positive("Price must be greater than 0"),
+  unit: z.string().min(1, "Unit type is required"),
+  minimum_units: z.number().int().positive("Minimum units must be greater than 0"),
+  is_active: z.boolean().default(true),
+});
+
 // Export types
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -112,3 +135,8 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
+
+// Add new types
+export const selectServicePricingSchema = createSelectSchema(servicePricing);
+export type InsertServicePricing = typeof servicePricing.$inferInsert;
+export type SelectServicePricing = typeof servicePricing.$inferSelect;
