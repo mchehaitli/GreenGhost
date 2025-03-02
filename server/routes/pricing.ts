@@ -1,12 +1,80 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { services, plans, planFeatures, insertServiceSchema, insertPlanSchema, insertPlanFeatureSchema } from '../../db/schema';
+import { services, plans, planFeatures, pageContent, insertServiceSchema, insertPlanSchema, insertPlanFeatureSchema, insertPageContentSchema } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
 
 const router = Router();
+
+// Page Content Routes
+router.get('/api/pricing/content', async (_req, res) => {
+  try {
+    const content = await db.query.pageContent.findMany({
+      where: eq(pageContent.page, 'pricing')
+    });
+    return res.json(content);
+  } catch (error) {
+    log('Error fetching page content:', error);
+    return res.status(500).json({ error: 'Failed to fetch page content' });
+  }
+});
+
+router.post('/api/pricing/content', requireAuth, async (req, res) => {
+  try {
+    const validatedData = insertPageContentSchema.parse(req.body);
+    const [content] = await db.insert(pageContent).values(validatedData).returning();
+    return res.status(201).json(content);
+  } catch (error) {
+    if (error instanceof Error) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
+    return res.status(500).json({ error: 'Failed to create content' });
+  }
+});
+
+router.patch('/api/pricing/content/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid content ID' });
+    }
+
+    const validatedData = insertPageContentSchema.parse(req.body);
+    const [content] = await db.update(pageContent)
+      .set(validatedData)
+      .where(eq(pageContent.id, id))
+      .returning();
+
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    return res.json(content);
+  } catch (error) {
+    if (error instanceof Error) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
+    return res.status(500).json({ error: 'Failed to update content' });
+  }
+});
+
+router.delete('/api/pricing/content/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid content ID' });
+    }
+
+    await db.delete(pageContent).where(eq(pageContent.id, id));
+    return res.json({ message: 'Content deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to delete content' });
+  }
+});
 
 // Services Routes
 router.get('/api/pricing/services', async (_req, res) => {
@@ -98,7 +166,7 @@ router.post('/api/pricing/plans', requireAuth, async (req, res) => {
   try {
     const { features, ...planData } = req.body;
     const validatedPlanData = insertPlanSchema.parse(planData);
-    
+
     const [plan] = await db.insert(plans).values(validatedPlanData).returning();
 
     if (features && Array.isArray(features)) {

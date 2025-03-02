@@ -27,6 +27,17 @@ export const waitlist = pgTable("waitlist", {
   expires_at: timestamp("expires_at"),
 });
 
+// New table for page content
+export const pageContent = pgTable("page_content", {
+  id: serial("id").primaryKey(),
+  page: text("page").notNull(), // e.g., 'pricing'
+  section: text("section").notNull(), // e.g., 'hero', 'plans', 'services'
+  key: text("key").notNull(), // e.g., 'title', 'description'
+  content: text("content").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // New tables for pricing management
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -158,6 +169,13 @@ export const insertPlanFeatureSchema = z.object({
   sort_order: z.number().optional(),
 });
 
+// Add new schema for page content
+export const insertPageContentSchema = z.object({
+  page: z.string().min(1, "Page identifier is required"),
+  section: z.string().min(1, "Section identifier is required"),
+  key: z.string().min(1, "Content key is required"),
+  content: z.string().min(1, "Content is required"),
+});
 
 // Export types
 export const selectUserSchema = createSelectSchema(users);
@@ -188,3 +206,6 @@ export type SelectPlan = typeof plans.$inferSelect;
 
 export type InsertPlanFeature = typeof planFeatures.$inferInsert;
 export type SelectPlanFeature = typeof planFeatures.$inferSelect;
+
+export type InsertPageContent = typeof pageContent.$inferInsert;
+export type SelectPageContent = typeof pageContent.$inferSelect;

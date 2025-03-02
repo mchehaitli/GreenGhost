@@ -144,6 +144,13 @@ type EmailHistoryEntry = {
   status: 'completed' | 'failed' | 'pending';
 };
 
+type PageContent = {
+  id: number;
+  page: string;
+  section: string;
+  key: string;
+  content: string;
+};
 
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
@@ -191,6 +198,8 @@ export default function AdminPortal() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [editingContent, setEditingContent] = useState<PageContent | null>(null);
+  const [showContentDialog, setShowContentDialog] = useState(false);
 
 
   useEffect(() => {
@@ -208,7 +217,6 @@ export default function AdminPortal() {
     enabled: activeTab === "waitlist-entries" && !!user,
   });
 
-  // Add new query for analytics data
   const {
     data: analyticsData,
     isLoading: analyticsLoading
@@ -222,13 +230,11 @@ export default function AdminPortal() {
     enabled: activeTab === "waitlist-analytics"
   });
 
-  // Add this query for email history
   const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery({
     queryKey: ['email-history'],
     queryFn: () => fetch('/api/email-history').then(res => res.json()),
     enabled: activeTab === 'email-history'
   });
-
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ['services'],
@@ -246,6 +252,17 @@ export default function AdminPortal() {
     queryFn: async () => {
       const response = await fetch('/api/pricing/plans');
       if (!response.ok) throw new Error('Failed to fetch plans');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: activeTab === "pricing",
+  });
+
+  const { data: pageContent = [], isLoading: contentLoading } = useQuery<PageContent[]>({
+    queryKey: ['pricing-content'],
+    queryFn: async () => {
+      const response = await fetch('/api/pricing/content');
+      if (!response.ok) throw new Error('Failed to fetch page content');
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
@@ -476,6 +493,83 @@ export default function AdminPortal() {
     },
   });
 
+  const createContentMutation = useMutation({
+    mutationFn: async (content: Omit<PageContent, 'id'>) => {
+      const response = await fetch('/api/pricing/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(content),
+      });
+      if (!response.ok) throw new Error('Failed to create content');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
+      setShowContentDialog(false);
+      toast({
+        title: "Content created",
+        description: "The content has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create content",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateContentMutation = useMutation({
+    mutationFn: async (content: PageContent) => {
+      const response = await fetch(`/api/pricing/content/${content.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(content),
+      });
+      if (!response.ok) throw new Error('Failed to update content');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
+      setShowContentDialog(false);
+      toast({
+        title: "Content updated",
+        description: "The content has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update content",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteContentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/pricing/content/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete content');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
+      toast({
+        title: "Content deleted",
+        description: "The content has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete content",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleFieldChange = (entryId: number, field: keyof WaitlistEntry, value: string) => {
     setUnsavedChanges(prev => ({
       ...prev,
@@ -509,7 +603,6 @@ export default function AdminPortal() {
 
   const getFilteredRecipients = () => {
     return waitlistEntries.filter(entry => {
-      // Filter by date range
       if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
         const entryDate = new Date(entry.created_at);
         if (!isWithinInterval(entryDate, {
@@ -520,21 +613,18 @@ export default function AdminPortal() {
         }
       }
 
-      // Filter by state
       if (segmentationCriteria.states.length > 0) {
         if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
           return false;
         }
       }
 
-      // Filter by city
       if (segmentationCriteria.cities.length > 0) {
         if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
           return false;
         }
       }
 
-      // Filter by ZIP code
       if (segmentationCriteria.zipCodes.length > 0) {
         if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
           return false;
@@ -573,7 +663,6 @@ export default function AdminPortal() {
       const dateB = new Date(b.created_at).getTime();
       return (dateA - dateB) * modifier;
     } else {
-      // ZIP code sorting
       const zipA = a.zip_code || '';
       const zipB = b.zip_code || '';
       return zipA.localeCompare(zipB) * modifier;
@@ -768,7 +857,6 @@ export default function AdminPortal() {
     }
   };
 
-
   const filteredWaitlistEntries = recipientSearchTerm
     ? waitlistEntries.filter(entry =>
       entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
@@ -784,7 +872,7 @@ export default function AdminPortal() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          template: selectedTemplate as string, //Type assertion to remove type error
+          template: selectedTemplate as string,
           recipients: recipients
         }),
       });
@@ -1327,9 +1415,7 @@ export default function AdminPortal() {
                         if (!response.ok) {
                           throw new Error('Failed to create template');
                         }
-                        // Refresh custom templates list
                         await queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-                        // Switch to custom templates tab
                         setActiveTemplateTab("custom");
                         toast({
                           title: "Success",
@@ -1404,7 +1490,7 @@ export default function AdminPortal() {
         <TabsContent value="pricing" className="space-y-4">
           <Card className="p-4 md:p-6">
             <LoadingOverlay 
-              isLoading={servicesLoading || plansLoading}
+              isLoading={servicesLoading || plansLoading || contentLoading}
               text="Loading pricing data..."
             />
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -1513,6 +1599,54 @@ export default function AdminPortal() {
                 </Card>
               ))}
             </div>
+
+            {/* Add content management section to pricing tab */}
+            <Separator className="my-8" />
+
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Page Content</h2>
+                <p className="text-muted-foreground">Manage the text content that appears on the pricing page</p>
+              </div>
+              <Button onClick={() => {
+                setEditingContent(null);
+                setShowContentDialog(true);
+              }}>
+                Add New Content
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {pageContent.map((content) => (
+                <Card key={content.id} className="p-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{content.section} - {content.key}</h3>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{content.content}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingContent(content);
+                          setShowContentDialog(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteContentMutation.mutate(content.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </Card>
         </TabsContent>
 
@@ -1535,7 +1669,6 @@ export default function AdminPortal() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4 pt-2">
-                    {/* Date Range Selector */}
                     <div className="space-y-2">
                       <Label>Signup Date Range</Label>
                       <div className="flex items-center gap-2">
@@ -1573,7 +1706,6 @@ export default function AdminPortal() {
                       </div>
                     </div>
 
-                    {/* Location Filters */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>States</Label>
@@ -1743,7 +1875,6 @@ export default function AdminPortal() {
               </Select>
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
@@ -1789,48 +1920,7 @@ export default function AdminPortal() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Delete Template Confirmation Dialog */}
-      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the template "{templateToDelete?.name}".
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (templateToDelete) {
-                  try {
-                    const response = await fetch(`/api/email-templates/${templateToDelete.id}`, {
-                      method: 'DELETE',
-                    });
-                    if (!response.ok) {
-                      throw new Error('Failed to delete template');
-                    }
-                    queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-                    toast({
-                      title: "Success",
-                      description: "Template deleted successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: error instanceof Error ? error.message : "Failed to delete template",
-                      variant: "destructive"
-                    });
-                  }
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
       <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1893,7 +1983,7 @@ export default function AdminPortal() {
                   defaultValue={editingService?.sort_order ?? 0}
                   required
                 />
-                            </div>
+              </div>
             </div>
             <DialogFooter className="mt-6">
               <Button type="submit">
@@ -2055,6 +2145,76 @@ export default function AdminPortal() {
         </DialogContent>
       </Dialog>
 
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contentData = {
+                page: 'pricing',
+                section: formData.get('section') as string,
+                key: formData.get('key') as string,
+                content: formData.get('content') as string,
+              };
+
+              if (editingContent) {
+                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
+              } else {
+                createContentMutation.mutate(contentData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="section">Section</Label>
+                <Select
+                  name="section"
+                  defaultValue={editingContent?.section ?? "hero"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hero">Hero</SelectItem>
+                    <SelectItem value="plans">Plans</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="key">Content Key</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="e.g., title, description"
+                  defaultValue={editingContent?.key}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  rows={5}
+                  defaultValue={editingContent?.content}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingContent ? 'Update Content' : 'Create Content'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
