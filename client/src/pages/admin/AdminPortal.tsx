@@ -9,89 +9,33 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import {
-  Search,
-  MapPin,
-  FileText,
-  Save,
-  Loader2,
-  Trash2,
-  Download,
   User,
   Settings,
   UserPlus,
-  ChevronUp,
-  ChevronDown,
-  Eye,
-  BarChart,
+  BarChart, 
   Mail,
   CheckCircle,
   Users,
   DollarSign,
   Plus,
   Edit,
-  X
+  X,
+  Loader2,
+  FileText,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { format } from 'date-fns';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { isWithinInterval } from 'date-fns';
-import { Separator } from "@/components/ui/separator";
-
-type WaitlistEntry = {
-  id: number;
-  email: string;
-  created_at: string;
-  first_name?: string;
-  last_name?: string;
-  phone_number?: string;
-  street_address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  notes?: string;
-};
-
-type DateRange = {
-  from: Date;
-  to: Date;
-} | null;
-
-type SegmentationCriteria = {
-  dateRange: DateRange;
-  states: string[];
-  cities: string[];
-  zipCodes: string[];
-};
-
-type SortDirection = 'asc' | 'desc';
-type SortField = 'created_at' | 'zip_code';
+import { Textarea } from "@/components/ui/textarea";
 
 type Service = {
   id: number;
@@ -119,26 +63,6 @@ type PlanFeature = {
   sort_order: number;
 };
 
-let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
-  '75033': { city: 'Frisco', state: 'TX' },
-};
-
-type EmailTemplate = {
-  id: number;
-  name: string;
-  subject: string;
-  html_content: string;
-  thumbnail_url?: string;
-};
-
-type EmailHistoryEntry = {
-  id: number;
-  template_name: string;
-  sent_at: string;
-  total_recipients: number;
-  status: 'completed' | 'failed' | 'pending';
-};
-
 type PageContent = {
   id: number;
   page: string;
@@ -162,28 +86,6 @@ const AdminPortal = () => {
   const [isSavingService, setIsSavingService] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false); 
   const [isSavingContent, setIsSavingContent] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<WaitlistEntry>>>({});
-  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
-  const [loadingZips, setLoadingZips] = useState<Record<number, boolean>>({});
-  const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
-    dateRange: null,
-    states: [],
-    cities: [],
-    zipCodes: []
-  });
-  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [isSendingEmails, setIsSendingEmails] = useState(false);
-  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -192,33 +94,7 @@ const AdminPortal = () => {
     }
   }, [user, authLoading, setLocation]);
 
-  const {
-    data: waitlistEntries = [],
-    isLoading: waitlistLoading,
-  } = useQuery<WaitlistEntry[]>({
-    queryKey: ['waitlist'],
-    queryFn: () => fetch('/api/waitlist').then(res => res.json()),
-    enabled: activeTab === "waitlist-entries" && !!user,
-  });
-
-  const {
-    data: analyticsData,
-    isLoading: analyticsLoading
-  } = useQuery({
-    queryKey: ['waitlist-analytics'],
-    queryFn: async () => {
-      const res = await fetch('/api/waitlist/analytics');
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      return res.json();
-    },
-    enabled: activeTab === "waitlist-analytics"
-  });
-
-  const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery({
-    queryKey: ['email-history'],
-    queryFn: () => fetch('/api/email-history').then(res => res.json()),
-    enabled: activeTab === 'email-history'
-  });
+  // Pricing related queries
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ['services'],
@@ -638,29 +514,6 @@ const AdminPortal = () => {
     );
   });
 
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1;
-
-    if (sortField === 'created_at') {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return (dateA - dateB) * modifier;
-    } else {
-      const zipA = a.zip_code || '';
-      const zipB = b.zip_code || '';
-      return zipA.localeCompare(zipB) * modifier;
-    }
-  });
-
   const handleViewDetails = (entry: WaitlistEntry) => {
     setSelectedEntry(entry);
     setShowDetailsDialog(true);
@@ -921,205 +774,6 @@ const AdminPortal = () => {
   };
 
 
-
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1;
-
-    if (sortField === 'created_at') {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return (dateA - dateB) * modifier;
-    } else {
-      const zipA = a.zip_code || '';
-      const zipB = b.zip_code || '';
-      return zipA.localeCompare(zipB) * modifier;
-    }
-  });
-
-  const handleCityStateFromZip = async (zip: string, entryId: number) => {
-    if (!/^\d{5}$/.test(zip)) {
-      toast({
-        title: "Invalid ZIP Code",
-        description: "ZIP code must be 5 digits",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    setLoadingZips(prev => ({ ...prev, [entryId]: true }));
-
-    try {
-      if (knownZipCodeMappings[zip]) {
-        await updateEntryMutation.mutateAsync([{
-          id: entryId,
-          city: knownZipCodeMappings[zip].city,
-          state: knownZipCodeMappings[zip].state
-        }]);
-        return true;
-      }
-
-      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-      if (!response.ok) throw new Error('Failed to get response from ZIP API');
-
-      const data = await response.json();
-
-      if (data && data.places && data.places.length > 0 && data.places[0]) {
-        const place = data.places[0];
-        if (place['place name'] && place['state abbreviation']) {
-          await updateEntryMutation.mutateAsync([{
-            id: entryId,
-            city: place['place name'],
-            state: place['state abbreviation']
-          }]);
-          toast({
-            title: "ZIP Code Validated",
-            description: `Updated to ${place['place name']}, ${place['state abbreviation']}`,
-            variant: "default"
-          });
-          return true;
-        } else {
-          throw new Error('Invalid location data format in API response');
-        }
-      } else {
-        throw new Error('No location data found for this ZIP code');
-      }
-    } catch (error) {
-      console.error('Error in handleCityStateFromZip:', error);
-      toast({
-        title: "ZIP Code Validation Failed",
-        description: error instanceof Error ? error.message : "Please enter city and state manually",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
-    }
-  };
-
-  const handleAutoPopulateAll = async () => {
-    setIsAutoPopulating(true);
-    let successCount = 0;
-    let failCount = 0;
-    let failedZips: string[] = [];
-
-    try {
-      const entriesToUpdate = filteredEntries.filter(
-        entry => entry.zip_code && (!entry.city || !entry.state)
-      );
-
-      if (entriesToUpdate.length === 0) {
-        toast({
-          title: "No entries to update",
-          description: "All entries with ZIP codes already have city and state information.",
-        });
-        return;
-      }
-
-      for (const entry of entriesToUpdate) {
-        if (!entry.zip_code) continue;
-
-        try {
-          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
-          if (success) {
-            successCount++;
-          } else {
-            failCount++;
-            failedZips.push(entry.zip_code);
-          }
-          if (successCount + failCount < entriesToUpdate.length) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        } catch (error) {
-          failCount++;
-          failedZips.push(entry.zip_code);
-        }
-      }
-
-      let description = `Successfully updated ${successCount} entries.`;
-      if (failCount > 0) {
-        description += `\nFailed entries: ${failedZips.join(', ')}`;
-      }
-
-      toast({
-        title: "Auto-population Complete",
-        description: description,
-        duration: 5000,
-        variant: successCount > 0 ? "default" : "destructive"
-      });
-    } catch (error) {
-      toast({
-        title: "Auto-population Failed",
-        description: "An error occurred while updating locations.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAutoPopulating(false);
-    }
-  };
-
-  const handleExportToExcel = () => {
-    try {
-      const workbook = XLSX.utils.book_new();
-      const excelData = filteredEntries.map(entry => ({
-        'Email': entry.email,
-        'Sign-up Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a"),
-        'First Name': entry.first_name || '',
-        'Last Name': entry.last_name || '',
-        'Phone Number': entry.phone_number || '',
-        'Street Address': entry.street_address || '',
-        'City': entry.city || '',
-        'State': entry.state || '',
-        'ZIP Code': entry.zip_code || '',
-        'Notes': entry.notes || ''
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Waitlist Entries');
-      XLSX.writeFile(workbook, `waitlist-entries-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-
-      toast({
-        title: "Export Successful",
-        description: "Waitlist entries have been exported to Excel.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export waitlist entries.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
-    const isLoading = {
-      service: isSavingService,
-      plan: isSavingPlan,
-      content: isSavingContent
-    }[type];
-
-    const labels = {
-      service: ['Create Service', 'Update Service'],
-      plan: ['Create Plan', 'Update Plan'],
-      content: ['Create Content', 'Update Content']
-    };
-
-    return (
-      <DialogFooter className="mt-6">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {isEditing ? labels[type][1] : labels[type][0]}
-        </Button>
-      </DialogFooter>
-    );
-  };
 
   return (
     <>
