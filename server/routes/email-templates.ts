@@ -118,7 +118,7 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid template ID' });
     }
 
-    // Check if it's a system template
+    // Check if template exists
     const template = await db.query.emailTemplates.findFirst({
       where: eq(emailTemplates.id, id)
     });
@@ -127,13 +127,12 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    if (SYSTEM_TEMPLATE_NAMES.includes(template.name)) {
-      return res.status(403).json({ error: 'Cannot delete system templates' });
-    }
-
+    // Delete the template
     await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
-    return res.sendStatus(200);
+
+    return res.status(200).json({ message: 'Template deleted successfully' });
   } catch (error) {
+    console.error('Error deleting template:', error);
     return res.status(500).json({ error: 'Failed to delete template' });
   }
 });

@@ -1146,7 +1146,7 @@ export default function AdminPortal() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {emailHistory?.map((history: any) => (
+                    {Array.isArray(emailHistory) ? emailHistory.map((history: EmailHistoryEntry) => (
                       <TableRow key={history.id}>
                         <TableCell className="font-medium">
                           {history.template_name}
@@ -1156,12 +1156,18 @@ export default function AdminPortal() {
                         </TableCell>
                         <TableCell>{history.total_recipients}</TableCell>
                         <TableCell>
-                          <Badge variant={history.status === 'completed' ? 'success' : 'default'}>
+                          <Badge variant={history.status === 'completed' ? 'default' : 'destructive'}>
                             {history.status}
                           </Badge>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                          No email history available
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
