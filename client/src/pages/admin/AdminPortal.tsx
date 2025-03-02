@@ -240,7 +240,13 @@ export default function AdminPortal() {
     isLoading: pricingLoading
   } = useQuery<ServicePricing[]>({
     queryKey: ['pricing'],
-    queryFn: () => fetch('/api/pricing').then(res => res.json()),
+    queryFn: async () => {
+      const response = await fetch('/api/pricing');
+      if (!response.ok) {
+        throw new Error('Failed to fetch pricing data');
+      }
+      return response.json();
+    },
     enabled: activeTab === "pricing"
   });
 
