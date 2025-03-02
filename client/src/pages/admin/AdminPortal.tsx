@@ -28,7 +28,8 @@ import {
   Mail,
   CheckCircle,
   Users,
-  DollarSign
+  DollarSign,
+  Plus
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -116,8 +117,8 @@ type Plan = {
 };
 
 type PlanFeature = {
-  id: number;
-  plan_id: number;
+  id?: number; // Optional for new features
+  plan_id?: number; // Optional for new features  
   feature: string;
   included: boolean;
   sort_order: number;
@@ -200,6 +201,9 @@ export default function AdminPortal() {
   const [showPlanDialog, setShowPlanDialog] = useState(false);
   const [editingContent, setEditingContent] = useState<PageContent | null>(null);
   const [showContentDialog, setShowContentDialog] = useState(false);
+  const [isSavingService, setIsSavingService] = useState(false);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [isSavingContent, setIsSavingContent] = useState(false);
 
 
   useEffect(() => {
@@ -341,26 +345,31 @@ export default function AdminPortal() {
 
   const createServiceMutation = useMutation({
     mutationFn: async (service: Omit<Service, 'id'>) => {
-      const response = await fetch('/api/pricing/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(service),
-      });
-      if (!response.ok) throw new Error('Failed to create service');
-      return response.json();
+      setIsSavingService(true);
+      try {
+        const response = await fetch('/api/pricing/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(service),
+        });
+        if (!response.ok) throw new Error('Failed to create service');
+        return response.json();
+      } finally {
+        setIsSavingService(false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
       setShowServiceDialog(false);
       toast({
-        title: "Service created",
-        description: "The service has been created successfully.",
+        title: "Success",
+        description: "Service created successfully",
       });
     },
     onError: (error) => {
       toast({
-        title: "Failed to create service",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create service",
         variant: "destructive"
       });
     },
@@ -575,14 +584,17 @@ export default function AdminPortal() {
       ...prev,
       [entryId]: {
         ...prev[entryId],
-        id: entryId,
+        ...{ id: entryId },
         [field]: value
-      }
+      } as { id: number } & Partial<WaitlistEntry>
     }));
   };
 
   const handleSaveChanges = () => {
-    const changes = Object.values(unsavedChanges);
+    const changes = Object.values(unsavedChanges).map(change => ({
+      id: change.id!,
+      ...change
+    }));
     if (changes.length > 0) {
       updateEntryMutation.mutate(changes);
     }
@@ -653,6 +665,29 @@ export default function AdminPortal() {
       setSortField(field);
       setSortDirection('desc');
     }
+  };
+
+  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
+    const isLoading = {
+      service: isSavingService,
+      plan: isSavingPlan,
+      content: isSavingContent
+    }[type];
+
+    const labels = {
+      service: ['Create Service', 'Update Service'],
+      plan: ['Create Plan', 'Update Plan'],
+      content: ['Create Content', 'Update Content']
+    };
+
+    return (
+      <DialogFooter className="mt-6">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isEditing ? labels[type][1] : labels[type][0]}
+        </Button>
+      </DialogFooter>
+    );
   };
 
   const sortedEntries = [...filteredEntries].sort((a, b) => {
@@ -937,6 +972,512 @@ export default function AdminPortal() {
         </div>
       </div>
 
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="waitlist-entries">
+            <Users className="w-4 h-4 mr-2" />
+            Waitlist
+          </TabsTrigger>
+          <TabsTrigger value="waitlist-analytics">
+            <BarChart className="w-4 h-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="email-templates">
+            <Mail className="w-4 h-4 mr-2" />
+            Email Templates
+          </TabsTrigger>
+          <TabsTrigger value="email-history">
+            <FileText className="w-4 h-4 mr-2" />
+            Email History
+          </TabsTrigger>
+          <TabsTrigger value="pricing">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Pricing
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pricing">
+          <Card className="p-6">
+            <LoadingOverlay 
+              isLoading={servicesLoading || plansLoading || contentLoading}
+              text="Loading pricing data..."
+            />
+            
+            {/* Services Section */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-semibold">Services</h2>
+                  <p className="text-muted-foreground mt-1">Manage your service offerings and pricing</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingService(null);
+                  setShowServiceDialog(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Service
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {services.map((service) => (
+                  <Card key={service.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium">{service.name}</h3>
+                        <p className="text-muted-foreground mt-1">{service.description}</p>
+                        <p className="text-sm font-medium mt-2">${service.price.toFixed(2)}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingService(service);
+                            setShowServiceDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteServiceMutation.mutate(service.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Plans Section */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-semibold">Plans</h2>
+                  <p className="text-muted-foreground mt-1">Manage subscription plans and features</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingPlan(null);
+                  setShowPlanDialog(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Plan
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {plans.map((plan) => (
+                  <Card key={plan.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium">{plan.name}</h3>
+                        <p className="text-muted-foreground mt-1">{plan.description}</p>
+                        <p className="text-sm font-medium mt-2">
+                          ${plan.price.toFixed(2)} / {plan.billing_period}
+                        </p>
+                        {plan.features && plan.features.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium mb-2">Features:</h4>
+                            <ul className="space-y-2">
+                              {plan.features.map((feature, idx) => (
+                                <li key={idx} className="flex items-center text-sm">
+                                  <CheckCircle className={`w-4 h-4 mr-2 ${
+                                    feature.included ? 'text-green-500' : 'text-muted-foreground'
+                                  }`} />
+                                  {feature.feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingPlan(plan);
+                            setShowPlanDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deletePlanMutation.mutate(plan.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Page Content Section */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-semibold">Page Content</h2>
+                  <p className="text-muted-foreground mt-1">Manage pricing page content and text</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingContent(null);
+                  setShowContentDialog(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Content
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {pageContent.map((content) => (
+                  <Card key={content.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-medium capitalize">{content.section}</h3>
+                          <Badge variant="outline">{content.key}</Badge>
+                        </div>
+                        <p className="text-muted-foreground mt-2 whitespace-pre-wrap">
+                          {content.content}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingContent(content);
+                            setShowContentDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteContentMutation.mutate(content.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Service Dialog */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const serviceData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                sort_order: parseInt(formData.get('sort_order') as string),
+              };
+
+              if (editingService) {
+                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
+              } else {
+                createServiceMutation.mutate(serviceData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingService?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingService?.description}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingService?.price}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingService?.sort_order ?? 0}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingService ? 'Update Service' : 'Create Service'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
+                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
+                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
+                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
+              }));
+
+              const planData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
+                sort_order: parseInt(formData.get('sort_order') as string),
+                features,
+              };
+
+              if (editingPlan) {
+                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
+              } else {
+                createPlanMutation.mutate(planData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingPlan?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingPlan?.description}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingPlan?.price}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billing_period">Billing Period</Label>
+                  <Select
+                    name="billing_period"
+                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingPlan?.sort_order ?? 0}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Features</Label>
+                <div className="space-y-2 mt-2">
+                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
+                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
+                      <Input
+                        name="feature"
+                        placeholder="Feature description"
+                        defaultValue={feature.feature}
+                        required
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
+                        <Checkbox
+                          id={`included-${index}`}
+                          name="included"
+                          defaultChecked={feature.included}
+                        />
+                      </div>
+                      <Input
+                        name="feature_sort_order"
+                        type="number"
+                        className="w-20"
+                        defaultValue={feature.sort_order}
+                        required
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
+                      if (featuresContainer) {
+                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
+                        if (newFeature) {
+                          const inputs = newFeature.querySelectorAll('input');
+                          inputs.forEach(input => {
+                            if (input.name === 'feature') input.value = '';
+                            if (input.name === 'feature_sort_order') {
+                              input.value = String(featuresContainer.children.length);
+                            }
+                          });
+                          featuresContainer.appendChild(newFeature);
+                        }
+                      }
+                    }}
+                  >
+                    Add Feature
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingPlan ? 'Update Plan' : 'Create Plan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contentData = {
+                page: 'pricing',
+                section: formData.get('section') as string,
+                key: formData.get('key') as string,
+                content: formData.get('content') as string,
+              };
+
+              if (editingContent) {
+                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
+              } else {
+                createContentMutation.mutate(contentData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="section">Section</Label>
+                <Select
+                  name="section"
+                  defaultValue={editingContent?.section ?? "hero"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hero">Hero</SelectItem>
+                    <SelectItem value="plans">Plans</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="key">Content Key</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="e.g., title, description"
+                  defaultValue={editingContent?.key}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  rows={5}
+                  defaultValue={editingContent?.content}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingContent ? 'Update Content' : 'Create Content'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
           <TabsTrigger value="waitlist-entries">
@@ -1021,14 +1562,12 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <Separator className="my-8" />
-
             {/* Plans Section */}
-            <div className="space-y-6">
+            <div className="mt-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">Plans</h2>
-                  <p className="text-muted-foreground">Manage your subscription plans and features</p>
+                  <p className="text-muted-foreground">Manage your subscription plans</p>
                 </div>
                 <Button onClick={() => {
                   setEditingPlan(null);
@@ -1038,7 +1577,7 @@ export default function AdminPortal() {
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 {Array.isArray(plans) && plans.map((plan) => (
                   <Card key={plan.id} className="p-4">
                     <div className="flex justify-between items-start gap-4">
@@ -1048,17 +1587,19 @@ export default function AdminPortal() {
                         <p className="text-sm font-medium mt-2">
                           ${plan.price}/{plan.billing_period}
                         </p>
-                        <div className="mt-4">
-                          <h4 className="text-sm font-medium mb-2">Features:</h4>
-                          <ul className="space-y-2">
-                            {plan.features?.map((feature) => (
-                              <li key={feature.id} className="text-sm flex items-center gap-2">
-                                <CheckCircle className={`h-4 w-4 ${feature.included ? 'text-green-500' : 'text-muted-foreground'}`} />
-                                {feature.feature}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        {plan.features && plan.features.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium mb-2">Features:</p>
+                            <ul className="text-sm space-y-1">
+                              {plan.features.map((feature, index) => (
+                                <li key={index} className="flex items-center gap-2">
+                                  <CheckCircle className={feature.included ? "w-4 h-4 text-primary" : "w-4 h-4 text-muted-foreground"} />
+                                  {feature.feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -1085,14 +1626,12 @@ export default function AdminPortal() {
               </div>
             </div>
 
-            <Separator className="my-8" />
-
-            {/* Page Content Section */}
-            <div className="space-y-6">
+            {/* Content Section */}
+            <div className="mt-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">Page Content</h2>
-                  <p className="text-muted-foreground">Manage the text content that appears on the pricing page</p>
+                  <p className="text-muted-foreground">Manage pricing page content and copy</p>
                 </div>
                 <Button onClick={() => {
                   setEditingContent(null);
@@ -1102,13 +1641,14 @@ export default function AdminPortal() {
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 {Array.isArray(pageContent) && pageContent.map((content) => (
                   <Card key={content.id} className="p-4">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
-                        <h3 className="font-medium">{content.section} - {content.key}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{content.content}</p>
+                        <h3 className="font-medium capitalize">{content.section}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{content.key}</p>
+                        <p className="text-sm mt-2">{content.content}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
