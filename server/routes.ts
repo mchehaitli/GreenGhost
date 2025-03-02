@@ -5,6 +5,7 @@ import { waitlist } from "../db/schema";
 import { eq, inArray } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
+import pricingRoutes from './routes/pricing';
 import emailService from './services/email';
 
 export function registerRoutes(app: Express): Server {
@@ -14,22 +15,20 @@ export function registerRoutes(app: Express): Server {
   // Register email template routes
   app.use(emailTemplateRoutes);
 
+  // Register pricing routes
+  app.use(pricingRoutes);
+
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
     try {
       const { type } = req.params;
-      const { email, template } = req.body;
+      const { email } = req.body;
 
       if (!email || !['verification', 'welcome'].includes(type)) {
         return res.status(400).json({ error: 'Invalid request parameters' });
       }
 
-      let html = template;
-      if (!template) {
-        // If no template provided, use the default preview template
-        html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
-      }
-
+      const html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
       res.json({ html });
     } catch (error) {
       res.status(500).json({ error: 'Failed to generate preview' });

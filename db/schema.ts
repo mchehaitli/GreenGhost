@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, numeric, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -20,11 +20,43 @@ export const waitlist = pgTable("waitlist", {
   street_address: text("street_address"),
   city: text("city"),
   state: text("state"),
-  zip_code: text("zip_code").default("").notNull(),
+  zip_code: text("zip_code"),
   notes: text("notes"),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   expires_at: timestamp("expires_at"),
+});
+
+// New tables for pricing management
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: numeric("price").notNull(),
+  sort_order: integer("sort_order").default(0).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const plans = pgTable("plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: numeric("price").notNull(),
+  billing_period: text("billing_period").default("monthly").notNull(),
+  sort_order: integer("sort_order").default(0).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const planFeatures = pgTable("plan_features", {
+  id: serial("id").primaryKey(),
+  plan_id: integer("plan_id").notNull().references(() => plans.id, { onDelete: 'cascade' }),
+  feature: text("feature").notNull(),
+  included: boolean("included").default(true).notNull(),
+  sort_order: integer("sort_order").default(0).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
@@ -63,6 +95,18 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
   }),
 }));
 
+// Add new relations
+export const planRelations = relations(plans, ({ many }) => ({
+  features: many(planFeatures),
+}));
+
+export const planFeaturesRelations = relations(planFeatures, ({ one }) => ({
+  plan: one(plans, {
+    fields: [planFeatures.plan_id],
+    references: [plans.id],
+  }),
+}));
+
 export const emailSegmentsRelations = relations(emailSegments, ({ one }) => ({
   template: one(emailTemplates, {
     fields: [emailSegments.template_id],
@@ -92,6 +136,29 @@ export const insertEmailTemplateSchema = z.object({
   html_content: z.string().min(1, "Email content is required"),
 });
 
+export const insertServiceSchema = z.object({
+  name: z.string().min(1, "Service name is required"),
+  description: z.string().min(1, "Service description is required"),
+  price: z.number().min(0, "Price must be non-negative"),
+  sort_order: z.number().optional(),
+});
+
+export const insertPlanSchema = z.object({
+  name: z.string().min(1, "Plan name is required"),
+  description: z.string().min(1, "Plan description is required"),
+  price: z.number().min(0, "Price must be non-negative"),
+  billing_period: z.enum(["monthly", "yearly"]),
+  sort_order: z.number().optional(),
+});
+
+export const insertPlanFeatureSchema = z.object({
+  plan_id: z.number(),
+  feature: z.string().min(1, "Feature description is required"),
+  included: z.boolean(),
+  sort_order: z.number().optional(),
+});
+
+
 // Export types
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -112,3 +179,12 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
+
+export type InsertService = typeof services.$inferInsert;
+export type SelectService = typeof services.$inferSelect;
+
+export type InsertPlan = typeof plans.$inferInsert;
+export type SelectPlan = typeof plans.$inferSelect;
+
+export type InsertPlanFeature = typeof planFeatures.$inferInsert;
+export type SelectPlanFeature = typeof planFeatures.$inferSelect;

@@ -27,7 +27,8 @@ import {
   BarChart,
   Mail,
   CheckCircle,
-  Users
+  Users,
+  DollarSign
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -64,6 +65,8 @@ import {
 } from "@/components/ui/accordion";
 import { DatePicker } from "@/components/ui/date-picker";
 import { addDays, subDays, isWithinInterval } from 'date-fns';
+import { Separator } from "@/components/ui/separator";
+
 
 type WaitlistEntry = {
   id: number;
@@ -94,6 +97,32 @@ type SegmentationCriteria = {
 type SortDirection = 'asc' | 'desc';
 type SortField = 'created_at' | 'zip_code';
 
+type Service = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  sort_order: number;
+};
+
+type Plan = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  billing_period: 'monthly' | 'yearly';
+  sort_order: number;
+  features?: PlanFeature[];
+};
+
+type PlanFeature = {
+  id: number;
+  plan_id: number;
+  feature: string;
+  included: boolean;
+  sort_order: number;
+};
+
 let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
   '75033': { city: 'Frisco', state: 'TX' },
   // Add any other problematic ZIP codes here
@@ -105,7 +134,7 @@ type EmailTemplate = {
   subject: string;
   html_content: string;
   thumbnail_url?: string; // Added thumbnail_url
-}
+};
 
 type EmailHistoryEntry = {
   id: number;
@@ -158,6 +187,10 @@ export default function AdminPortal() {
   const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
   const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
   const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
 
 
   useEffect(() => {
@@ -196,6 +229,18 @@ export default function AdminPortal() {
     enabled: activeTab === 'email-history'
   });
 
+
+  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
+    queryKey: ['services'],
+    queryFn: () => fetch('/api/pricing/services').then(res => res.json()),
+    enabled: activeTab === "pricing",
+  });
+
+  const { data: plans = [], isLoading: plansLoading } = useQuery<Plan[]>({
+    queryKey: ['plans'],
+    queryFn: () => fetch('/api/pricing/plans').then(res => res.json()),
+    enabled: activeTab === "pricing",
+  });
 
   const updateEntryMutation = useMutation({
     mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
@@ -261,6 +306,160 @@ export default function AdminPortal() {
     onError: (error) => {
       toast({
         title: "Failed to delete entry",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const createServiceMutation = useMutation({
+    mutationFn: async (service: Omit<Service, 'id'>) => {
+      const response = await fetch('/api/pricing/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service),
+      });
+      if (!response.ok) throw new Error('Failed to create service');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setShowServiceDialog(false);
+      toast({
+        title: "Service created",
+        description: "The service has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create service",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: async (service: Service) => {
+      const response = await fetch(`/api/pricing/services/${service.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service),
+      });
+      if (!response.ok) throw new Error('Failed to update service');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setShowServiceDialog(false);
+      toast({
+        title: "Service updated",
+        description: "The service has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update service",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/pricing/services/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete service');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast({
+        title: "Service deleted",
+        description: "The service has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete service",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const createPlanMutation = useMutation({
+    mutationFn: async (plan: Omit<Plan, 'id'>) => {
+      const response = await fetch('/api/pricing/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plan),
+      });
+      if (!response.ok) throw new Error('Failed to create plan');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      setShowPlanDialog(false);
+      toast({
+        title: "Plan created",
+        description: "The plan has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create plan",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: async (plan: Plan) => {
+      const response = await fetch(`/api/pricing/plans/${plan.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plan),
+      });
+      if (!response.ok) throw new Error('Failed to update plan');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      setShowPlanDialog(false);
+      toast({
+        title: "Plan updated",
+        description: "The plan has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update plan",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/pricing/plans/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete plan');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      toast({
+        title: "Plan deleted",
+        description: "The plan has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete plan",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
@@ -653,6 +852,10 @@ export default function AdminPortal() {
           <TabsTrigger value="email-templates">
             <FileText className="w-4 h-4 mr-2" />
             Email Templates
+          </TabsTrigger>
+          <TabsTrigger value="pricing">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Pricing
           </TabsTrigger>
           <TabsTrigger value="email-history">
             <Mail className="w-4 h-4 mr-2"/>
@@ -1188,6 +1391,117 @@ export default function AdminPortal() {
             )}
           </Card>
         </TabsContent>
+        <TabsContent value="pricing" className="space-y-4">
+          <Card className="p-4 md:p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Services</h2>
+                <p className="text-muted-foreground">Manage your service offerings and pricing</p>
+              </div>
+              <Button onClick={() => {
+                setEditingService(null);
+                setShowServiceDialog(true);
+              }}>
+                Add New Service
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {services.map((service) => (
+                <Card key={service.id} className="p-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{service.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
+                      <p className="text-sm font-medium mt-2">${service.price}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingService(service);
+                          setShowServiceDialog(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteServiceMutation.mutate(service.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <Separator className="my-8" />
+
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Plans</h2>
+                <p className="text-muted-foreground">Manage your subscription plans and features</p>
+              </div>
+              <Button onClick={() => {
+                setEditingPlan(null);
+                setShowPlanDialog(true);
+              }}>
+                Add New Plan
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {plans.map((plan) => (
+                <Card key={plan.id} className="p-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{plan.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
+                      <p className="text-sm font-medium mt-2">
+                        ${plan.price}/{plan.billing_period}
+                      </p>
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium mb-2">Features:</h4>
+                        <ul className="space-y-2">
+                          {plan.features?.map((feature) => (
+                            <li key={feature.id} className="text-sm flex items-center gap-2">
+                              <CheckCircle className={`h-4 w-4 ${feature.included ? 'text-green-500' : 'text-muted-foreground'}`} />
+                              {feature.feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingPlan(plan);
+                          setShowPlanDialog(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deletePlanMutation.mutate(plan.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
@@ -1503,6 +1817,230 @@ export default function AdminPortal() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const serviceData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                sort_order: parseInt(formData.get('sort_order') as string),
+              };
+
+              if (editingService) {
+                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
+              } else {
+                createServiceMutation.mutate(serviceData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingService?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingService?.description}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingService?.price}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingService?.sort_order ?? 0}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingService ? 'Update Service' : 'Create Service'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
+                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
+                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
+                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
+              }));
+
+              const planData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
+                sort_order: parseInt(formData.get('sort_order') as string),
+                features,
+              };
+
+              if (editingPlan) {
+                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
+              } else {
+                createPlanMutation.mutate(planData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingPlan?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingPlan?.description}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingPlan?.price}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billing_period">Billing Period</Label>
+                  <Select
+                    name="billing_period"
+                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingPlan?.sort_order ?? 0}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Features</Label>
+                <div className="space-y-2 mt-2">
+                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
+                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
+                      <Input
+                        name="feature"
+                        placeholder="Feature description"
+                        defaultValue={feature.feature}
+                        required
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
+                        <Checkbox
+                          id={`included-${index}`}
+                          name="included"
+                          defaultChecked={feature.included}
+                        />
+                      </div>
+                      <Input
+                        name="feature_sort_order"
+                        type="number"
+                        className="w-20"
+                        defaultValue={feature.sort_order}
+                        required
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
+                      if (featuresContainer) {
+                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
+                        if (newFeature) {
+                          const inputs = newFeature.querySelectorAll('input');
+                          inputs.forEach(input => {
+                            if (input.name === 'feature') input.value = '';
+                            if (input.name === 'feature_sort_order') {
+                              input.value = String(featuresContainer.children.length);
+                            }
+                          });
+                          featuresContainer.appendChild(newFeature);
+                        }
+                      }
+                    }}
+                  >
+                    Add Feature
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingPlan ? 'Update Plan' : 'Create Plan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
