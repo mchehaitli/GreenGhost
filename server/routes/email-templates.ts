@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { emailTemplates, emailSegments, waitlist, insertEmailTemplateSchema } from '../../db/schema';
-import { eq, inArray, not, or } from 'drizzle-orm';
+import { eq, inArray, not } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
+import { generateThumbnail } from '../services/thumbnail-generator';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const router = Router();
 
@@ -52,8 +55,21 @@ router.post('/api/email-templates', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Template name already exists' });
     }
 
-    const [template] = await db.insert(emailTemplates).values(validatedData).returning();
-    return res.status(201).json(template);
+    // Create template first to get the ID
+    const [template] = await db.insert(emailTemplates)
+      .values(validatedData)
+      .returning();
+
+    // Generate thumbnail
+    const thumbnailUrl = await generateThumbnail(validatedData.html_content, template.id);
+
+    // Update template with thumbnail URL
+    const [updatedTemplate] = await db.update(emailTemplates)
+      .set({ thumbnail_url: thumbnailUrl })
+      .where(eq(emailTemplates.id, template.id))
+      .returning();
+
+    return res.status(201).json(updatedTemplate);
   } catch (error) {
     if (error instanceof Error) {
       const validationError = fromZodError(error);
@@ -82,19 +98,13 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    // Check if new name conflicts with another template
-    if (validatedData.name !== existingTemplate.name) {
-      const nameExists = await db.query.emailTemplates.findFirst({
-        where: eq(emailTemplates.name, validatedData.name)
-      });
-      if (nameExists) {
-        return res.status(400).json({ error: 'Template name already exists' });
-      }
-    }
+    // Generate new thumbnail
+    const thumbnailUrl = await generateThumbnail(validatedData.html_content, id);
 
     const [template] = await db.update(emailTemplates)
       .set({
         ...validatedData,
+        thumbnail_url: thumbnailUrl,
         updated_at: new Date(),
       })
       .where(eq(emailTemplates.id, id))
@@ -127,6 +137,14 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
+    // Delete the thumbnail file if it exists
+    if (template.thumbnail_url) {
+      const thumbnailPath = path.join(__dirname, '../../public', template.thumbnail_url);
+      if (fs.existsSync(thumbnailPath)) {
+        fs.unlinkSync(thumbnailPath);
+      }
+    }
+
     // Delete the template
     await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
 
@@ -137,56 +155,11 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Send email to segment
-router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
-  try {
-    const templateId = parseInt(req.params.id);
-    if (isNaN(templateId)) {
-      return res.status(400).json({ error: 'Invalid template ID' });
-    }
-
-    const { zip_codes } = req.body;
-    if (!Array.isArray(zip_codes)) {
-      return res.status(400).json({ error: 'zip_codes must be an array' });
-    }
-
-    // Get template
-    const template = await db.query.emailTemplates.findFirst({
-      where: eq(emailTemplates.id, templateId)
-    });
-
-    if (!template) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-
-    // Get recipients
-    const recipients = await db.query.waitlist.findMany({
-      where: zip_codes.length > 0 ? inArray(waitlist.zip_code, zip_codes) : undefined
-    });
-
-    // Record segment
-    const [segment] = await db.insert(emailSegments).values({
-      template_id: templateId,
-      zip_codes: zip_codes,
-      total_recipients: recipients.length,
-    }).returning();
-
-    return res.json({
-      success: true,
-      total_recipients: recipients.length,
-      segment_id: segment.id,
-    });
-  } catch (error) {
-    log('Error sending emails:', error instanceof Error ? error.message : 'Unknown error');
-    return res.status(500).json({ error: 'Failed to send emails' });
-  }
-});
-
-// Add this route for email history
+// Email history route
 router.get('/api/email-history', requireAuth, async (_req, res) => {
   try {
     const history = await db.query.emailSegments.findMany({
-      orderBy: (emailSegments, { desc }) => [desc(emailSegments.created_at)],
+      orderBy: (emailSegments, { desc }) => [desc(emailSegments.sent_at)],
       with: {
         template: true
       }
@@ -195,7 +168,7 @@ router.get('/api/email-history', requireAuth, async (_req, res) => {
     const formattedHistory = history.map(entry => ({
       id: entry.id,
       template_name: entry.template?.name || 'Unknown Template',
-      sent_at: entry.created_at,
+      sent_at: entry.sent_at,
       total_recipients: entry.total_recipients,
       status: entry.status || 'completed',
     }));

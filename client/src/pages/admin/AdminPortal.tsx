@@ -104,6 +104,7 @@ type EmailTemplate = {
   name: string;
   subject: string;
   html_content: string;
+  thumbnail_url?: string; // Added thumbnail_url
 }
 
 type EmailHistoryEntry = {
@@ -112,7 +113,7 @@ type EmailHistoryEntry = {
   sent_at: string;
   total_recipients: number;
   status: 'completed' | 'failed' | 'pending';
-}
+};
 
 
 export default function AdminPortal() {
@@ -1062,6 +1063,19 @@ export default function AdminPortal() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
+                          {template.thumbnail_url ? (
+                            <div className="relative w-full h-48 mb-4 rounded-md overflow-hidden border">
+                              <img
+                                src={template.thumbnail_url}
+                                alt={`Preview of ${template.name}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-48 mb-4 rounded-md border flex items-center justify-center bg-muted">
+                              <FileText className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          )}
                           <EmailTemplateEditor
                             initialData={template}
                             onSave={async (data) => {
