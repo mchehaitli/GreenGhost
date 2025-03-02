@@ -183,4 +183,29 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
   }
 });
 
+// Add this route for email history
+router.get('/api/email-history', requireAuth, async (_req, res) => {
+  try {
+    const history = await db.query.emailSegments.findMany({
+      orderBy: (emailSegments, { desc }) => [desc(emailSegments.created_at)],
+      with: {
+        template: true
+      }
+    });
+
+    const formattedHistory = history.map(entry => ({
+      id: entry.id,
+      template_name: entry.template?.name || 'Unknown Template',
+      sent_at: entry.created_at,
+      total_recipients: entry.total_recipients,
+      status: entry.status || 'completed',
+    }));
+
+    return res.json(formattedHistory);
+  } catch (error) {
+    log('Error fetching email history:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to fetch email history' });
+  }
+});
+
 export default router;

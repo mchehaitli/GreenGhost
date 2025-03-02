@@ -106,6 +106,15 @@ type EmailTemplate = {
   html_content: string;
 }
 
+type EmailHistoryEntry = {
+  id: number;
+  template_name: string;
+  sent_at: string;
+  total_recipients: number;
+  status: 'completed' | 'failed' | 'pending';
+}
+
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -144,6 +153,10 @@ export default function AdminPortal() {
     queryFn: () => fetch('/api/email-templates/custom').then(res => res.json()),
     enabled: activeTab === 'email-templates' && activeTemplateTab === 'custom'
   });
+  const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
+  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
+  const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
+  const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
 
 
   useEffect(() => {
@@ -173,6 +186,13 @@ export default function AdminPortal() {
       return res.json();
     },
     enabled: activeTab === "waitlist-analytics"
+  });
+
+  // Add this query for email history
+  const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery({
+    queryKey: ['email-history'],
+    queryFn: () => fetch('/api/email-history').then(res => res.json()),
+    enabled: activeTab === 'email-history'
   });
 
 
@@ -633,6 +653,10 @@ export default function AdminPortal() {
             <FileText className="w-4 h-4 mr-2" />
             Email Templates
           </TabsTrigger>
+          <TabsTrigger value="email-history">
+            <Mail className="w-4 h-4 mr-2"/>
+            Email History
+          </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="w-4 h-4 mr-2" />
             Settings
@@ -881,8 +905,7 @@ export default function AdminPortal() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Date</TableHead>
-                          <TableHead>Signups</TableHead>
-                          <TableHead>Percentage</TableHead>
+                          <TableHead>Signups</TableHead>                          <TableHead>Percentage</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -900,7 +923,7 @@ export default function AdminPortal() {
 
                 <div>
                   <h3 className="text-lg font-medium mb-4">Monthly Breakdown</h3>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-xauto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -1026,6 +1049,19 @@ export default function AdminPortal() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {customTemplates?.map((template) => (
                         <Card key={template.id} className="p-4">
+                          <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-lg font-medium">{template.name}</h3>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setTemplateToDelete(template);
+                                setDeleteTemplateDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <EmailTemplateEditor
                             initialData={template}
                             onSave={async (data) => {
@@ -1085,6 +1121,51 @@ export default function AdminPortal() {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Settings</h2>
             <p className="text-muted-foreground">Configure your application settings here.</p>
+          </Card>
+        </TabsContent>
+        <TabsContent value="email-history" className="space-y-4">
+          <Card className="p-4 md:p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold mb-2">Email History</h2>
+              <p className="text-muted-foreground">
+                Track all sent emails and their delivery statistics
+              </p>
+            </div>
+
+            {emailHistoryLoading ? (
+              <LoadingSpinner />
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Template Name</TableHead>
+                      <TableHead>Sent At</TableHead>
+                      <TableHead>Recipients</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {emailHistory?.map((history: any) => (
+                      <TableRow key={history.id}>
+                        <TableCell className="font-medium">
+                          {history.template_name}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(history.sent_at), "MMM dd, yyyy 'at' h:mm a")}
+                        </TableCell>
+                        <TableCell>{history.total_recipients}</TableCell>
+                        <TableCell>
+                          <Badge variant={history.status === 'completed' ? 'success' : 'default'}>
+                            {history.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </Card>
         </TabsContent>
       </Tabs>
@@ -1357,6 +1438,48 @@ export default function AdminPortal() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the template "{templateToDelete?.name}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (templateToDelete) {
+                  try {
+                    const response = await fetch(`/api/email-templates/${templateToDelete.id}`, {
+                      method: 'DELETE',
+                    });
+                    if (!response.ok) {
+                      throw new Error('Failed to delete template');
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                    toast({
+                      title: "Success",
+                      description: "Template deleted successfully",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: error instanceof Error ? error.message : "Failed to delete template",
+                      variant: "destructive"
+                    });
+                  }
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
