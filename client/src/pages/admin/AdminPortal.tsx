@@ -232,13 +232,23 @@ export default function AdminPortal() {
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ['services'],
-    queryFn: () => fetch('/api/pricing/services').then(res => res.json()),
+    queryFn: async () => {
+      const response = await fetch('/api/pricing/services');
+      if (!response.ok) throw new Error('Failed to fetch services');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: activeTab === "pricing",
   });
 
   const { data: plans = [], isLoading: plansLoading } = useQuery<Plan[]>({
     queryKey: ['plans'],
-    queryFn: () => fetch('/api/pricing/plans').then(res => res.json()),
+    queryFn: async () => {
+      const response = await fetch('/api/pricing/plans');
+      if (!response.ok) throw new Error('Failed to fetch plans');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: activeTab === "pricing",
   });
 
@@ -1393,6 +1403,10 @@ export default function AdminPortal() {
         </TabsContent>
         <TabsContent value="pricing" className="space-y-4">
           <Card className="p-4 md:p-6">
+            <LoadingOverlay 
+              isLoading={servicesLoading || plansLoading}
+              text="Loading pricing data..."
+            />
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Services</h2>
@@ -1407,7 +1421,7 @@ export default function AdminPortal() {
             </div>
 
             <div className="space-y-4">
-              {services.map((service) => (
+              {Array.isArray(services) && services.map((service) => (
                 <Card key={service.id} className="p-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
@@ -1879,7 +1893,7 @@ export default function AdminPortal() {
                   defaultValue={editingService?.sort_order ?? 0}
                   required
                 />
-              </div>
+                            </div>
             </div>
             <DialogFooter className="mt-6">
               <Button type="submit">
