@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import {
@@ -29,7 +29,9 @@ import {
   CheckCircle,
   Users,
   DollarSign,
-  Plus
+  Plus,
+  Edit,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -153,57 +155,43 @@ type PageContent = {
   content: string;
 };
 
-export default function AdminPortal() {
+const AdminPortal = () => {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("waitlist-entries");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [currentNotes, setCurrentNotes] = useState("");
-  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
-  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
-  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
-  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [showContentDialog, setShowContentDialog] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editingContent, setEditingContent] = useState<PageContent | null>(null);
+  const [isSavingService, setIsSavingService] = useState(false);
+  const [isSavingPlan, setIsSavingPlan] = useState(false); 
+  const [isSavingContent, setIsSavingContent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<WaitlistEntry>>>({});
+  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
-  const [selectAllRecipients, setSelectAllRecipients] = useState(false);
-  const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
-  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | null>(null);
-  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [loadingZips, setLoadingZips] = useState<Record<number, boolean>>({});
   const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
     dateRange: null,
     states: [],
     cities: [],
-    zipCodes: [],
+    zipCodes: []
   });
-  const [activeTemplateTab, setActiveTemplateTab] = useState('system');
-  const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<EmailTemplate[]>({
-    queryKey: ['email-templates', 'custom'],
-    queryFn: () => fetch('/api/email-templates/custom').then(res => res.json()),
-    enabled: activeTab === 'email-templates' && activeTemplateTab === 'custom'
-  });
-  const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
-  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
-  const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
-  const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const [showPlanDialog, setShowPlanDialog] = useState(false);
-  const [editingContent, setEditingContent] = useState<PageContent | null>(null);
-  const [showContentDialog, setShowContentDialog] = useState(false);
-  const [isSavingService, setIsSavingService] = useState(false);
-  const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [isSavingContent, setIsSavingContent] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -667,29 +655,6 @@ export default function AdminPortal() {
     }
   };
 
-  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
-    const isLoading = {
-      service: isSavingService,
-      plan: isSavingPlan,
-      content: isSavingContent
-    }[type];
-
-    const labels = {
-      service: ['Create Service', 'Update Service'],
-      plan: ['Create Plan', 'Update Plan'],
-      content: ['Create Content', 'Update Content']
-    };
-
-    return (
-      <DialogFooter className="mt-6">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {isEditing ? labels[type][1] : labels[type][0]}
-        </Button>
-      </DialogFooter>
-    );
-  };
-
   const sortedEntries = [...filteredEntries].sort((a, b) => {
     const modifier = sortDirection === 'asc' ? 1 : -1;
 
@@ -940,7 +905,674 @@ export default function AdminPortal() {
     );
   }
 
+  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
+    const isLoading = {
+      service: isSavingService,
+      plan: isSavingPlan,
+      content: isSavingContent
+    }[type];
+
+    const labels = {
+      service: ['Create Service', 'Update Service'],
+      plan: ['Create Plan', 'Update Plan'],
+      content: ['Create Content', 'Update Content']
+    };
+
+    return (
+      <DialogFooter className="mt-6">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isEditing ? labels[type][1] : labels[type][0]}
+        </Button>
+      </DialogFooter>
+    );
+  };
+
+  const handleViewDetails = (entry: WaitlistEntry) => {
+    setSelectedEntry(entry);
+    setShowDetailsDialog(true);
+  };
+
+  const handleSaveChanges = () => {
+    const changes = Object.values(unsavedChanges).map(change => ({
+      id: change.id!,
+      ...change
+    }));
+    if (changes.length > 0) {
+      updateEntryMutation.mutate(changes);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setEntryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (entryToDelete) {
+      deleteEntryMutation.mutate(entryToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  };
+
+  const getFilteredRecipients = () => {
+    return waitlistEntries.filter(entry => {
+      if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
+        const entryDate = new Date(entry.created_at);
+        if (!isWithinInterval(entryDate, {
+          start: segmentationCriteria.dateRange.from,
+          end: segmentationCriteria.dateRange.to
+        })) {
+          return false;
+        }
+      }
+
+      if (segmentationCriteria.states.length > 0) {
+        if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
+          return false;
+        }
+      }
+
+      if (segmentationCriteria.cities.length > 0) {
+        if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
+          return false;
+        }
+      }
+
+      if (segmentationCriteria.zipCodes.length > 0) {
+        if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  const filteredEntries = getFilteredRecipients().filter(entry => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      entry.email.toLowerCase().includes(searchLower) ||
+      entry.first_name?.toLowerCase().includes(searchLower) ||
+      entry.last_name?.toLowerCase().includes(searchLower) ||
+      entry.zip_code?.includes(searchTerm)
+    );
+  });
+
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    const modifier = sortDirection === 'asc' ? 1 : -1;
+
+    if (sortField === 'created_at') {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return (dateA - dateB) * modifier;
+    } else {
+      const zipA = a.zip_code || '';
+      const zipB = b.zip_code || '';
+      return zipA.localeCompare(zipB) * modifier;
+    }
+  });
+
+  const handleCityStateFromZip = async (zip: string, entryId: number) => {
+    if (!/^\d{5}$/.test(zip)) {
+      toast({
+        title: "Invalid ZIP Code",
+        description: "ZIP code must be 5 digits",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    setLoadingZips(prev => ({ ...prev, [entryId]: true }));
+
+    try {
+      if (knownZipCodeMappings[zip]) {
+        await updateEntryMutation.mutateAsync([{
+          id: entryId,
+          city: knownZipCodeMappings[zip].city,
+          state: knownZipCodeMappings[zip].state
+        }]);
+        return true;
+      }
+
+      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      if (!response.ok) throw new Error('Failed to get response from ZIP API');
+
+      const data = await response.json();
+
+      if (data && data.places && data.places.length > 0 && data.places[0]) {
+        const place = data.places[0];
+        if (place['place name'] && place['state abbreviation']) {
+          await updateEntryMutation.mutateAsync([{
+            id: entryId,
+            city: place['place name'],
+            state: place['state abbreviation']
+          }]);
+          toast({
+            title: "ZIP Code Validated",
+            description: `Updated to ${place['place name']}, ${place['state abbreviation']}`,
+            variant: "default"
+          });
+          return true;
+        } else {
+          throw new Error('Invalid location data format in API response');
+        }
+      } else {
+        throw new Error('No location data found for this ZIP code');
+      }
+    } catch (error) {
+      console.error('Error in handleCityStateFromZip:', error);
+      toast({
+        title: "ZIP Code Validation Failed",
+        description: error instanceof Error ? error.message : "Please enter city and state manually",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
+    }
+  };
+
+  const handleAutoPopulateAll = async () => {
+    setIsAutoPopulating(true);
+    let successCount = 0;
+    let failCount = 0;
+    let failedZips: string[] = [];
+
+    try {
+      const entriesToUpdate = filteredEntries.filter(
+        entry => entry.zip_code && (!entry.city || !entry.state)
+      );
+
+      if (entriesToUpdate.length === 0) {
+        toast({
+          title: "No entries to update",
+          description: "All entries with ZIP codes already have city and state information.",
+        });
+        return;
+      }
+
+      for (const entry of entriesToUpdate) {
+        if (!entry.zip_code) continue;
+
+        try {
+          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
+          if (success) {
+            successCount++;
+          } else {
+            failCount++;
+            failedZips.push(entry.zip_code);
+          }
+          if (successCount + failCount < entriesToUpdate.length) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        } catch (error) {
+          failCount++;
+          failedZips.push(entry.zip_code);
+        }
+      }
+
+      let description = `Successfully updated ${successCount} entries.`;
+      if (failCount > 0) {
+        description += `\nFailed entries: ${failedZips.join(', ')}`;
+      }
+
+      toast({
+        title: "Auto-population Complete",
+        description: description,
+        duration: 5000,
+        variant: successCount > 0 ? "default" : "destructive"
+      });
+    } catch (error) {
+      toast({
+        title: "Auto-population Failed",
+        description: "An error occurred while updating locations.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAutoPopulating(false);
+    }
+  };
+
+  const handleExportToExcel = () => {
+    try {
+      const workbook = XLSX.utils.book_new();
+      const excelData = filteredEntries.map(entry => ({
+        'Email': entry.email,
+        'Sign-up Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a"),
+        'First Name': entry.first_name || '',
+        'Last Name': entry.last_name || '',
+        'Phone Number': entry.phone_number || '',
+        'Street Address': entry.street_address || '',
+        'City': entry.city || '',
+        'State': entry.state || '',
+        'ZIP Code': entry.zip_code || '',
+        'Notes': entry.notes || ''
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Waitlist Entries');
+      XLSX.writeFile(workbook, `waitlist-entries-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+      toast({
+        title: "Export Successful",
+        description: "Waitlist entries have been exported to Excel.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export waitlist entries.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
+    const isLoading = {
+      service: isSavingService,
+      plan: isSavingPlan,
+      content: isSavingContent
+    }[type];
+
+    const labels = {
+      service: ['Create Service', 'Update Service'],
+      plan: ['Create Plan', 'Update Plan'],
+      content: ['Create Content', 'Update Content']
+    };
+
+    return (
+      <DialogFooter className="mt-6">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isEditing ? labels[type][1] : labels[type][0]}
+        </Button>
+      </DialogFooter>
+    );
+  };
+
   return (
+    <>
+      <div className="container py-4 md:py-10 px-4 md:px-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Admin Portal</h1>
+            <p className="text-muted-foreground mt-1">Manage your platform content and settings</p>
+          </div>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+            <Badge variant="outline" className="flex gap-1 px-3 py-1">
+              <User className="w-3 h-3" /> {user?.username}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await logout();
+                  setLocation('/login');
+                } catch (error) {
+                  toast({
+                    title: "Logout Failed",
+                    description: "Could not log out. Please try again.",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
+            <TabsTrigger value="waitlist-entries">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Waitlist Entries
+            </TabsTrigger>
+            <TabsTrigger value="waitlist-analytics">
+              <BarChart className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="email-templates">
+              <FileText className="w-4 h-4 mr-2" />
+              Email Templates
+            </TabsTrigger>
+            <TabsTrigger value="pricing">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Pricing
+            </TabsTrigger>
+            <TabsTrigger value="email-history">
+              <Mail className="w-4 h-4 mr-2"/>
+              Email History
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="pricing">
+            Pricing Content Goes Here
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Service Dialog */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const serviceData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                sort_order: parseInt(formData.get('sort_order') as string),
+              };
+
+              if (editingService) {
+                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
+              } else {
+                createServiceMutation.mutate(serviceData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingService?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingService?.description}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingService?.price}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingService?.sort_order ?? 0}
+                  required
+                />
+              </div>
+            </div>
+            {renderDialogFooter('service', !!editingService)}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+            <DialogDescription>
+              Configure a subscription plan and its features.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
+                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
+                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
+                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
+              }));
+
+              const planData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
+                sort_order: parseInt(formData.get('sort_order') as string),
+                features,
+              };
+
+              if (editingPlan) {
+                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
+              } else {
+                createPlanMutation.mutate(planData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Plan Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingPlan?.name}
+                  placeholder="e.g., Premium Care"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingPlan?.description}
+                  placeholder="Brief description of the plan..."
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Monthly Price</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingPlan?.price}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billing_period">Billing Period</Label>
+                  <Select
+                    name="billing_period"
+                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Display Order (1 for Most Popular)</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingPlan?.sort_order ?? 0}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Features</Label>
+                <div className="space-y-2 mt-2">
+                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
+                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
+                      <Input
+                        name="feature"
+                        placeholder="Feature description"
+                        defaultValue={feature.feature}
+                        required
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
+                        <Checkbox
+                          id={`included-${index}`}
+                          name="included"
+                          defaultChecked={feature.included}
+                        />
+                      </div>
+                      <Input
+                        name="feature_sort_order"
+                        type="number"
+                        className="w-20"
+                        defaultValue={feature.sort_order}
+                        required
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
+                      if (featuresContainer) {
+                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
+                        if (newFeature) {
+                          const inputs = newFeature.querySelectorAll('input');
+                          inputs.forEach(input => {
+                            if (input.name === 'feature') input.value = '';
+                            if (input.name === 'feature_sort_order') {
+                              input.value = String(featuresContainer.children.length);
+                            }
+                          });
+                          featuresContainer.appendChild(newFeature);
+                        }
+                      }
+                    }}
+                  >
+                    Add Feature
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit" disabled={isSavingPlan}>
+                {isSavingPlan && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {editingPlan ? 'Update Plan' : 'Create Plan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+            <DialogDescription>
+              Manage the text content that appears on the pricing page.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contentData = {
+                page: 'pricing',
+                section: formData.get('section') as string,
+                key: formData.get('key') as string,
+                content: formData.get('content') as string,
+              };
+
+              if (editingContent) {
+                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
+              } else {
+                createContentMutation.mutate(contentData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="section">Section</Label>
+                <Select
+                  name="section"
+                  defaultValue={editingContent?.section ?? "hero"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hero">Hero</SelectItem>
+                    <SelectItem value="plans">Plans</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="key">Content Key</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="e.g., title, description"
+                  defaultValue={editingContent?.key}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  rows={5}
+                  defaultValue={editingContent?.content}
+                  placeholder="Enter the content text..."
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit" disabled={isSavingContent}>
+                {isSavingContent && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {editingContent ? 'Update Content' : 'Create Content'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      return (
     <div className="container py-4 md:py-10 px-4 md:px-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
@@ -972,130 +1604,812 @@ export default function AdminPortal() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
           <TabsTrigger value="waitlist-entries">
-            <Users className="w-4 h-4 mr-2" />
-            Waitlist
+            <UserPlus className="w-4 h-4 mr-2" />
+            Waitlist Entries
           </TabsTrigger>
           <TabsTrigger value="waitlist-analytics">
             <BarChart className="w-4 h-4 mr-2" />
             Analytics
           </TabsTrigger>
           <TabsTrigger value="email-templates">
-            <Mail className="w-4 h-4 mr-2" />
-            Email Templates
-          </TabsTrigger>
-          <TabsTrigger value="email-history">
             <FileText className="w-4 h-4 mr-2" />
-            Email History
+            Email Templates
           </TabsTrigger>
           <TabsTrigger value="pricing">
             <DollarSign className="w-4 h-4 mr-2" />
             Pricing
           </TabsTrigger>
+          <TabsTrigger value="email-history">
+            <Mail className="w-4 h-4 mr-2"/>
+            Email History
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pricing">
-          <Card className="p-6">
-            <LoadingOverlay 
-              isLoading={servicesLoading || plansLoading || contentLoading}
-              text="Loading pricing data..."
-            />
-            
-            {/* Services Section */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-semibold">Services</h2>
-                  <p className="text-muted-foreground mt-1">Manage your service offerings and pricing</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingService(null);
-                  setShowServiceDialog(true);
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Service
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {services.map((service) => (
-                  <Card key={service.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-medium">{service.name}</h3>
-                        <p className="text-muted-foreground mt-1">{service.description}</p>
-                        <p className="text-sm font-medium mt-2">${service.price.toFixed(2)}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingService(service);
-                            setShowServiceDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteServiceMutation.mutate(service.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+          <div className="min-h-screen bg-background">
+            <section className="py-8">
+              <div className="container">
+                <LoadingOverlay 
+                  isLoading={servicesLoading || plansLoading || contentLoading}
+                  text="Loading pricing data..."
+                />
+                {/* Hero Section with Content Management */}
+                <Card className="p-6 mb-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold">Hero Section Content</h2>
+                      <p className="text-muted-foreground">Manage the main pricing page header content</p>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                    <Button onClick={() => {
+                      setEditingContent(null);
+                      setShowContentDialog(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Content
+                    </Button>
+                  </div>
+                  <div className="space-y-4">
+                    {pageContent
+                      .filter(content => content.section === 'hero')
+                      .map((content) => (
+                        <Card key={content.id} className="relative p-4 overflow-hidden">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <Badge variant="outline" className="mb-2">{content.key}</Badge>
+                              <p className="text-lg">{content.content}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingContent(content);
+                                  setShowContentDialog(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => deleteContentMutation.mutate(content.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                    ))}
+                  </div>
+                </Card>
 
-            <Separator className="my-8" />
-
-            {/* Plans Section */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-semibold">Plans</h2>
-                  <p className="text-muted-foreground mt-1">Manage subscription plans and features</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingPlan(null);
-                  setShowPlanDialog(true);
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Plan
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {plans.map((plan) => (
-                  <Card key={plan.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium">{plan.name}</h3>
-                        <p className="text-muted-foreground mt-1">{plan.description}</p>
-                        <p className="text-sm font-medium mt-2">
-                          ${plan.price.toFixed(2)} / {plan.billing_period}
-                        </p>
-                        {plan.features && plan.features.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="text-sm font-medium mb-2">Features:</h4>
-                            <ul className="space-y-2">
-                              {plan.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-center text-sm">
-                                  <CheckCircle className={`w-4 h-4 mr-2 ${
-                                    feature.included ? 'text-green-500' : 'text-muted-foreground'
-                                  }`} />
-                                  {feature.feature}
-                                </li>
-                              ))}
-                            </ul>
+                {/* Plans Section */}
+                <Card className="p-6 mb-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold">Subscription Plans</h2>
+                      <p className="text-muted-foreground">Manage your subscription plans and features</p>
+                    </div>
+                    <Button onClick={() => {
+                      setEditingPlan(null);
+                      setShowPlanDialog(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Plan
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {plans.map((plan) => (
+                      <Card key={plan.id} className={`relative overflow-hidden ${plan.sort_order === 1 ? 'border-primary shadow-lg' : ''}`}>
+                        {plan.sort_order === 1 && (
+                          <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                            <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                              Most Popular
+                            </span>
                           </div>
                         )}
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingPlan(plan);
+                                  setShowPlanDialog(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deletePlanMutation.mutate(plan.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex items-baseline">
+                            <span className="text-4xl font-bold">${plan.price}</span>
+                            <span className="text-muted-foreground ml-2">/{plan.billing_period}</span>
+                          </div>
+                          <CardDescription className="mt-4">
+                            {plan.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-3">
+                            {plan.features?.map((feature, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <CheckCircle className={`h-5 w-5 flex-shrink-0 ${feature.included ? 'text-primary' : 'text-muted-foreground'}`} />
+                                <span>{feature.feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Additional Services Section */}
+                <Card className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold">Additional Services</h2>
+                      <p className="text-muted-foreground">Manage your additional service offerings</p>
+                    </div>
+                    <Button onClick={() => {
+                      setEditingService(null);
+                      setShowServiceDialog(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Service
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {services.map((service) => (
+                      <Card key={service.id} className="relative group">
+                        <CardContent className="p-6">
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingService(service);
+                                  setShowServiceDialog(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteServiceMutation.mutate(service.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
+                            <p className="text-muted-foreground mb-4">{service.description}</p>
+                            <div className="mt-4 pt-4 border-t border-border">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-bold text-primary">
+                                  ${service.price.toFixed(2)}
+                                </span>
+                                <span className="text-sm text-muted-foreground">/sq ft</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            </section>
+          </div>
+        </TabsContent>
+
+        {/* Other tab content */}
+      
+      </Tabs>
+
+      {/* Service Dialog */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const serviceData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                sort_order: parseInt(formData.get('sort_order') as string),
+              };
+
+              if (editingService) {
+                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
+              } else {
+                createServiceMutation.mutate(serviceData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingService?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingService?.description}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingService?.price}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingService?.sort_order ?? 0}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingService ? 'Update Service' : 'Create Service'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
+                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
+                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
+                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
+              }));
+
+              const planData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
+                sort_order: parseInt(formData.get('sort_order') as string),
+                features,
+              };
+
+              if (editingPlan) {
+                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
+              } else {
+                createPlanMutation.mutate(planData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingPlan?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingPlan?.description}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingPlan?.price}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billing_period">Billing Period</Label>
+                  <Select
+                    name="billing_period"
+                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingPlan?.sort_order ?? 0}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Features</Label>
+                <div className="space-y-2 mt-2">
+                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
+                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
+                      <Input
+                        name="feature"
+                        placeholder="Feature description"
+                        defaultValue={feature.feature}
+                        required
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
+                        <Checkbox
+                          id={`included-${index}`}
+                          name="included"
+                          defaultChecked={feature.included}
+                        />
+                      </div>
+                      <Input
+                        name="feature_sort_order"
+                        type="number"
+                        className="w-20"
+                        defaultValue={feature.sort_order}
+                        required
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
+                      if (featuresContainer) {
+                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
+                        if (newFeature) {
+                          const inputs = newFeature.querySelectorAll('input');
+                          inputs.forEach(input => {
+                            if (input.name === 'feature') input.value = '';
+                            if (input.name === 'feature_sort_order') {
+                              input.value = String(featuresContainer.children.length);
+                            }
+                          });
+                          featuresContainer.appendChild(newFeature);
+                        }
+                      }
+                    }}
+                  >
+                    Add Feature
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingPlan ? 'Update Plan' : 'Create Plan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contentData = {
+                page: 'pricing',
+                section: formData.get('section') as string,
+                key: formData.get('key') as string,
+                content: formData.get('content') as string,
+              };
+
+              if (editingContent) {
+                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
+              } else {
+                createContentMutation.mutate(contentData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="section">Section</Label>
+                <Select
+                  name="section"
+                  defaultValue={editingContent?.section ?? "hero"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hero">Hero</SelectItem>
+                    <SelectItem value="plans">Plans</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="key">Content Key</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="e.g., title, description"
+                  defaultValue={editingContent?.key}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  rows={5}
+                  defaultValue={editingContent?.content}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button type="submit">
+                {editingContent ? 'Update Content' : 'Create Content'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Dialog */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const serviceData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                sort_order: parseInt(formData.get('sort_order') as string),
+              };
+
+              if (editingService) {
+                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
+              } else {
+                createServiceMutation.mutate(serviceData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingService?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingService?.description}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingService?.price}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingService?.sort_order ?? 0}
+                  required
+                />
+              </div>
+            </div>
+            {renderDialogFooter('service', !!editingService)}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
+                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
+                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
+                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
+              }));
+
+              const planData = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                price: parseFloat(formData.get('price') as string),
+                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
+                sort_order: parseInt(formData.get('sort_order') as string),
+                features,
+              };
+
+              if (editingPlan) {
+                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
+              } else {
+                createPlanMutation.mutate(planData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingPlan?.name}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={editingPlan?.description}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingPlan?.price}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billing_period">Billing Period</Label>
+                  <Select
+                    name="billing_period"
+                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sort_order">Sort Order</Label>
+                <Input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={editingPlan?.sort_order ?? 0}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Features</Label>
+                <div className="space-y-2 mt-2">
+                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
+                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
+                      <Input
+                        name="feature"
+                        placeholder="Feature description"
+                        defaultValue={feature.feature}
+                        required
+                      />
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
+                        <Checkbox
+                          id={`included-${index}`}
+                          name="included"
+                          defaultChecked={feature.included}
+                        />
+                      </div>
+                      <Input
+                        name="feature_sort_order"
+                        type="number"
+                        className="w-20"
+                        defaultValue={feature.sort_order}
+                        required
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
+                      if (featuresContainer) {
+                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
+                        if (newFeature) {
+                          const inputs = newFeature.querySelectorAll('input');
+                          inputs.forEach(input => {
+                            if (input.name === 'feature') input.value = '';
+                            if (input.name === 'feature_sort_order') {
+                              input.value = String(featuresContainer.children.length);
+                            }
+                          });
+                          featuresContainer.appendChild(newFeature);
+                        }
+                      }
+                    }}
+                  >
+                    Add Feature
+                  </Button>
+                </div>
+              </div>
+            </div>
+            {renderDialogFooter('plan', !!editingPlan)}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contentData = {
+                page: 'pricing',
+                section: formData.get('section') as string,
+                key: formData.get('key') as string,
+                content: formData.get('content') as string,
+              };
+
+              if (editingContent) {
+                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
+              } else {
+                createContentMutation.mutate(contentData);
+              }
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="section">Section</Label>
+                <Select
+                  name="section"
+                  defaultValue={editingContent?.section ?? "hero"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hero">Hero</SelectItem>
+                    <SelectItem value="plans">Plans</SelectItem>
+                    <SelectItem value="services">Services</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="key">Content Key</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="e.g., title, description"
+                  defaultValue={editingContent?.key}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  rows={5}
+                  defaultValue={editingContent?.content}
+                  required
+                />
+              </div>
+            </div>
+            {renderDialogFooter('content', !!editingContent)}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+
                       </div>
                       <div className="flex gap-2">
                         <Button
