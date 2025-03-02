@@ -965,6 +965,178 @@ export default function AdminPortal() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="pricing" className="space-y-4">
+          <Card className="p-4 md:p-6">
+            <LoadingOverlay 
+              isLoading={servicesLoading || plansLoading || contentLoading}
+              text="Loading pricing data..."
+            />
+
+            {/* Services Section */}
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Services</h2>
+                  <p className="text-muted-foreground">Manage your service offerings and pricing</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingService(null);
+                  setShowServiceDialog(true);
+                }}>
+                  Add New Service
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {Array.isArray(services) && services.map((service) => (
+                  <Card key={service.id} className="p-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{service.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
+                        <p className="text-sm font-medium mt-2">${service.price}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingService(service);
+                            setShowServiceDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteServiceMutation.mutate(service.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Plans Section */}
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Plans</h2>
+                  <p className="text-muted-foreground">Manage your subscription plans and features</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingPlan(null);
+                  setShowPlanDialog(true);
+                }}>
+                  Add New Plan
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {Array.isArray(plans) && plans.map((plan) => (
+                  <Card key={plan.id} className="p-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{plan.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
+                        <p className="text-sm font-medium mt-2">
+                          ${plan.price}/{plan.billing_period}
+                        </p>
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium mb-2">Features:</h4>
+                          <ul className="space-y-2">
+                            {plan.features?.map((feature) => (
+                              <li key={feature.id} className="text-sm flex items-center gap-2">
+                                <CheckCircle className={`h-4 w-4 ${feature.included ? 'text-green-500' : 'text-muted-foreground'}`} />
+                                {feature.feature}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingPlan(plan);
+                            setShowPlanDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deletePlanMutation.mutate(plan.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Page Content Section */}
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Page Content</h2>
+                  <p className="text-muted-foreground">Manage the text content that appears on the pricing page</p>
+                </div>
+                <Button onClick={() => {
+                  setEditingContent(null);
+                  setShowContentDialog(true);
+                }}>
+                  Add New Content
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {Array.isArray(pageContent) && pageContent.map((content) => (
+                  <Card key={content.id} className="p-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{content.section} - {content.key}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{content.content}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingContent(content);
+                            setShowContentDialog(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteContentMutation.mutate(content.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="waitlist-entries" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
             <LoadingOverlay
