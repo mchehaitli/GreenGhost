@@ -9,7 +9,7 @@ import { log } from '../vite';
 const router = Router();
 
 // Get all pricing entries
-router.get('/api/pricing', requireAuth, async (_req, res) => {
+router.get('/api/pricing', async (_req, res) => {
   try {
     const pricing = await db.query.servicePricing.findMany({
       orderBy: (servicePricing, { desc }) => [desc(servicePricing.created_at)]
@@ -26,7 +26,10 @@ router.post('/api/pricing', requireAuth, async (req, res) => {
   try {
     const validatedData = insertServicePricingSchema.parse(req.body);
     const [pricing] = await db.insert(servicePricing)
-      .values(validatedData)
+      .values({
+        ...validatedData,
+        base_price: validatedData.base_price.toString()
+      })
       .returning();
     return res.status(201).json(pricing);
   } catch (error) {
@@ -51,6 +54,7 @@ router.patch('/api/pricing/:id', requireAuth, async (req, res) => {
     const [pricing] = await db.update(servicePricing)
       .set({
         ...validatedData,
+        base_price: validatedData.base_price.toString(),
         updated_at: new Date(),
       })
       .where(eq(servicePricing.id, id))
