@@ -5,9 +5,6 @@ import { eq, inArray, not } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
-import { generateThumbnail } from '../services/thumbnail-generator';
-import * as path from 'path';
-import * as fs from 'fs';
 
 const router = Router();
 
@@ -55,21 +52,11 @@ router.post('/api/email-templates', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Template name already exists' });
     }
 
-    // Create template first to get the ID
     const [template] = await db.insert(emailTemplates)
       .values(validatedData)
       .returning();
 
-    // Generate thumbnail
-    const thumbnailUrl = await generateThumbnail(validatedData.html_content, template.id);
-
-    // Update template with thumbnail URL
-    const [updatedTemplate] = await db.update(emailTemplates)
-      .set({ thumbnail_url: thumbnailUrl })
-      .where(eq(emailTemplates.id, template.id))
-      .returning();
-
-    return res.status(201).json(updatedTemplate);
+    return res.status(201).json(template);
   } catch (error) {
     if (error instanceof Error) {
       const validationError = fromZodError(error);
@@ -98,13 +85,9 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    // Generate new thumbnail
-    const thumbnailUrl = await generateThumbnail(validatedData.html_content, id);
-
     const [template] = await db.update(emailTemplates)
       .set({
         ...validatedData,
-        thumbnail_url: thumbnailUrl,
         updated_at: new Date(),
       })
       .where(eq(emailTemplates.id, id))
@@ -135,14 +118,6 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
 
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
-    }
-
-    // Delete the thumbnail file if it exists
-    if (template.thumbnail_url) {
-      const thumbnailPath = path.join(__dirname, '../../public', template.thumbnail_url);
-      if (fs.existsSync(thumbnailPath)) {
-        fs.unlinkSync(thumbnailPath);
-      }
     }
 
     // Delete the template

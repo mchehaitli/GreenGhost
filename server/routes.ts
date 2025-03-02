@@ -2,32 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
 import { waitlist } from "../db/schema";
-import { eq, inQuery } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
-import * as path from 'path';
-import * as fs from 'fs';
-import express from 'express';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Ensure public directory exists
-const publicDir = path.join(__dirname, '../public');
-const thumbnailsDir = path.join(publicDir, 'thumbnails');
-if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true });
-}
-if (!fs.existsSync(thumbnailsDir)) {
-  fs.mkdirSync(thumbnailsDir, { recursive: true });
-}
 
 export function registerRoutes(app: Express): Server {
-  // Serve static files from public directory
-  app.use('/thumbnails', express.static(path.join(__dirname, '../public/thumbnails')));
-
   // Register waitlist routes
   app.use(waitlistRoutes);
 
@@ -69,7 +49,7 @@ export function registerRoutes(app: Express): Server {
       const entries = await db
         .select()
         .from(waitlist)
-        .where(inQuery(waitlist.email, recipients));
+        .where(inArray(waitlist.email, recipients));
 
       // Send emails to each recipient
       const results = await Promise.allSettled(

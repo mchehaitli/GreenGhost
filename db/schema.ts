@@ -42,7 +42,6 @@ export const emailTemplates = pgTable("email_templates", {
   name: text("name").notNull(),
   subject: text("subject").notNull(),
   html_content: text("html_content").notNull(),
-  thumbnail_url: text("thumbnail_url"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -91,7 +90,6 @@ export const insertEmailTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
   subject: z.string().min(1, "Email subject is required"),
   html_content: z.string().min(1, "Email content is required"),
-  thumbnail_url: z.string().optional(),
 });
 
 // Export types
