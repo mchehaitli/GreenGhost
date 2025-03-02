@@ -32,13 +32,21 @@ async function startServer() {
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
-    // Request logging middleware
+    // Enhanced request logging middleware
     app.use((req, res, next) => {
+      const timestamp = new Date().toISOString();
       const start = Date.now();
+
+      log(`[${timestamp}] Incoming ${req.method} request to ${req.path}`);
+      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        log('Request body:', req.body);
+      }
+
       res.on("finish", () => {
         const duration = Date.now() - start;
-        log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+        log(`[${timestamp}] ${req.method} ${req.path} ${res.statusCode} completed in ${duration}ms`);
       });
+
       next();
     });
 

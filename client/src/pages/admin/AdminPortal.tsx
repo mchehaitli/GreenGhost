@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { isWithinInterval } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { cn } from '@/lib/utils'; 
+import { EmailTemplate } from '@/lib/types';
+import { EmailTemplateEditor } from '@/components/ui/email-template-editor';
+import { AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -23,12 +30,21 @@ import {
   X,
   Loader2,
   FileText,
+  Save,
+  Download,
+  Eye,
+  Trash2,
+  Search,
+  MapPin,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -36,6 +52,12 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type Service = {
   id: number;
@@ -71,7 +93,146 @@ type PageContent = {
   content: string;
 };
 
+type WaitlistEntry = {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  notes?: string;
+  created_at: string;
+};
+
+type UnsavedChanges = {
+  [key: number]: { id: number } & Partial<WaitlistEntry>
+};
+
+type SegmentationCriteria = {
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+  states: string[];
+  cities: string[];
+  zipCodes: string[];
+};
+
+type EmailHistoryEntry = {
+  id: number;
+  email: string;
+  template: string;
+  sent_at: string;
+  status: string;
+  error?: string;
+};
+
+const knownZipCodeMappings: Record<string, { city: string; state: string }> = {};
+
+type AdminPortalState = {
+  // Loading states 
+  isSaving: boolean;
+  isAutoPopulating: boolean;
+  isSendingEmails: boolean;
+  isLoadingContent: boolean;
+
+  // Dialog states
+  showDetailsDialog: boolean;
+  showServiceDialog: boolean;
+  showPlanDialog: boolean;
+  showContentDialog: boolean;
+  deleteDialogOpen: boolean;
+
+  // Selected/editing states
+  selectedEntry: WaitlistEntry | null;
+  editingService: Service | null;
+  editingPlan: Plan | null;
+  editingContent: PageContent | null;
+  entryToDelete: number | null;
+
+  // Tab states  
+  activeTab: string;
+  selectedTemplateTab: string;
+
+  // Filters/search
+  searchTerm: string;
+  sortField: keyof WaitlistEntry;
+  sortDirection: 'asc' | 'desc';
+  recipientSearchTerm: string;
+
+  // Data
+  waitlistEntries: WaitlistEntry[]; 
+  services: Service[];
+  plans: Plan[];
+  pageContent: PageContent[];
+  customTemplates: any[];
+  selectedRecipients: Set<string>;
+  selectedTemplate: string;
+  loadingZips: Record<number, boolean>;
+  unsavedChanges: UnsavedChanges;
+  segmentationCriteria: SegmentationCriteria;
+};
+
 const AdminPortal = () => {
+  // Centralized state 
+  // Use Immer for immutable state updates
+  const [state, setState] = useState<AdminPortalState>(() => ({
+    // Loading states
+    isSaving: false,
+    isAutoPopulating: false, 
+    isSendingEmails: false,
+    isLoadingContent: false,
+
+    // Dialog states
+    showDetailsDialog: false,
+    showServiceDialog: false,
+    showPlanDialog: false,
+    showContentDialog: false,
+    deleteDialogOpen: false,
+
+    // Selected/editing states
+    selectedEntry: null,
+    editingService: null,
+    editingPlan: null, 
+    editingContent: null,
+    entryToDelete: null,
+
+    // Tab states
+    activeTab: "waitlist-entries",
+    selectedTemplateTab: "default",
+
+    // Filters/search
+    searchTerm: '',
+    sortField: 'created_at',
+    sortDirection: 'desc',
+    recipientSearchTerm: '',
+
+    // Data
+    waitlistEntries: [],
+    services: [],
+    plans: [],
+    pageContent: [],
+    customTemplates: [],
+    selectedRecipients: new Set(),
+    selectedTemplate: '',
+    loadingZips: {},
+    unsavedChanges: {},
+    segmentationCriteria: {
+      states: [],
+      cities: [],
+      zipCodes: []
+    }
+  });
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [selectedTemplateTab, setSelectedTemplateTab] = useState('default');
+  const [customTemplates, setCustomTemplates] = useState([]);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
+  const [loadingZips, setLoadingZips] = useState<Record<number, boolean>>({});
+  const [unsavedChanges, setUnsavedChanges] = useState<UnsavedChanges>({});
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -447,10 +608,11 @@ const AdminPortal = () => {
   };
 
   const handleSaveChanges = () => {
-    const changes = Object.values(unsavedChanges).map(change => ({
-      id: change.id!,
-      ...change
-    }));
+    // Safeguard against spreading duplicate id
+    const changes = Object.values(unsavedChanges).map(change => {
+      const { id, ...rest } = change;
+      return { id, ...rest };
+    });
     if (changes.length > 0) {
       updateEntryMutation.mutate(changes);
     }

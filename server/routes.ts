@@ -9,7 +9,7 @@ import pricingRoutes from './routes/pricing';
 import emailService from './services/email';
 
 export function registerRoutes(app: Express): Server {
-  // Register API routes
+  // Register API routes with proper prefixes
   app.use('/api', waitlistRoutes);
   app.use('/api', emailTemplateRoutes);
   app.use('/api', pricingRoutes);
@@ -51,7 +51,7 @@ export function registerRoutes(app: Express): Server {
       const results = await Promise.allSettled(
         entries.map(async (entry) => {
           if (template === 'welcome') {
-            await emailService.sendWelcomeEmail(entry.email, entry.first_name);
+            await emailService.sendWelcomeEmail(entry.email, entry.first_name || '');
           } else if (template === 'verification') {
             await emailService.sendVerificationEmail(entry.email, '123456');
           }
