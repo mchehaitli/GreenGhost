@@ -13,7 +13,6 @@ import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
 import AdminPortal from "./pages/admin/AdminPortal";
 import ThemeCustomization from "@/pages/ThemeCustomization";
-import HowItWorks from "@/pages/HowItWorks";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Pricing from "@/pages/Pricing";
@@ -31,12 +30,11 @@ const ProtectedRouteWrapper = ({ component }: { component: React.ComponentType }
 
 function Router() {
   const [location] = useLocation();
-  
+
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
-      <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/pricing" component={Pricing} />
