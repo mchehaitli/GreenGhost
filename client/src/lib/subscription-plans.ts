@@ -45,12 +45,12 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     description: "Essential automated lawn care for smaller properties",
     features: [
       "Includes all Starter features",
-      "Automated lawn mowing twice a month",
+      "Monthly automated lawn mowing",
       "Basic health monitoring",
       "Up to 2,000 sq ft coverage"
     ],
-    serviceFrequency: "Bi-weekly",
-    maxBookingsPerMonth: 2
+    serviceFrequency: "Monthly",
+    maxBookingsPerMonth: 1
   },
   {
     id: "standard",
@@ -59,13 +59,13 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     description: "Comprehensive care with smart features for medium-sized properties",
     features: [
       "Includes all Basic features",
-      "Weekly automated lawn mowing",
+      "Bi-weekly automated lawn mowing",
       "Smart irrigation monitoring",
       "Priority scheduling",
       "Up to 5,000 sq ft coverage"
     ],
-    serviceFrequency: "Weekly",
-    maxBookingsPerMonth: 4
+    serviceFrequency: "Bi-weekly",
+    maxBookingsPerMonth: 2
   },
   {
     id: "premium",
@@ -82,6 +82,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
       "Seasonal treatment planning"
     ],
     serviceFrequency: "Bi-weekly",
-    maxBookingsPerMonth: 8
+    maxBookingsPerMonth: 2
   }
 ];

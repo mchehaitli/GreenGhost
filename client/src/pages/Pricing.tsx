@@ -11,7 +11,7 @@ const plans = [
     price: 149,
     description: "Perfect for standard residential lawns up to 5,000 sq ft",
     features: [
-      "Bi-weekly lawn maintenance",
+      "Monthly lawn maintenance",
       "Standard mowing and edging",
       "Basic fertilization",
       "Seasonal cleanup",
@@ -29,7 +29,7 @@ const plans = [
     price: 249,
     description: "Ideal for larger properties up to 10,000 sq ft",
     features: [
-      "Weekly lawn maintenance",
+      "Bi-weekly lawn maintenance",
       "Premium mowing and edging",
       "Advanced fertilization program",
       "Seasonal cleanup and preparation",
@@ -45,7 +45,7 @@ const plans = [
     price: 399,
     description: "Comprehensive care for luxury estates over 10,000 sq ft",
     features: [
-      "Weekly lawn maintenance",
+      "Bi-weekly lawn maintenance",
       "Premium mowing and edging",
       "Advanced fertilization program",
       "Full-service lawn treatments",
