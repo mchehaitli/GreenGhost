@@ -46,7 +46,6 @@ function Router() {
       <Route path="/admin">
         <ProtectedRouteWrapper component={AdminPortal} />
       </Route>
-      {/* Protected routes - only accessible through admin portal */}
       <Route path="/admin/ai-review">
         <ProtectedRouteWrapper component={AIReview} />
       </Route>
