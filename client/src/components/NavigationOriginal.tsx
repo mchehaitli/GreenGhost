@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { GhostMascot } from "./GhostMascot";
 import WaitlistDialog from "./WaitlistDialog";
-import { Logo } from "./Logo";
 
 const Navigation = () => {
   const [location] = useLocation();
@@ -40,7 +40,11 @@ const Navigation = () => {
         <div className="container flex h-16 items-center justify-between px-8">
           <div onClick={scrollToTop} className="cursor-pointer">
             <Link href="/">
-              <Logo size="default" className="hover:opacity-90 transition-opacity" />
+              <div className="flex items-center space-x-2 group">
+                <GhostMascot size="sm" animated={false} />
+                <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
+                <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
+              </div>
             </Link>
           </div>
 
