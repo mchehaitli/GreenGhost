@@ -1,97 +1,33 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { isWithinInterval } from 'date-fns';
 import * as XLSX from 'xlsx';
-import { cn } from '@/lib/utils'; 
-import { EmailTemplate } from '@/lib/types';
-import { EmailTemplateEditor } from '@/components/ui/email-template-editor';
-import { AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  User,
-  Settings,
-  UserPlus,
-  BarChart, 
-  Mail,
-  CheckCircle,
-  Users,
-  DollarSign,
-  Plus,
-  Edit,
-  X,
-  Loader2,
+  Search,
+  MapPin,
   FileText,
   Save,
   Download,
   Eye,
-  Trash2,
-  Search,
-  MapPin,
-  ChevronUp,
-  ChevronDown,
+  User,
+  Users,
+  BarChart,
+  Mail,
+  Loader2
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DatePicker } from "@/components/ui/date-picker";
 
-type Service = {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  sort_order: number;
-};
-
-type Plan = {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  billing_period: 'monthly' | 'yearly';
-  sort_order: number;
-  features?: PlanFeature[];
-};
-
-type PlanFeature = {
-  id?: number;
-  plan_id?: number;
-  feature: string;
-  included: boolean;
-  sort_order: number;
-};
-
-type PageContent = {
-  id: number;
-  page: string;
-  section: string;
-  key: string;
-  content: string;
-};
+type DateRange = {
+  from: Date;
+  to: Date;
+} | null;
 
 type WaitlistEntry = {
   id: number;
@@ -107,125 +43,27 @@ type WaitlistEntry = {
   created_at: string;
 };
 
-type UnsavedChanges = {
-  [key: number]: { id: number } & Partial<WaitlistEntry>
-};
-
 type SegmentationCriteria = {
-  dateRange?: {
-    from: Date;
-    to: Date;
-  };
+  dateRange: DateRange;
   states: string[];
   cities: string[];
   zipCodes: string[];
 };
 
-type EmailHistoryEntry = {
-  id: number;
-  email: string;
-  template: string;
-  sent_at: string;
-  status: string;
-  error?: string;
-};
-
-const knownZipCodeMappings: Record<string, { city: string; state: string }> = {};
-
-type AdminPortalState = {
-  // Loading states 
-  isSaving: boolean;
-  isAutoPopulating: boolean;
-  isSendingEmails: boolean;
-  isLoadingContent: boolean;
-
-  // Dialog states
-  showDetailsDialog: boolean;
-  showServiceDialog: boolean;
-  showPlanDialog: boolean;
-  showContentDialog: boolean;
-  deleteDialogOpen: boolean;
-
-  // Selected/editing states
-  selectedEntry: WaitlistEntry | null;
-  editingService: Service | null;
-  editingPlan: Plan | null;
-  editingContent: PageContent | null;
-  entryToDelete: number | null;
-
-  // Tab states  
-  activeTab: string;
-  selectedTemplateTab: string;
-
-  // Filters/search
-  searchTerm: string;
-  sortField: keyof WaitlistEntry;
-  sortDirection: 'asc' | 'desc';
-  recipientSearchTerm: string;
-
-  // Data
-  waitlistEntries: WaitlistEntry[]; 
-  services: Service[];
-  plans: Plan[];
-  pageContent: PageContent[];
-  customTemplates: any[];
-  selectedRecipients: Set<string>;
-  selectedTemplate: string;
-  loadingZips: Record<number, boolean>;
-  unsavedChanges: UnsavedChanges;
-  segmentationCriteria: SegmentationCriteria;
-};
+type SortDirection = 'asc' | 'desc';
+type SortField = 'created_at' | 'zip_code';
 
 const AdminPortal = () => {
-  // Centralized state 
-  // Use Immer for immutable state updates
-  const [state, setState] = useState<AdminPortalState>(() => ({
-    // Loading states
-    isSaving: false,
-    isAutoPopulating: false, 
-    isSendingEmails: false,
-    isLoadingContent: false,
-
-    // Dialog states
-    showDetailsDialog: false,
-    showServiceDialog: false,
-    showPlanDialog: false,
-    showContentDialog: false,
-    deleteDialogOpen: false,
-
-    // Selected/editing states
-    selectedEntry: null,
-    editingService: null,
-    editingPlan: null, 
-    editingContent: null,
-    entryToDelete: null,
-
-    // Tab states
-    activeTab: "waitlist-entries",
-    selectedTemplateTab: "default",
-
-    // Filters/search
-    searchTerm: '',
-    sortField: 'created_at',
-    sortDirection: 'desc',
-    recipientSearchTerm: '',
-
-    // Data
-    waitlistEntries: [],
-    services: [],
-    plans: [],
-    pageContent: [],
-    customTemplates: [],
-    selectedRecipients: new Set(),
-    selectedTemplate: '',
-    loadingZips: {},
-    unsavedChanges: {},
-    segmentationCriteria: {
-      states: [],
-      cities: [],
-      zipCodes: []
-    }
-  });
+    const { user, isLoading: authLoading, logout } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("waitlist-entries");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [selectedTemplateTab, setSelectedTemplateTab] = useState('default');
   const [customTemplates, setCustomTemplates] = useState([]);
@@ -255,39 +93,16 @@ const AdminPortal = () => {
     }
   }, [user, authLoading, setLocation]);
 
-  // Pricing related queries
-
-  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
-    queryKey: ['services'],
+  // Waitlist queries
+  const { data: waitlistEntries = [], isLoading: waitlistLoading } = useQuery<WaitlistEntry[]>({
+    queryKey: ['waitlist'],
     queryFn: async () => {
-      const response = await fetch('/api/pricing/services');
-      if (!response.ok) throw new Error('Failed to fetch services');
+      const response = await fetch('/api/waitlist');
+      if (!response.ok) throw new Error('Failed to fetch waitlist entries');
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
-    enabled: activeTab === "pricing",
-  });
-
-  const { data: plans = [], isLoading: plansLoading } = useQuery<Plan[]>({
-    queryKey: ['plans'],
-    queryFn: async () => {
-      const response = await fetch('/api/pricing/plans');
-      if (!response.ok) throw new Error('Failed to fetch plans');
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: activeTab === "pricing",
-  });
-
-  const { data: pageContent = [], isLoading: contentLoading } = useQuery<PageContent[]>({
-    queryKey: ['pricing-content'],
-    queryFn: async () => {
-      const response = await fetch('/api/pricing/content');
-      if (!response.ok) throw new Error('Failed to fetch page content');
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: activeTab === "pricing",
+    enabled: activeTab === "waitlist-entries",
   });
 
   const updateEntryMutation = useMutation({
@@ -970,33 +785,25 @@ const AdminPortal = () => {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
-            <TabsTrigger value="waitlist-entries">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Waitlist Entries
-            </TabsTrigger>
-            <TabsTrigger value="waitlist-analytics">
-              <BarChart className="w-4 h-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="email-templates">
-              <FileText className="w-4 h-4 mr-2" />
-              Email Templates
-            </TabsTrigger>
-            <TabsTrigger value="pricing">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Pricing
-            </TabsTrigger>
-            <TabsTrigger value="email-history">
-              <Mail className="w-4 h-4 mr-2"/>
-              Email History
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="waitlist-entries">
+            <Users className="w-4 h-4 mr-2" />
+            Waitlist
+          </TabsTrigger>
+          <TabsTrigger value="waitlist-analytics">
+            <BarChart className="w-4 h-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="email-templates">
+            <Mail className="w-4 h-4 mr-2" />
+            Email Templates
+          </TabsTrigger>
+          <TabsTrigger value="email-history">
+            <FileText className="w-4 h-4 mr-2" />
+            Email History
+          </TabsTrigger>
+        </TabsList>
           <TabsContent value="pricing">
             Pricing Content Goes Here
           </TabsContent>
