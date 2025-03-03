@@ -9,7 +9,6 @@ async function captureLogo() {
   console.log('Launching browser to capture logo...');
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: '/nix/store/chromium-unwrapped/bin/chromium',
     defaultViewport: { width: 1280, height: 800 }
   });
 
