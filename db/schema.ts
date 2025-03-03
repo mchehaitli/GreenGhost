@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, numeric, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -20,54 +20,11 @@ export const waitlist = pgTable("waitlist", {
   street_address: text("street_address"),
   city: text("city"),
   state: text("state"),
-  zip_code: text("zip_code"),
+  zip_code: text("zip_code").default("").notNull(),
   notes: text("notes"),
   verified: boolean("verified").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   expires_at: timestamp("expires_at"),
-});
-
-// New table for page content
-export const pageContent = pgTable("page_content", {
-  id: serial("id").primaryKey(),
-  page: text("page").notNull(), // e.g., 'pricing'
-  section: text("section").notNull(), // e.g., 'hero', 'plans', 'services'
-  key: text("key").notNull(), // e.g., 'title', 'description'
-  content: text("content").notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// New tables for pricing management
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  price: numeric("price").notNull(),
-  sort_order: integer("sort_order").default(0).notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const plans = pgTable("plans", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  price: numeric("price").notNull(),
-  billing_period: text("billing_period").default("monthly").notNull(),
-  sort_order: integer("sort_order").default(0).notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const planFeatures = pgTable("plan_features", {
-  id: serial("id").primaryKey(),
-  plan_id: integer("plan_id").notNull().references(() => plans.id, { onDelete: 'cascade' }),
-  feature: text("feature").notNull(),
-  included: boolean("included").default(true).notNull(),
-  sort_order: integer("sort_order").default(0).notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const verificationTokens = pgTable("verification_tokens", {
@@ -95,7 +52,6 @@ export const emailSegments = pgTable("email_segments", {
   zip_codes: text("zip_codes").array(),
   sent_at: timestamp("sent_at").defaultNow().notNull(),
   total_recipients: serial("total_recipients").notNull(),
-  status: text("status").default("completed").notNull(),
 });
 
 // Relations
@@ -103,18 +59,6 @@ export const verificationTokensRelations = relations(verificationTokens, ({ one 
   waitlist: one(waitlist, {
     fields: [verificationTokens.email],
     references: [waitlist.email],
-  }),
-}));
-
-// Add new relations
-export const planRelations = relations(plans, ({ many }) => ({
-  features: many(planFeatures),
-}));
-
-export const planFeaturesRelations = relations(planFeatures, ({ one }) => ({
-  plan: one(plans, {
-    fields: [planFeatures.plan_id],
-    references: [plans.id],
   }),
 }));
 
@@ -147,36 +91,6 @@ export const insertEmailTemplateSchema = z.object({
   html_content: z.string().min(1, "Email content is required"),
 });
 
-export const insertServiceSchema = z.object({
-  name: z.string().min(1, "Service name is required"),
-  description: z.string().min(1, "Service description is required"),
-  price: z.number().min(0, "Price must be non-negative"),
-  sort_order: z.number().optional(),
-});
-
-export const insertPlanSchema = z.object({
-  name: z.string().min(1, "Plan name is required"),
-  description: z.string().min(1, "Plan description is required"),
-  price: z.number().min(0, "Price must be non-negative"),
-  billing_period: z.enum(["monthly", "yearly"]),
-  sort_order: z.number().optional(),
-});
-
-export const insertPlanFeatureSchema = z.object({
-  plan_id: z.number(),
-  feature: z.string().min(1, "Feature description is required"),
-  included: z.boolean(),
-  sort_order: z.number().optional(),
-});
-
-// Add new schema for page content
-export const insertPageContentSchema = z.object({
-  page: z.string().min(1, "Page identifier is required"),
-  section: z.string().min(1, "Section identifier is required"),
-  key: z.string().min(1, "Content key is required"),
-  content: z.string().min(1, "Content is required"),
-});
-
 // Export types
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = typeof users.$inferInsert;
@@ -197,15 +111,3 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
-
-export type InsertService = typeof services.$inferInsert;
-export type SelectService = typeof services.$inferSelect;
-
-export type InsertPlan = typeof plans.$inferInsert;
-export type SelectPlan = typeof plans.$inferSelect;
-
-export type InsertPlanFeature = typeof planFeatures.$inferInsert;
-export type SelectPlanFeature = typeof planFeatures.$inferSelect;
-
-export type InsertPageContent = typeof pageContent.$inferInsert;
-export type SelectPageContent = typeof pageContent.$inferSelect;

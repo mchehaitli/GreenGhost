@@ -2,30 +2,36 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "./db";
 import { waitlist } from "../db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
 
 export function registerRoutes(app: Express): Server {
-  // Register API routes with proper prefixes
-  app.use('/api', waitlistRoutes);
-  app.use('/api', emailTemplateRoutes);
+  // Register waitlist routes
+  app.use(waitlistRoutes);
+
+  // Register email template routes
+  app.use(emailTemplateRoutes);
 
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
     try {
       const { type } = req.params;
-      const { email } = req.body;
+      const { email, template } = req.body;
 
       if (!email || !['verification', 'welcome'].includes(type)) {
         return res.status(400).json({ error: 'Invalid request parameters' });
       }
 
-      const html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
+      let html = template;
+      if (!template) {
+        // If no template provided, use the default preview template
+        html = await emailService.previewEmailTemplate(type as 'verification' | 'welcome', email);
+      }
+
       res.json({ html });
     } catch (error) {
-      console.error('Email preview error:', error);
       res.status(500).json({ error: 'Failed to generate preview' });
     }
   });
@@ -43,15 +49,19 @@ export function registerRoutes(app: Express): Server {
       const entries = await db
         .select()
         .from(waitlist)
-        .where(inArray(waitlist.email, recipients));
+        .where(
+          recipients.length === 1 
+            ? eq(waitlist.email, recipients[0])
+            : waitlist.email.in(recipients)
+        );
 
       // Send emails to each recipient
       const results = await Promise.allSettled(
         entries.map(async (entry) => {
           if (template === 'welcome') {
-            await emailService.sendWelcomeEmail(entry.email, entry.first_name || '');
+            await emailService.sendWelcomeEmail(entry.email, entry.first_name);
           } else if (template === 'verification') {
-            await emailService.sendVerificationEmail(entry.email, '123456');
+            await emailService.sendVerificationEmail(entry.email, '123456'); // Example verification code
           }
         })
       );

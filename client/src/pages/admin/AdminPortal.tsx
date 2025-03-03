@@ -3,35 +3,72 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import {
   Search,
   MapPin,
   FileText,
   Save,
+  Loader2,
+  Trash2,
   Download,
-  Eye,
   User,
-  Users,
+  Settings,
+  UserPlus,
+  ChevronUp,
+  ChevronDown,
+  Eye,
   BarChart,
   Mail,
-  Loader2
+  CheckCircle,
+  Users
 } from 'lucide-react';
-
-type DateRange = {
-  from: Date;
-  to: Date;
-} | null;
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { DatePicker } from "@/components/ui/date-picker";
+import { addDays, subDays, isWithinInterval } from 'date-fns';
 
 type WaitlistEntry = {
   id: number;
   email: string;
+  created_at: string;
   first_name?: string;
   last_name?: string;
   phone_number?: string;
@@ -40,8 +77,12 @@ type WaitlistEntry = {
   state?: string;
   zip_code?: string;
   notes?: string;
-  created_at: string;
 };
+
+type DateRange = {
+  from: Date;
+  to: Date;
+} | null;
 
 type SegmentationCriteria = {
   dateRange: DateRange;
@@ -53,38 +94,69 @@ type SegmentationCriteria = {
 type SortDirection = 'asc' | 'desc';
 type SortField = 'created_at' | 'zip_code';
 
-const AdminPortal = () => {
-    const { user, isLoading: authLoading, logout } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("waitlist-entries");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [selectedTemplateTab, setSelectedTemplateTab] = useState('default');
-  const [customTemplates, setCustomTemplates] = useState([]);
-  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
-  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
-  const [loadingZips, setLoadingZips] = useState<Record<number, boolean>>({});
-  const [unsavedChanges, setUnsavedChanges] = useState<UnsavedChanges>({});
+let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
+  '75033': { city: 'Frisco', state: 'TX' },
+  // Add any other problematic ZIP codes here
+};
+
+type EmailTemplate = {
+  id: number;
+  name: string;
+  subject: string;
+  html_content: string;
+}
+
+type EmailHistoryEntry = {
+  id: number;
+  template_name: string;
+  sent_at: string;
+  total_recipients: number;
+  status: 'completed' | 'failed' | 'pending';
+}
+
+
+export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("waitlist-entries");
-  const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const [showPlanDialog, setShowPlanDialog] = useState(false);
-  const [showContentDialog, setShowContentDialog] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [editingContent, setEditingContent] = useState<PageContent | null>(null);
-  const [isSavingService, setIsSavingService] = useState(false);
-  const [isSavingPlan, setIsSavingPlan] = useState(false); 
-  const [isSavingContent, setIsSavingContent] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [currentNotes, setCurrentNotes] = useState("");
+  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
+  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
+  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
+  const [selectAllRecipients, setSelectAllRecipients] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
+  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | null>(null);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
+    dateRange: null,
+    states: [],
+    cities: [],
+    zipCodes: [],
+  });
+  const [activeTemplateTab, setActiveTemplateTab] = useState('system');
+  const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<EmailTemplate[]>({
+    queryKey: ['email-templates', 'custom'],
+    queryFn: () => fetch('/api/email-templates/custom').then(res => res.json()),
+    enabled: activeTab === 'email-templates' && activeTemplateTab === 'custom'
+  });
+  const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
+  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
+  const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
+  const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
 
 
   useEffect(() => {
@@ -93,17 +165,36 @@ const AdminPortal = () => {
     }
   }, [user, authLoading, setLocation]);
 
-  // Waitlist queries
-  const { data: waitlistEntries = [], isLoading: waitlistLoading } = useQuery<WaitlistEntry[]>({
+  const {
+    data: waitlistEntries = [],
+    isLoading: waitlistLoading,
+  } = useQuery<WaitlistEntry[]>({
     queryKey: ['waitlist'],
-    queryFn: async () => {
-      const response = await fetch('/api/waitlist');
-      if (!response.ok) throw new Error('Failed to fetch waitlist entries');
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: activeTab === "waitlist-entries",
+    queryFn: () => fetch('/api/waitlist').then(res => res.json()),
+    enabled: activeTab === "waitlist-entries" && !!user,
   });
+
+  // Add new query for analytics data
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading
+  } = useQuery({
+    queryKey: ['waitlist-analytics'],
+    queryFn: async () => {
+      const res = await fetch('/api/waitlist/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      return res.json();
+    },
+    enabled: activeTab === "waitlist-analytics"
+  });
+
+  // Add this query for email history
+  const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery({
+    queryKey: ['email-history'],
+    queryFn: () => fetch('/api/email-history').then(res => res.json()),
+    enabled: activeTab === 'email-history'
+  });
+
 
   const updateEntryMutation = useMutation({
     mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
@@ -175,259 +266,19 @@ const AdminPortal = () => {
     },
   });
 
-  const createServiceMutation = useMutation({
-    mutationFn: async (service: Omit<Service, 'id'>) => {
-      setIsSavingService(true);
-      try {
-        const response = await fetch('/api/pricing/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(service),
-        });
-        if (!response.ok) throw new Error('Failed to create service');
-        return response.json();
-      } finally {
-        setIsSavingService(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      setShowServiceDialog(false);
-      toast({
-        title: "Success",
-        description: "Service created successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create service",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const updateServiceMutation = useMutation({
-    mutationFn: async (service: Service) => {
-      const response = await fetch(`/api/pricing/services/${service.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(service),
-      });
-      if (!response.ok) throw new Error('Failed to update service');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      setShowServiceDialog(false);
-      toast({
-        title: "Service updated",
-        description: "The service has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update service",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const deleteServiceMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/pricing/services/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete service');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
-      toast({
-        title: "Service deleted",
-        description: "The service has been deleted successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to delete service",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const createPlanMutation = useMutation({
-    mutationFn: async (plan: Omit<Plan, 'id'>) => {
-      const response = await fetch('/api/pricing/plans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(plan),
-      });
-      if (!response.ok) throw new Error('Failed to create plan');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      setShowPlanDialog(false);
-      toast({
-        title: "Plan created",
-        description: "The plan has been created successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to create plan",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const updatePlanMutation = useMutation({
-    mutationFn: async (plan: Plan) => {
-      const response = await fetch(`/api/pricing/plans/${plan.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(plan),
-      });
-      if (!response.ok) throw new Error('Failed to update plan');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      setShowPlanDialog(false);
-      toast({
-        title: "Plan updated",
-        description: "The plan has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update plan",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const deletePlanMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/pricing/plans/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete plan');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      toast({
-        title: "Plan deleted",
-        description: "The plan has been deleted successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to delete plan",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const createContentMutation = useMutation({
-    mutationFn: async (content: Omit<PageContent, 'id'>) => {
-      const response = await fetch('/api/pricing/content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(content),
-      });
-      if (!response.ok) throw new Error('Failed to create content');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
-      setShowContentDialog(false);
-      toast({
-        title: "Content created",
-        description: "The content has been created successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to create content",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const updateContentMutation = useMutation({
-    mutationFn: async (content: PageContent) => {
-      const response = await fetch(`/api/pricing/content/${content.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(content),
-      });
-      if (!response.ok) throw new Error('Failed to update content');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
-      setShowContentDialog(false);
-      toast({
-        title: "Content updated",
-        description: "The content has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update content",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const deleteContentMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/pricing/content/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete content');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pricing-content'] });
-      toast({
-        title: "Content deleted",
-        description: "The content has been deleted successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to delete content",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
   const handleFieldChange = (entryId: number, field: keyof WaitlistEntry, value: string) => {
     setUnsavedChanges(prev => ({
       ...prev,
       [entryId]: {
         ...prev[entryId],
-        ...{ id: entryId },
+        id: entryId,
         [field]: value
-      } as { id: number } & Partial<WaitlistEntry>
+      }
     }));
   };
 
   const handleSaveChanges = () => {
-    // Safeguard against spreading duplicate id
-    const changes = Object.values(unsavedChanges).map(change => {
-      const { id, ...rest } = change;
-      return { id, ...rest };
-    });
+    const changes = Object.values(unsavedChanges);
     if (changes.length > 0) {
       updateEntryMutation.mutate(changes);
     }
@@ -448,6 +299,7 @@ const AdminPortal = () => {
 
   const getFilteredRecipients = () => {
     return waitlistEntries.filter(entry => {
+      // Filter by date range
       if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
         const entryDate = new Date(entry.created_at);
         if (!isWithinInterval(entryDate, {
@@ -458,18 +310,21 @@ const AdminPortal = () => {
         }
       }
 
+      // Filter by state
       if (segmentationCriteria.states.length > 0) {
         if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
           return false;
         }
       }
 
+      // Filter by city
       if (segmentationCriteria.cities.length > 0) {
         if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
           return false;
         }
       }
 
+      // Filter by ZIP code
       if (segmentationCriteria.zipCodes.length > 0) {
         if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
           return false;
@@ -489,6 +344,30 @@ const AdminPortal = () => {
       entry.last_name?.toLowerCase().includes(searchLower) ||
       entry.zip_code?.includes(searchTerm)
     );
+  });
+
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    const modifier = sortDirection === 'asc' ? 1 : -1;
+
+    if (sortField === 'created_at') {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return (dateA - dateB) * modifier;
+    } else {
+      // ZIP code sorting
+      const zipA = a.zip_code || '';
+      const zipB = b.zip_code || '';
+      return zipA.localeCompare(zipB) * modifier;
+    }
   });
 
   const handleViewDetails = (entry: WaitlistEntry) => {
@@ -679,6 +558,7 @@ const AdminPortal = () => {
     }
   };
 
+
   const filteredWaitlistEntries = recipientSearchTerm
     ? waitlistEntries.filter(entry =>
       entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
@@ -694,7 +574,7 @@ const AdminPortal = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          template: selectedTemplate as string,
+          template: selectedTemplate as string, //Type assertion to remove type error
           recipients: recipients
         }),
       });
@@ -727,396 +607,7 @@ const AdminPortal = () => {
     );
   }
 
-  const renderDialogFooter = (type: 'service' | 'plan' | 'content', isEditing: boolean) => {
-    const isLoading = {
-      service: isSavingService,
-      plan: isSavingPlan,
-      content: isSavingContent
-    }[type];
-
-    const labels = {
-      service: ['Create Service', 'Update Service'],
-      plan: ['Create Plan', 'Update Plan'],
-      content: ['Create Content', 'Update Content']
-    };
-
-    return (
-      <DialogFooter className="mt-6">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {isEditing ? labels[type][1] : labels[type][0]}
-        </Button>
-      </DialogFooter>
-    );
-  };
-
-
-
   return (
-    <>
-      <div className="container py-4 md:py-10 px-4 md:px-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Admin Portal</h1>
-            <p className="text-muted-foreground mt-1">Manage your platform content and settings</p>
-          </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-            <Badge variant="outline" className="flex gap-1 px-3 py-1">
-              <User className="w-3 h-3" /> {user?.username}
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await logout();
-                  setLocation('/login');
-                } catch (error) {
-                  toast({
-                    title: "Logout Failed",
-                    description: "Could not log out. Please try again.",
-                    variant: "destructive"
-                  });
-                }
-              }}
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="waitlist-entries">
-            <Users className="w-4 h-4 mr-2" />
-            Waitlist
-          </TabsTrigger>
-          <TabsTrigger value="waitlist-analytics">
-            <BarChart className="w-4 h-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="email-templates">
-            <Mail className="w-4 h-4 mr-2" />
-            Email Templates
-          </TabsTrigger>
-          <TabsTrigger value="email-history">
-            <FileText className="w-4 h-4 mr-2" />
-            Email History
-          </TabsTrigger>
-        </TabsList>
-          <TabsContent value="pricing">
-            Pricing Content Goes Here
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Service Dialog */}
-      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const serviceData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                sort_order: parseInt(formData.get('sort_order') as string),
-              };
-
-              if (editingService) {
-                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
-              } else {
-                createServiceMutation.mutate(serviceData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingService?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingService?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingService?.price}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingService?.sort_order ?? 0}
-                  required
-                />
-              </div>
-            </div>
-            {renderDialogFooter('service', !!editingService)}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Plan Dialog */}
-      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-            <DialogDescription>
-              Configure a subscription plan and its features.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
-                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
-                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
-                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
-              }));
-
-              const planData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
-                sort_order: parseInt(formData.get('sort_order') as string),
-                features,
-              };
-
-              if (editingPlan) {
-                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
-              } else {
-                createPlanMutation.mutate(planData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Plan Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingPlan?.name}
-                  placeholder="e.g., Premium Care"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingPlan?.description}
-                  placeholder="Brief description of the plan..."
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Monthly Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={editingPlan?.price}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_period">Billing Period</Label>
-                  <Select
-                    name="billing_period"
-                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Display Order (1 for Most Popular)</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingPlan?.sort_order ?? 0}
-                  placeholder="0"
-                  required
-                />
-              </div>
-              <div>
-                <Label>Features</Label>
-                <div className="space-y-2 mt-2">
-                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
-                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
-                      <Input
-                        name="feature"
-                        placeholder="Feature description"
-                        defaultValue={feature.feature}
-                        required
-                      />
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
-                        <Checkbox
-                          id={`included-${index}`}
-                          name="included"
-                          defaultChecked={feature.included}
-                        />
-                      </div>
-                      <Input
-                        name="feature_sort_order"
-                        type="number"
-                        className="w-20"
-                        defaultValue={feature.sort_order}
-                        required
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
-                      if (featuresContainer) {
-                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
-                        if (newFeature) {
-                          const inputs = newFeature.querySelectorAll('input');
-                          inputs.forEach(input => {
-                            if (input.name === 'feature') input.value = '';
-                            if (input.name === 'feature_sort_order') {
-                              input.value = String(featuresContainer.children.length);
-                            }
-                          });
-                          featuresContainer.appendChild(newFeature);
-                        }
-                      }
-                    }}
-                  >
-                    Add Feature
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit" disabled={isSavingPlan}>
-                {isSavingPlan && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingPlan ? 'Update Plan' : 'Create Plan'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Content Dialog */}
-      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
-            <DialogDescription>
-              Manage the text content that appears on the pricing page.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const contentData = {
-                page: 'pricing',
-                section: formData.get('section') as string,
-                key: formData.get('key') as string,
-                content: formData.get('content') as string,
-              };
-
-              if (editingContent) {
-                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
-              } else {
-                createContentMutation.mutate(contentData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  name="section"
-                  defaultValue={editingContent?.section ?? "hero"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hero">Hero</SelectItem>
-                    <SelectItem value="plans">Plans</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="key">Content Key</Label>
-                <Input
-                  id="key"
-                  name="key"
-                  placeholder="e.g., title, description"
-                  defaultValue={editingContent?.key}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  rows={5}
-                  defaultValue={editingContent?.content}
-                  placeholder="Enter the content text..."
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit" disabled={isSavingContent}>
-                {isSavingContent && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingContent ? 'Update Content' : 'Create Content'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      return (
     <div className="container py-4 md:py-10 px-4 md:px-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
@@ -1162,10 +653,6 @@ const AdminPortal = () => {
             <FileText className="w-4 h-4 mr-2" />
             Email Templates
           </TabsTrigger>
-          <TabsTrigger value="pricing">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Pricing
-          </TabsTrigger>
           <TabsTrigger value="email-history">
             <Mail className="w-4 h-4 mr-2"/>
             Email History
@@ -1175,1365 +662,6 @@ const AdminPortal = () => {
             Settings
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="pricing">
-          <div className="min-h-screen bg-background">
-            <section className="py-8">
-              <div className="container">
-                <LoadingOverlay 
-                  isLoading={servicesLoading || plansLoading || contentLoading}
-                  text="Loading pricing data..."
-                />
-                {/* Hero Section with Content Management */}
-                <Card className="p-6 mb-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold">Hero Section Content</h2>
-                      <p className="text-muted-foreground">Manage the main pricing page header content</p>
-                    </div>
-                    <Button onClick={() => {
-                      setEditingContent(null);
-                      setShowContentDialog(true);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Content
-                    </Button>
-                  </div>
-                  <div className="space-y-4">
-                    {pageContent
-                      .filter(content => content.section === 'hero')
-                      .map((content) => (
-                        <Card key={content.id} className="relative p-4 overflow-hidden">
-                          <div className="flex justify-between items-start gap-4">
-                            <div>
-                              <Badge variant="outline" className="mb-2">{content.key}</Badge>
-                              <p className="text-lg">{content.content}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingContent(content);
-                                  setShowContentDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => deleteContentMutation.mutate(content.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </Card>
-                    ))}
-                  </div>
-                </Card>
-
-                {/* Plans Section */}
-                <Card className="p-6 mb-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold">Subscription Plans</h2>
-                      <p className="text-muted-foreground">Manage your subscription plans and features</p>
-                    </div>
-                    <Button onClick={() => {
-                      setEditingPlan(null);
-                      setShowPlanDialog(true);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Plan
-                    </Button>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-8">
-                    {plans.map((plan) => (
-                      <Card key={plan.id} className={`relative overflow-hidden ${plan.sort_order === 1 ? 'border-primary shadow-lg' : ''}`}>
-                        {plan.sort_order === 1 && (
-                          <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                            <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                              Most Popular
-                            </span>
-                          </div>
-                        )}
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingPlan(plan);
-                                  setShowPlanDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deletePlanMutation.mutate(plan.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mt-4 flex items-baseline">
-                            <span className="text-4xl font-bold">${plan.price}</span>
-                            <span className="text-muted-foreground ml-2">/{plan.billing_period}</span>
-                          </div>
-                          <CardDescription className="mt-4">
-                            {plan.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-3">
-                            {plan.features?.map((feature, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <CheckCircle className={`h-5 w-5 flex-shrink-0 ${feature.included ? 'text-primary' : 'text-muted-foreground'}`} />
-                                <span>{feature.feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </Card>
-
-                {/* Additional Services Section */}
-                <Card className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold">Additional Services</h2>
-                      <p className="text-muted-foreground">Manage your additional service offerings</p>
-                    </div>
-                    <Button onClick={() => {
-                      setEditingService(null);
-                      setShowServiceDialog(true);
-                    }}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Service
-                    </Button>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {services.map((service) => (
-                      <Card key={service.id} className="relative group">
-                        <CardContent className="p-6">
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingService(service);
-                                  setShowServiceDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteServiceMutation.mutate(service.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
-                            <p className="text-muted-foreground mb-4">{service.description}</p>
-                            <div className="mt-4 pt-4 border-t border-border">
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-bold text-primary">
-                                  ${service.price.toFixed(2)}
-                                </span>
-                                <span className="text-sm text-muted-foreground">/sq ft</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            </section>
-          </div>
-        </TabsContent>
-
-        {/* Other tab content */}
-      
-      </Tabs>
-
-      {/* Service Dialog */}
-      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const serviceData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                sort_order: parseInt(formData.get('sort_order') as string),
-              };
-
-              if (editingService) {
-                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
-              } else {
-                createServiceMutation.mutate(serviceData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingService?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingService?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingService?.price}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingService?.sort_order ?? 0}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingService ? 'Update Service' : 'Create Service'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Plan Dialog */}
-      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
-                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
-                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
-                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
-              }));
-
-              const planData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
-                sort_order: parseInt(formData.get('sort_order') as string),
-                features,
-              };
-
-              if (editingPlan) {
-                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
-              } else {
-                createPlanMutation.mutate(planData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingPlan?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingPlan?.description}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={editingPlan?.price}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_period">Billing Period</Label>
-                  <Select
-                    name="billing_period"
-                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingPlan?.sort_order ?? 0}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Features</Label>
-                <div className="space-y-2 mt-2">
-                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
-                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
-                      <Input
-                        name="feature"
-                        placeholder="Feature description"
-                        defaultValue={feature.feature}
-                        required
-                      />
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
-                        <Checkbox
-                          id={`included-${index}`}
-                          name="included"
-                          defaultChecked={feature.included}
-                        />
-                      </div>
-                      <Input
-                        name="feature_sort_order"
-                        type="number"
-                        className="w-20"
-                        defaultValue={feature.sort_order}
-                        required
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
-                      if (featuresContainer) {
-                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
-                        if (newFeature) {
-                          const inputs = newFeature.querySelectorAll('input');
-                          inputs.forEach(input => {
-                            if (input.name === 'feature') input.value = '';
-                            if (input.name === 'feature_sort_order') {
-                              input.value = String(featuresContainer.children.length);
-                            }
-                          });
-                          featuresContainer.appendChild(newFeature);
-                        }
-                      }
-                    }}
-                  >
-                    Add Feature
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingPlan ? 'Update Plan' : 'Create Plan'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Content Dialog */}
-      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const contentData = {
-                page: 'pricing',
-                section: formData.get('section') as string,
-                key: formData.get('key') as string,
-                content: formData.get('content') as string,
-              };
-
-              if (editingContent) {
-                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
-              } else {
-                createContentMutation.mutate(contentData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  name="section"
-                  defaultValue={editingContent?.section ?? "hero"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hero">Hero</SelectItem>
-                    <SelectItem value="plans">Plans</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="key">Content Key</Label>
-                <Input
-                  id="key"
-                  name="key"
-                  placeholder="e.g., title, description"
-                  defaultValue={editingContent?.key}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  rows={5}
-                  defaultValue={editingContent?.content}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingContent ? 'Update Content' : 'Create Content'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Service Dialog */}
-      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const serviceData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                sort_order: parseInt(formData.get('sort_order') as string),
-              };
-
-              if (editingService) {
-                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
-              } else {
-                createServiceMutation.mutate(serviceData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingService?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingService?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingService?.price}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingService?.sort_order ?? 0}
-                  required
-                />
-              </div>
-            </div>
-            {renderDialogFooter('service', !!editingService)}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Plan Dialog */}
-      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
-                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
-                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
-                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
-              }));
-
-              const planData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
-                sort_order: parseInt(formData.get('sort_order') as string),
-                features,
-              };
-
-              if (editingPlan) {
-                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
-              } else {
-                createPlanMutation.mutate(planData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingPlan?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingPlan?.description}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={editingPlan?.price}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_period">Billing Period</Label>
-                  <Select
-                    name="billing_period"
-                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingPlan?.sort_order ?? 0}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Features</Label>
-                <div className="space-y-2 mt-2">
-                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
-                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
-                      <Input
-                        name="feature"
-                        placeholder="Feature description"
-                        defaultValue={feature.feature}
-                        required
-                      />
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
-                        <Checkbox
-                          id={`included-${index}`}
-                          name="included"
-                          defaultChecked={feature.included}
-                        />
-                      </div>
-                      <Input
-                        name="feature_sort_order"
-                        type="number"
-                        className="w-20"
-                        defaultValue={feature.sort_order}
-                        required
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
-                      if (featuresContainer) {
-                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
-                        if (newFeature) {
-                          const inputs = newFeature.querySelectorAll('input');
-                          inputs.forEach(input => {
-                            if (input.name === 'feature') input.value = '';
-                            if (input.name === 'feature_sort_order') {
-                              input.value = String(featuresContainer.children.length);
-                            }
-                          });
-                          featuresContainer.appendChild(newFeature);
-                        }
-                      }
-                    }}
-                  >
-                    Add Feature
-                  </Button>
-                </div>
-              </div>
-            </div>
-            {renderDialogFooter('plan', !!editingPlan)}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Content Dialog */}
-      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const contentData = {
-                page: 'pricing',
-                section: formData.get('section') as string,
-                key: formData.get('key') as string,
-                content: formData.get('content') as string,
-              };
-
-              if (editingContent) {
-                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
-              } else {
-                createContentMutation.mutate(contentData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  name="section"
-                  defaultValue={editingContent?.section ?? "hero"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hero">Hero</SelectItem>
-                    <SelectItem value="plans">Plans</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="key">Content Key</Label>
-                <Input
-                  id="key"
-                  name="key"
-                  placeholder="e.g., title, description"
-                  defaultValue={editingContent?.key}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  rows={5}
-                  defaultValue={editingContent?.content}
-                  required
-                />
-              </div>
-            </div>
-            {renderDialogFooter('content', !!editingContent)}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingPlan(plan);
-                            setShowPlanDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deletePlanMutation.mutate(plan.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <Separator className="my-8" />
-
-            {/* Page Content Section */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-semibold">Page Content</h2>
-                  <p className="text-muted-foreground mt-1">Manage pricing page content and text</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingContent(null);
-                  setShowContentDialog(true);
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Content
-                </Button>
-              </div>
-
-              <div className="grid gap-4">
-                {pageContent.map((content) => (
-                  <Card key={content.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-medium capitalize">{content.section}</h3>
-                          <Badge variant="outline">{content.key}</Badge>
-                        </div>
-                        <p className="text-muted-foreground mt-2 whitespace-pre-wrap">
-                          {content.content}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingContent(content);
-                            setShowContentDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteContentMutation.mutate(content.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Service Dialog */}
-      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const serviceData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                sort_order: parseInt(formData.get('sort_order') as string),
-              };
-
-              if (editingService) {
-                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
-              } else {
-                createServiceMutation.mutate(serviceData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingService?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingService?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingService?.price}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingService?.sort_order ?? 0}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingService ? 'Update Service' : 'Create Service'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Plan Dialog */}
-      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
-                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
-                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
-                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
-              }));
-
-              const planData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
-                sort_order: parseInt(formData.get('sort_order') as string),
-                features,
-              };
-
-              if (editingPlan) {
-                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
-              } else {
-                createPlanMutation.mutate(planData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingPlan?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingPlan?.description}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={editingPlan?.price}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_period">Billing Period</Label>
-                  <Select
-                    name="billing_period"
-                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingPlan?.sort_order ?? 0}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Features</Label>
-                <div className="space-y-2 mt-2">
-                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
-                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
-                      <Input
-                        name="feature"
-                        placeholder="Feature description"
-                        defaultValue={feature.feature}
-                        required
-                      />
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
-                        <Checkbox
-                          id={`included-${index}`}
-                          name="included"
-                          defaultChecked={feature.included}
-                        />
-                      </div>
-                      <Input
-                        name="feature_sort_order"
-                        type="number"
-                        className="w-20"
-                        defaultValue={feature.sort_order}
-                        required
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
-                      if (featuresContainer) {
-                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
-                        if (newFeature) {
-                          const inputs = newFeature.querySelectorAll('input');
-                          inputs.forEach(input => {
-                            if (input.name === 'feature') input.value = '';
-                            if (input.name === 'feature_sort_order') {
-                              input.value = String(featuresContainer.children.length);
-                            }
-                          });
-                          featuresContainer.appendChild(newFeature);
-                        }
-                      }
-                    }}
-                  >
-                    Add Feature
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingPlan ? 'Update Plan' : 'Create Plan'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Content Dialog */}
-      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const contentData = {
-                page: 'pricing',
-                section: formData.get('section') as string,
-                key: formData.get('key') as string,
-                content: formData.get('content') as string,
-              };
-
-              if (editingContent) {
-                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
-              } else {
-                createContentMutation.mutate(contentData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  name="section"
-                  defaultValue={editingContent?.section ?? "hero"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hero">Hero</SelectItem>
-                    <SelectItem value="plans">Plans</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="key">Content Key</Label>
-                <Input
-                  id="key"
-                  name="key"
-                  placeholder="e.g., title, description"
-                  defaultValue={editingContent?.key}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  rows={5}
-                  defaultValue={editingContent?.content}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingContent ? 'Update Content' : 'Create Content'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
-          <TabsTrigger value="waitlist-entries">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Waitlist Entries
-          </TabsTrigger>
-          <TabsTrigger value="waitlist-analytics">
-            <BarChart className="w-4 h-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="email-templates">
-            <FileText className="w-4 h-4 mr-2" />
-            Email Templates
-          </TabsTrigger>
-          <TabsTrigger value="pricing">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Pricing
-          </TabsTrigger>
-          <TabsTrigger value="email-history">
-            <Mail className="w-4 h-4 mr-2"/>
-            Email History
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pricing" className="space-y-4">
-          <Card className="p-4 md:p-6">
-            <LoadingOverlay 
-              isLoading={servicesLoading || plansLoading || contentLoading}
-              text="Loading pricing data..."
-            />
-
-            {/* Services Section */}
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">Services</h2>
-                  <p className="text-muted-foreground">Manage your service offerings and pricing</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingService(null);
-                  setShowServiceDialog(true);
-                }}>
-                  Add New Service
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {Array.isArray(services) && services.map((service) => (
-                  <Card key={service.id} className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{service.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                        <p className="text-sm font-medium mt-2">${service.price}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingService(service);
-                            setShowServiceDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteServiceMutation.mutate(service.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Plans Section */}
-            <div className="mt-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">Plans</h2>
-                  <p className="text-muted-foreground">Manage your subscription plans</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingPlan(null);
-                  setShowPlanDialog(true);
-                }}>
-                  Add New Plan
-                </Button>
-              </div>
-
-              <div className="space-y-4 mt-4">
-                {Array.isArray(plans) && plans.map((plan) => (
-                  <Card key={plan.id} className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{plan.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
-                        <p className="text-sm font-medium mt-2">
-                          ${plan.price}/{plan.billing_period}
-                        </p>
-                        {plan.features && plan.features.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-sm font-medium mb-2">Features:</p>
-                            <ul className="text-sm space-y-1">
-                              {plan.features.map((feature, index) => (
-                                <li key={index} className="flex items-center gap-2">
-                                  <CheckCircle className={feature.included ? "w-4 h-4 text-primary" : "w-4 h-4 text-muted-foreground"} />
-                                  {feature.feature}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingPlan(plan);
-                            setShowPlanDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deletePlanMutation.mutate(plan.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Content Section */}
-            <div className="mt-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">Page Content</h2>
-                  <p className="text-muted-foreground">Manage pricing page content and copy</p>
-                </div>
-                <Button onClick={() => {
-                  setEditingContent(null);
-                  setShowContentDialog(true);
-                }}>
-                  Add New Content
-                </Button>
-              </div>
-
-              <div className="space-y-4 mt-4">
-                {Array.isArray(pageContent) && pageContent.map((content) => (
-                  <Card key={content.id} className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-medium capitalize">{content.section}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{content.key}</p>
-                        <p className="text-sm mt-2">{content.content}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingContent(content);
-                            setShowContentDialog(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteContentMutation.mutate(content.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="waitlist-entries" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
@@ -2934,19 +1062,6 @@ const AdminPortal = () => {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                          {template.thumbnail_url ? (
-                            <div className="relative w-full h-48 mb-4 rounded-md overflow-hidden border">
-                              <img
-                                src={template.thumbnail_url}
-                                alt={`Preview of ${template.name}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-full h-48 mb-4 rounded-md border flex items-center justify-center bg-muted">
-                              <FileText className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                          )}
                           <EmailTemplateEditor
                             initialData={template}
                             onSave={async (data) => {
@@ -2985,7 +1100,9 @@ const AdminPortal = () => {
                         if (!response.ok) {
                           throw new Error('Failed to create template');
                         }
+                        // Refresh custom templates list
                         await queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                        // Switch to custom templates tab
                         setActiveTemplateTab("custom");
                         toast({
                           title: "Success",
@@ -3057,169 +1174,6 @@ const AdminPortal = () => {
             )}
           </Card>
         </TabsContent>
-        <TabsContent value="pricing" className="space-y-4">
-          <Card className="p-4 md:p-6">
-            <LoadingOverlay 
-              isLoading={servicesLoading || plansLoading || contentLoading}
-              text="Loading pricing data..."
-            />
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Services</h2>
-                <p className="text-muted-foreground">Manage your service offerings and pricing</p>
-              </div>
-              <Button onClick={() => {
-                setEditingService(null);
-                setShowServiceDialog(true);
-              }}>
-                Add New Service
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {Array.isArray(services) && services.map((service) => (
-                <Card key={service.id} className="p-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{service.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                      <p className="text-sm font-medium mt-2">${service.price}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingService(service);
-                          setShowServiceDialog(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deleteServiceMutation.mutate(service.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <Separator className="my-8" />
-
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Plans</h2>
-                <p className="text-muted-foreground">Manage your subscription plans and features</p>
-              </div>
-              <Button onClick={() => {
-                setEditingPlan(null);
-                setShowPlanDialog(true);
-              }}>
-                Add New Plan
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {plans.map((plan) => (
-                <Card key={plan.id} className="p-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{plan.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
-                      <p className="text-sm font-medium mt-2">
-                        ${plan.price}/{plan.billing_period}
-                      </p>
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Features:</h4>
-                        <ul className="space-y-2">
-                          {plan.features?.map((feature) => (
-                            <li key={feature.id} className="text-sm flex items-center gap-2">
-                              <CheckCircle className={`h-4 w-4 ${feature.included ? 'text-green-500' : 'text-muted-foreground'}`} />
-                              {feature.feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingPlan(plan);
-                          setShowPlanDialog(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deletePlanMutation.mutate(plan.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Add content management section to pricing tab */}
-            <Separator className="my-8" />
-
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Page Content</h2>
-                <p className="text-muted-foreground">Manage the text content that appears on the pricing page</p>
-              </div>
-              <Button onClick={() => {
-                setEditingContent(null);
-                setShowContentDialog(true);
-              }}>
-                Add New Content
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {pageContent.map((content) => (
-                <Card key={content.id} className="p-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{content.section} - {content.key}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{content.content}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingContent(content);
-                          setShowContentDialog(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deleteContentMutation.mutate(content.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </Card>
-        </TabsContent>
-
       </Tabs>
 
       <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
@@ -3239,6 +1193,7 @@ const AdminPortal = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4 pt-2">
+                    {/* Date Range Selector */}
                     <div className="space-y-2">
                       <Label>Signup Date Range</Label>
                       <div className="flex items-center gap-2">
@@ -3276,6 +1231,7 @@ const AdminPortal = () => {
                       </div>
                     </div>
 
+                    {/* Location Filters */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>States</Label>
@@ -3445,6 +1401,7 @@ const AdminPortal = () => {
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -3490,301 +1447,48 @@ const AdminPortal = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const serviceData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                sort_order: parseInt(formData.get('sort_order') as string),
-              };
-
-              if (editingService) {
-                updateServiceMutation.mutate({ ...serviceData, id: editingService.id });
-              } else {
-                createServiceMutation.mutate(serviceData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingService?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingService?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingService?.price}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingService?.sort_order ?? 0}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingService ? 'Update Service' : 'Create Service'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPlan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const features = Array.from(document.querySelectorAll('[data-feature]')).map((el) => ({
-                feature: (el.querySelector('[name="feature"]') as HTMLInputElement).value,
-                included: (el.querySelector('[name="included"]') as HTMLInputElement).checked,
-                sort_order: parseInt((el.querySelector('[name="feature_sort_order"]') as HTMLInputElement).value),
-              }));
-
-              const planData = {
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                price: parseFloat(formData.get('price') as string),
-                billing_period: formData.get('billing_period') as 'monthly' | 'yearly',
-                sort_order: parseInt(formData.get('sort_order') as string),
-                features,
-              };
-
-              if (editingPlan) {
-                updatePlanMutation.mutate({ ...planData, id: editingPlan.id });
-              } else {
-                createPlanMutation.mutate(planData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingPlan?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={editingPlan?.description}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    defaultValue={editingPlan?.price}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billing_period">Billing Period</Label>
-                  <Select
-                    name="billing_period"
-                    defaultValue={editingPlan?.billing_period ?? 'monthly'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  name="sort_order"
-                  type="number"
-                  defaultValue={editingPlan?.sort_order ?? 0}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Features</Label>
-                <div className="space-y-2 mt-2">
-                  {(editingPlan?.features ?? [{ feature: '', included: true, sort_order: 0 }]).map((feature, index) => (
-                    <div key={index} data-feature className="grid grid-cols-[1fr,auto,auto] gap-2 items-center">
-                      <Input
-                        name="feature"
-                        placeholder="Feature description"
-                        defaultValue={feature.feature}
-                        required
-                      />
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`included-${index}`} className="text-sm">Included</Label>
-                        <Checkbox
-                          id={`included-${index}`}
-                          name="included"
-                          defaultChecked={feature.included}
-                        />
-                      </div>
-                      <Input
-                        name="feature_sort_order"
-                        type="number"
-                        className="w-20"
-                        defaultValue={feature.sort_order}
-                        required
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => {
-                      const featuresContainer = document.querySelector('[data-feature]')?.parentElement;
-                      if (featuresContainer) {
-                        const newFeature = featuresContainer.lastElementChild?.cloneNode(true) as HTMLElement;
-                        if (newFeature) {
-                          const inputs = newFeature.querySelectorAll('input');
-                          inputs.forEach(input => {
-                            if (input.name === 'feature') input.value = '';
-                            if (input.name === 'feature_sort_order') {
-                              input.value = String(featuresContainer.children.length);
-                            }
-                          });
-                          featuresContainer.appendChild(newFeature);
-                        }
-                      }
-                    }}
-                  >
-                    Add Feature
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingPlan ? 'Update Plan' : 'Create Plan'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Content Dialog */}
-      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContent ? 'Edit Content' : 'Add New Content'}</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const contentData = {
-                page: 'pricing',
-                section: formData.get('section') as string,
-                key: formData.get('key') as string,
-                content: formData.get('content') as string,
-              };
-
-              if (editingContent) {
-                updateContentMutation.mutate({ ...contentData, id: editingContent.id });
-              } else {
-                createContentMutation.mutate(contentData);
-              }
-            }}
-          >
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="section">Section</Label>
-                <Select
-                  name="section"
-                  defaultValue={editingContent?.section ?? "hero"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hero">Hero</SelectItem>
-                    <SelectItem value="plans">Plans</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="key">Content Key</Label>
-                <Input
-                  id="key"
-                  name="key"
-                  placeholder="e.g., title, description"
-                  defaultValue={editingContent?.key}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  rows={5}
-                  defaultValue={editingContent?.content}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-6">
-              <Button type="submit">
-                {editingContent ? 'Update Content' : 'Create Content'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the template "{templateToDelete?.name}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (templateToDelete) {
+                  try {
+                    const response = await fetch(`/api/email-templates/${templateToDelete.id}`, {
+                      method: 'DELETE',
+                    });
+                    if (!response.ok) {
+                      throw new Error('Failed to delete template');
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                    toast({
+                      title: "Success",
+                      description: "Template deleted successfully",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: error instanceof Error ? error.message : "Failed to delete template",
+                      variant: "destructive"
+                    });
+                  }
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

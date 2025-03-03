@@ -5,7 +5,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./auth";
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -28,25 +27,16 @@ async function startServer() {
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
 
-    // Body parsing middleware
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
-    // Enhanced request logging middleware
+    // Request logging middleware
     app.use((req, res, next) => {
-      const timestamp = new Date().toISOString();
       const start = Date.now();
-
-      log(`[${timestamp}] Incoming ${req.method} request to ${req.path}`);
-      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        log('Request body:', req.body);
-      }
-
       res.on("finish", () => {
         const duration = Date.now() - start;
-        log(`[${timestamp}] ${req.method} ${req.path} ${res.statusCode} completed in ${duration}ms`);
+        log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
       });
-
       next();
     });
 

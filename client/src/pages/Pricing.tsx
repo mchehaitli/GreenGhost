@@ -4,27 +4,76 @@ import { motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import PricingCalculator from "@/components/PricingCalculator";
-import { useQuery } from "@tanstack/react-query";
 
-type PageContent = {
-  id: number;
-  page: string;
-  section: string;
-  key: string;
-  content: string;
-};
+const plans = [
+  {
+    name: "Essential Care",
+    price: 149,
+    description: "Perfect for standard residential lawns up to 5,000 sq ft",
+    features: [
+      "Bi-weekly lawn maintenance",
+      "Standard mowing and edging",
+      "Basic fertilization",
+      "Seasonal cleanup",
+      "Email support",
+    ],
+    nonFeatures: [
+      "Priority scheduling",
+      "Custom care plan",
+      "Advanced lawn treatments",
+    ],
+    popular: false,
+  },
+  {
+    name: "Premium Care",
+    price: 249,
+    description: "Ideal for larger properties up to 10,000 sq ft",
+    features: [
+      "Weekly lawn maintenance",
+      "Premium mowing and edging",
+      "Advanced fertilization program",
+      "Seasonal cleanup and preparation",
+      "Priority scheduling",
+      "Custom care plan",
+      "24/7 support",
+    ],
+    nonFeatures: [],
+    popular: true,
+  },
+  {
+    name: "Estate Care",
+    price: 399,
+    description: "Comprehensive care for luxury estates over 10,000 sq ft",
+    features: [
+      "Weekly lawn maintenance",
+      "Premium mowing and edging",
+      "Advanced fertilization program",
+      "Full-service lawn treatments",
+      "Priority scheduling",
+      "Customized care plan",
+      "24/7 dedicated support",
+      "Landscape consultation",
+    ],
+    nonFeatures: [],
+    popular: false,
+  },
+];
+
+// Additional services with their prices
+const additionalServices = [
+  { id: "edging", name: "Edging & Trimming", pricePerSqft: 0.05, description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
+  { id: "fertilization", name: "Fertilization", pricePerSqft: 0.08, description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
+  { id: "weedControl", name: "Weed Control", pricePerSqft: 0.07, description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
+  { id: "leafRemoval", name: "Leaf Removal", pricePerSqft: 0.06, description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
+  { id: "soilTesting", name: "Soil Analysis & Treatment", pricePerSqft: 0.04, description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
+  { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06, description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
+  { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08, description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
+  { id: "mulching", name: "Mulching Service", pricePerSqft: 0.05, description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
+  { id: "hardscaping", name: "Hardscape Cleaning", pricePerSqft: 0.06, description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
+  { id: "seasonalCleanup", name: "Seasonal Cleanup", pricePerSqft: 0.08, description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
+];
 
 const Pricing = () => {
-  const { data: pageContent = [] } = useQuery<PageContent[]>({
-    queryKey: ['/api/pricing/content'],
-    queryFn: () => fetch('/api/pricing/content').then(res => res.json()),
-  });
-
-  const getContent = (section: string, key: string) => {
-    const content = pageContent.find(c => c.section === section && c.key === key);
-    return content?.content;
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <section className="py-20">
@@ -36,7 +85,7 @@ const Pricing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {getContent('hero', 'title') || 'Simple, Transparent Pricing'}
+              Simple, Transparent Pricing
             </motion.h1>
             <motion.p
               className="text-xl text-muted-foreground"
@@ -44,8 +93,8 @@ const Pricing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              {getContent('hero', 'description') || 
-                'Choose the perfect plan for your lawn. All plans include our innovative service approach and dedicated support team.'}
+              Choose the perfect plan for your lawn. All plans include our innovative service approach
+              and dedicated support team.
             </motion.p>
           </div>
 
@@ -169,73 +218,5 @@ const Pricing = () => {
     </div>
   );
 };
-
-const plans = [
-  {
-    name: "Essential Care",
-    price: 149,
-    description: "Perfect for standard residential lawns up to 5,000 sq ft",
-    features: [
-      "Bi-weekly lawn maintenance",
-      "Standard mowing and edging",
-      "Basic fertilization",
-      "Seasonal cleanup",
-      "Email support",
-    ],
-    nonFeatures: [
-      "Priority scheduling",
-      "Custom care plan",
-      "Advanced lawn treatments",
-    ],
-    popular: false,
-  },
-  {
-    name: "Premium Care",
-    price: 249,
-    description: "Ideal for larger properties up to 10,000 sq ft",
-    features: [
-      "Weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Seasonal cleanup and preparation",
-      "Priority scheduling",
-      "Custom care plan",
-      "24/7 support",
-    ],
-    nonFeatures: [],
-    popular: true,
-  },
-  {
-    name: "Estate Care",
-    price: 399,
-    description: "Comprehensive care for luxury estates over 10,000 sq ft",
-    features: [
-      "Weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Full-service lawn treatments",
-      "Priority scheduling",
-      "Customized care plan",
-      "24/7 dedicated support",
-      "Landscape consultation",
-    ],
-    nonFeatures: [],
-    popular: false,
-  },
-];
-
-// Additional services with their prices
-const additionalServices = [
-  { id: "edging", name: "Edging & Trimming", pricePerSqft: 0.05, description: "Precision edging and trimming for a manicured look along walkways, driveways, and garden beds." },
-  { id: "fertilization", name: "Fertilization", pricePerSqft: 0.08, description: "Custom-blended fertilizer application that promotes healthy growth and vibrant color throughout the seasons." },
-  { id: "weedControl", name: "Weed Control", pricePerSqft: 0.07, description: "Targeted treatment that eliminates weeds while protecting your lawn and garden plants." },
-  { id: "leafRemoval", name: "Leaf Removal", pricePerSqft: 0.06, description: "Efficient removal of fallen leaves to maintain lawn health and appearance during autumn." },
-  { id: "soilTesting", name: "Soil Analysis & Treatment", pricePerSqft: 0.04, description: "Comprehensive soil testing with custom amendment recommendations for optimal plant growth." },
-  { id: "aerationService", name: "Lawn Aeration", pricePerSqft: 0.06, description: "Core aeration to reduce soil compaction and improve water, nutrient, and oxygen flow to grass roots." },
-  { id: "gardenMaintenance", name: "Garden Bed Maintenance", pricePerSqft: 0.08, description: "Complete care for garden beds including weeding, pruning, and seasonal plantings." },
-  { id: "mulching", name: "Mulching Service", pricePerSqft: 0.05, description: "Professional mulch application to retain soil moisture, reduce weeds, and enhance landscape appearance." },
-  { id: "hardscaping", name: "Hardscape Cleaning", pricePerSqft: 0.06, description: "Thorough cleaning of patios, walkways, and other hardscape elements to maintain their appearance." },
-  { id: "seasonalCleanup", name: "Seasonal Cleanup", pricePerSqft: 0.08, description: "Comprehensive cleanup services during spring and fall to prepare your landscape for the coming season." }
-];
 
 export default Pricing;
