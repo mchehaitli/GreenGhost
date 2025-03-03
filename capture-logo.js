@@ -19,24 +19,25 @@ async function captureLogo() {
     // Navigate to the home page
     await page.goto('http://localhost:5000', { waitUntil: 'networkidle0' });
 
-    // Wait for the logo to be visible
-    await page.waitForSelector('.flex.items-center.gap-2', { visible: true });
+    // Wait for the ghost icon to be visible
+    await page.waitForSelector('svg.ghost-icon', { visible: true });
 
-    // Get the logo element
-    const logoElement = await page.$('.flex.items-center.gap-2');
+    // Get the ghost icon element
+    const logoElement = await page.$('svg.ghost-icon');
 
     if (logoElement) {
-      // Capture just the logo area
-      const screenshotPath = path.join(__dirname, 'ghost-logo.jpg');
+      // Capture just the logo area with high quality settings
+      const screenshotPath = path.join(__dirname, 'ghost-logo.png');
       await logoElement.screenshot({
         path: screenshotPath,
-        type: 'jpeg',
-        quality: 100
+        type: 'png',
+        omitBackground: true // This will make the background transparent
       });
 
       console.log(`Logo saved as: ${screenshotPath}`);
+      console.log('To download, you can click on ghost-logo.png in the file browser and download it from there.');
     } else {
-      console.error('Could not find logo element');
+      console.error('Could not find ghost icon');
     }
 
   } catch (error) {
