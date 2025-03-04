@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
+import { EmailBuilder } from "@/components/EmailBuilder";
 import {
   Search,
   MapPin,
@@ -114,7 +114,7 @@ type EmailHistoryEntry = {
   sent_at: string;
   total_recipients: number;
   status: 'completed' | 'failed' | 'pending';
-}
+};
 
 
 export default function AdminPortal() {
@@ -908,11 +908,11 @@ export default function AdminPortal() {
               <div className="grid md:grid-cols-2 gap-6">
                 {/* City Distribution */}
                 <div>
-                  <h3 className="text-lg font-medium mb-4">Top Cities</h3>
+                  <h3 className="text-lg font-medium mb-4">TopCities</h3>
                   <div className="overflow-x-auto"><Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>City</TableHead>
+                                                    <TableHead>City</TableHead>
                           <TableHead>Signups</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -995,169 +995,179 @@ export default function AdminPortal() {
 
         <TabsContent value="email-templates">
           <Card className="p-4 md:p-6 relative">
-            <div className="flex flex-col gap-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
-                  <p className="text-muted-foreground">
-                    Manage automated email templates for different events in your application.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => setSendEmailDialogOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Send Custom Email
-                  </Button>
-                </div>
-              </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
+              <p className="text-muted-foreground">Create and manage email templates using the visual builder</p>
+            </div>
 
-              <Tabs value={activeTemplateTab} onValueChange={setActiveTemplateTab} className="w-full">
-                <TabsList className="w-full flex justify-start space-x-2">
-                  <TabsTrigger value="system">System Templates</TabsTrigger>
-                  <TabsTrigger value="custom">Custom Templates</TabsTrigger>
-                  <TabsTrigger value="create">Create Template</TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTemplateTab} onValueChange={setActiveTemplateTab}>
+              <TabsList>
+                <TabsTrigger value="system">System Templates</TabsTrigger>
+                <TabsTrigger value="custom">Custom Templates</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="system" className="space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="p-4">
-                      <h3 className="text-lg font-medium mb-4">Welcome Email</h3>
-                      <EmailTemplateEditor
-                        initialData={{
-                          name: "Welcome Email",
+              <TabsContent value="system" className="space-y-4">
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Welcome Email</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EmailBuilder
+                        defaultTemplate={{
                           subject: "Welcome to Our Platform",
-                          html_content: `
-                            <h1>Welcome {firstName}!</h1>
-                            <p>Thank you for joining our waitlist. We're excited to have you with us.</p>
-                            <p>We'll keep you updated on our progress and let you know when we're ready to launch.</p>
-                          `,
-                        }}
-                        onSave={async (data) => {
-                          const response = await fetch('/api/email-templates/welcome', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data),
-                          });
-                          if (!response.ok) {
-                            throw new Error('Failed to save template');
-                          }
-                        }}
-                      />
-                    </Card>
-
-                    <Card className="p-4">
-                      <h3 className="text-lg font-medium mb-4">Verification Email</h3>
-                      <EmailTemplateEditor
-                        initialData={{
-                          name: "Verification Email",
-                          subject: "Verify Your Email",
-                          html_content: `
-                            <h1>Hello {firstName}!</h1>
-                            <p>Your verification code is: {verificationCode}</p>
-                            <p>Enter this code to verify your email address.</p>
-                          `,
-                        }}
-                        onSave={async (data) => {
-                          const response = await fetch('/api/email-templates/verification', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data),
-                          });
-                          if (!response.ok) {
-                            throw new Error('Failed to save template');
-                          }
-                        }}
-                      />
-                    </Card>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="custom" className="space-y-4">
-                  {customTemplatesLoading ? (
-                    <LoadingSpinner />
-                  ) : customTemplates?.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No custom templates yet.</p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => setActiveTemplateTab("create")}
-                      >
-                        Create Your First Template
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {customTemplates?.map((template) => (
-                        <Card key={template.id} className="p-4">
-                          <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-medium">{template.name}</h3>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                setTemplateToDelete(template);
-                                setDeleteTemplateDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <EmailTemplateEditor
-                            initialData={template}
-                            onSave={async (data) => {
-                              const response = await fetch(`/api/email-templates/${template.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(data),
-                              });
-                              if (!response.ok) {
-                                throw new Error('Failed to update template');
+                          blocks: [
+                            {
+                              id: "welcome-header",
+                              type: "header",
+                              content: {
+                                text: "Welcome to Our Platform!",
+                                size: "32px",
+                                align: "center"
                               }
-                              queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                            },
+                            {
+                              id: "welcome-text",
+                              type: "text",
+                              content: {
+                                text: "Thank you for joining our waitlist. We're excited to have you with us.",
+                                align: "left"
+                              }
+                            },
+                            {
+                              id: "welcome-button",
+                              type: "button",
+                              content: {
+                                text: "Visit Our Website",
+                                url: "https://ourplatform.com",
+                                align: "center"
+                              }
+                            }
+                          ]
+                        }}
+                        onSave={async (template) => {
+                          try {
+                            await fetch('/api/email-templates/welcome', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(template)
+                            });
+                            toast({
+                              title: "Template saved",
+                              description: "Welcome email template has been updated."
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to save template",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Verification Email</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EmailBuilder
+                        defaultTemplate={{
+                          subject: "Verify Your Email",
+                          blocks: [
+                            {
+                              id: "verify-header",
+                              type: "header",
+                              content: {
+                                text: "Verify Your Email",
+                                size: "32px",
+                                align: "center"
+                              }
+                            },
+                            {
+                              id: "verify-text",
+                              type: "text",
+                              content: {
+                                text: "Your verification code is: {verificationCode}",
+                                align: "center"
+                              }
+                            },
+                            {
+                              id: "verify-instructions",
+                              type: "text",
+                              content: {
+                                text: "Enter this code to verify your email address.",
+                                align: "left"
+                              }
+                            }
+                          ]
+                        }}
+                        onSave={async (template) => {
+                          try {
+                            await fetch('/api/email-templates/verification', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(template)
+                            });
+                            toast({
+                              title: "Template saved",
+                              description: "Verification email template has been updated."
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to save template",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="custom" className="space-y-4">
+                {customTemplatesLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  <div className="space-y-4">
+                    {customTemplates?.map((template) => (
+                      <Card key={template.id}>
+                        <CardHeader>
+                          <CardTitle>{template.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <EmailBuilder
+                            onSave={async (templateContent) => {
+                              try {
+                                await fetch(`/api/email-templates/custom/${template.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(templateContent)
+                                });
+                                toast({
+                                  title: "Template saved",
+                                  description: `${template.name} template has been updated.`
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to save template",
+                                  variant: "destructive"
+                                });
+                              }
                             }}
                           />
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="create">
-                  <Card className="p-4">
-                    <h3 className="text-lg font-medium mb-4">Create New Template</h3>
-                    <EmailTemplateEditor
-                      initialData={{
-                        name: "",
-                        subject: "",
-                        html_content: "",
-                      }}
-                      onSave={async (data) => {
-                        const response = await fetch('/api/email-templates', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(data),
-                        });
-                        if (!response.ok) {
-                          throw new Error('Failed to create template');
-                        }
-                        // Refresh custom templates list
-                        await queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-                        // Switch to custom templates tab
-                        setActiveTemplateTab("custom");
-                        toast({
-                          title: "Success",
-                          description: "Template created successfully",
-                        });
-                      }}
-                    />
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </Card>
         </TabsContent>
 
