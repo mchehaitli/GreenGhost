@@ -853,7 +853,7 @@ export default function AdminPortal() {
             <div className="flex flex-col gap-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Waitlist Analytics</h2>
-                <p className="text-muted-foreground">Track signup trends and distribution</p>
+                <p className="text-muted-foreground">Track signup trends and location distribution</p>
               </div>
 
               {/* Key Metrics Cards */}
@@ -887,7 +887,7 @@ export default function AdminPortal() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {analyticsData?.daily?.breakdown?.slice(0, 7).map((day: any) => (
+                      {analyticsData?.daily?.breakdown?.map((day: any) => (
                         <TableRow key={day.date}>
                           <TableCell>{day.date}</TableCell>
                           <TableCell>{day.count}</TableCell>
@@ -898,28 +898,89 @@ export default function AdminPortal() {
                 </div>
               </div>
 
-              {/* ZIP Code Distribution */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">Regional Distribution</h3>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analyticsData?.zipCodeDistribution || []}
-                        dataKey="count"
-                        nameKey="region"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        label
-                      >
-                        {(analyticsData?.zipCodeDistribution || []).map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              {/* Location Distribution */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* City Distribution */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Top Cities</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>City</TableHead>
+                          <TableHead>Signups</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analyticsData?.cityDistribution?.map((city: any) => (
+                          <TableRow key={city.name}>
+                            <TableCell>{city.name}</TableCell>
+                            <TableCell>{city.count}</TableCell>
+                          </TableRow>
                         ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* ZIP Distribution */}
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Top ZIP Codes</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ZIP Code</TableHead>
+                          <TableHead>Signups</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analyticsData?.zipDistribution?.map((zip: any) => (
+                          <TableRow key={zip.name}>
+                            <TableCell>{zip.name}</TableCell>
+                            <TableCell>{zip.count}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Regional Latest Signups */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Latest Signups by Region</h3>
+                <div className="space-y-6">
+                  {analyticsData?.regionalDistribution?.map((region: any) => (
+                    <Card key={region.region} className="p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-md font-medium">{region.region}</h4>
+                        <Badge variant="secondary">{region.count} total signups</Badge>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Signed Up</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {region.latest.map((signup: any) => (
+                            <TableRow key={signup.email}>
+                              <TableCell>{signup.email}</TableCell>
+                              <TableCell>
+                                {signup.city ? `${signup.city}, ${signup.state}` : signup.zip_code}
+                              </TableCell>
+                              <TableCell>
+                                {format(new Date(signup.created_at), "MMM dd, yyyy 'at' h:mm a")}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  ))}
                 </div>
               </div>
             </div>

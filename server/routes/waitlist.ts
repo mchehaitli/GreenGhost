@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { log } from '../vite';
 import { requireAuth } from '../auth';
 import emailService from '../services/email';
-import { format, subHours, startOfDay, startOfMonth, startOfYear } from 'date-fns';
+import { format, subHours, startOfDay, startOfMonth, startOfYear, subDays } from 'date-fns';
 
 const router = Router();
 
@@ -318,12 +318,12 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
     const daily = {
       total: entries.filter(entry => new Date(entry.created_at) >= startOfToday).length,
       breakdown: Array.from({ length: 7 }, (_, i) => {
-        const date = format(new Date(now.getTime() - i * 24 * 60 * 60 * 1000), 'MMM dd');
+        const date = format(subDays(now, i), 'MMM dd');
         const count = entries.filter(entry => 
           format(new Date(entry.created_at), 'MMM dd') === date
         ).length;
         return { date, count };
-      })
+      }).reverse() // Show oldest to newest
     };
 
     const monthly = {
@@ -334,25 +334,71 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
       total: entries.filter(entry => new Date(entry.created_at) >= startOfThisYear).length
     };
 
-    // Calculate ZIP code distribution
-    const zipCodeDistribution = entries.reduce((acc: Record<string, number>, entry) => {
+    // Calculate distribution by city, ZIP, and latest signups by region
+    const locationDistribution = entries.reduce((acc: { 
+      cities: Record<string, number>,
+      zips: Record<string, number>,
+      regions: Record<string, { count: number, latest: any[] }>
+    }, entry) => {
+      if (entry.city) {
+        const cityKey = `${entry.city}, ${entry.state || 'Unknown'}`;
+        acc.cities[cityKey] = (acc.cities[cityKey] || 0) + 1;
+      }
       if (entry.zip_code) {
-        const region = entry.zip_code.slice(0, 1); // First digit represents region
-        acc[region] = (acc[region] || 0) + 1;
+        acc.zips[entry.zip_code] = (acc.zips[entry.zip_code] || 0) + 1;
+        // Group by region (first digit of ZIP)
+        const region = entry.zip_code.slice(0, 1);
+        if (!acc.regions[region]) {
+          acc.regions[region] = { count: 0, latest: [] };
+        }
+        acc.regions[region].count++;
+        acc.regions[region].latest.push({
+          email: entry.email,
+          created_at: entry.created_at,
+          zip_code: entry.zip_code,
+          city: entry.city,
+          state: entry.state
+        });
       }
       return acc;
-    }, {});
+    }, { cities: {}, zips: {}, regions: {} });
 
-    const formattedZipDistribution = Object.entries(zipCodeDistribution).map(([region, count]) => ({
-      region: `Region ${region}`,
-      count
-    })).sort((a, b) => b.count - a.count);
+    // Format city distribution
+    const cityDistribution = Object.entries(locationDistribution.cities)
+      .map(([city, count]) => ({
+        name: city,
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 cities
+
+    // Format ZIP distribution
+    const zipDistribution = Object.entries(locationDistribution.zips)
+      .map(([zip, count]) => ({
+        name: zip,
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 ZIP codes
+
+    // Format regional distribution with latest signups
+    const regionalDistribution = Object.entries(locationDistribution.regions)
+      .map(([region, data]) => ({
+        region: `Region ${region}`,
+        count: data.count,
+        latest: data.latest
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5) // Latest 5 signups per region
+      }))
+      .sort((a, b) => b.count - a.count);
 
     return res.json({
       daily,
       monthly,
       yearly,
-      zipCodeDistribution: formattedZipDistribution
+      cityDistribution,
+      zipDistribution,
+      regionalDistribution
     });
   } catch (error) {
     log('Error fetching analytics:', error instanceof Error ? error.message : 'Unknown error');
