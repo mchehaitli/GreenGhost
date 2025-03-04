@@ -875,36 +875,41 @@ export default function AdminPortal() {
                 </Card>
               </div>
 
-              {/* Daily Breakdown */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">Last 7 Days</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Signups</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {analyticsData?.daily?.breakdown?.map((day: any) => (
-                        <TableRow key={day.date}>
-                          <TableCell>{day.date}</TableCell>
-                          <TableCell>{day.count}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
+              {/* Daily Breakdown - Now Collapsible */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="daily-breakdown">
+                  <AccordionTrigger>
+                    <h3 className="text-lg font-medium">Last 7 Days Breakdown</h3>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="overflow-x-auto pt-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Signups</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {analyticsData?.daily?.breakdown?.map((day: any) => (
+                            <TableRow key={day.date}>
+                              <TableCell>{day.date}</TableCell>
+                              <TableCell>{day.count}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               {/* Location Distribution */}
               <div className="grid md:grid-cols-2 gap-6">
                 {/* City Distribution */}
                 <div>
                   <h3 className="text-lg font-medium mb-4">Top Cities</h3>
-                  <div className="overflow-x-auto">
-                    <Table>
+                  <div className="overflow-x-auto"><Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>City</TableHead>
@@ -947,15 +952,15 @@ export default function AdminPortal() {
                 </div>
               </div>
 
-              {/* Regional Latest Signups */}
+              {/* Latest Signups by ZIP */}
               <div>
-                <h3 className="text-lg font-medium mb-4">Latest Signups by Region</h3>
+                <h3 className="text-lg font-medium mb-4">Latest Signups by ZIP Code</h3>
                 <div className="space-y-6">
-                  {analyticsData?.regionalDistribution?.map((region: any) => (
-                    <Card key={region.region} className="p-4">
+                  {analyticsData?.zipDistribution?.map((zip: any) => (
+                    <Card key={zip.name} className="p-4">
                       <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-md font-medium">{region.region}</h4>
-                        <Badge variant="secondary">{region.count} total signups</Badge>
+                        <h4 className="text-md font-medium">ZIP Code: {zip.name}</h4>
+                        <Badge variant="secondary">{zip.count} total signups</Badge>
                       </div>
                       <Table>
                         <TableHeader>
@@ -966,7 +971,7 @@ export default function AdminPortal() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {region.latest.map((signup: any) => (
+                          {zip.latest?.map((signup: any) => (
                             <TableRow key={signup.email}>
                               <TableCell>{signup.email}</TableCell>
                               <TableCell>
@@ -983,6 +988,7 @@ export default function AdminPortal() {
                   ))}
                 </div>
               </div>
+
             </div>
           </Card>
         </TabsContent>

@@ -334,11 +334,11 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
       total: entries.filter(entry => new Date(entry.created_at) >= startOfThisYear).length
     };
 
-    // Calculate distribution by city, ZIP, and latest signups by region
+    // Calculate distribution by city, ZIP, and latest signups
     const locationDistribution = entries.reduce((acc: { 
       cities: Record<string, number>,
       zips: Record<string, number>,
-      regions: Record<string, { count: number, latest: any[] }>
+      latestByZip: Record<string, any[]>
     }, entry) => {
       if (entry.city) {
         const cityKey = `${entry.city}, ${entry.state || 'Unknown'}`;
@@ -346,13 +346,12 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
       }
       if (entry.zip_code) {
         acc.zips[entry.zip_code] = (acc.zips[entry.zip_code] || 0) + 1;
-        // Group by region (first digit of ZIP)
-        const region = entry.zip_code.slice(0, 1);
-        if (!acc.regions[region]) {
-          acc.regions[region] = { count: 0, latest: [] };
+
+        // Track latest signups by ZIP
+        if (!acc.latestByZip[entry.zip_code]) {
+          acc.latestByZip[entry.zip_code] = [];
         }
-        acc.regions[region].count++;
-        acc.regions[region].latest.push({
+        acc.latestByZip[entry.zip_code].push({
           email: entry.email,
           created_at: entry.created_at,
           zip_code: entry.zip_code,
@@ -361,7 +360,7 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
         });
       }
       return acc;
-    }, { cities: {}, zips: {}, regions: {} });
+    }, { cities: {}, zips: {}, latestByZip: {} });
 
     // Format city distribution
     const cityDistribution = Object.entries(locationDistribution.cities)
@@ -372,33 +371,24 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10); // Top 10 cities
 
-    // Format ZIP distribution
+    // Format ZIP distribution with latest signups
     const zipDistribution = Object.entries(locationDistribution.zips)
       .map(([zip, count]) => ({
         name: zip,
-        count
+        count,
+        latest: locationDistribution.latestByZip[zip]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5) // Latest 5 signups per ZIP
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10); // Top 10 ZIP codes
-
-    // Format regional distribution with latest signups
-    const regionalDistribution = Object.entries(locationDistribution.regions)
-      .map(([region, data]) => ({
-        region: `Region ${region}`,
-        count: data.count,
-        latest: data.latest
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5) // Latest 5 signups per region
-      }))
-      .sort((a, b) => b.count - a.count);
 
     return res.json({
       daily,
       monthly,
       yearly,
       cityDistribution,
-      zipDistribution,
-      regionalDistribution
+      zipDistribution
     });
   } catch (error) {
     log('Error fetching analytics:', error instanceof Error ? error.message : 'Unknown error');
