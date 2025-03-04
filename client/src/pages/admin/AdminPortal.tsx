@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
+import { DynamicEmailBuilder } from '@/components/DynamicEmailBuilder';
 import {
   Search,
   MapPin,
@@ -114,7 +114,7 @@ type EmailHistoryEntry = {
   sent_at: string;
   total_recipients: number;
   status: 'completed' | 'failed' | 'pending';
-}
+};
 
 
 export default function AdminPortal() {
@@ -1014,7 +1014,32 @@ export default function AdminPortal() {
                 </TabsList>
 
                 <TabsContent value="system" className="space-y-4">
-                  <EmailTemplatePreview />
+                  <Card className="p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Welcome Email</h3>
+                        <p className="text-muted-foreground">Default template for new user welcome emails.</p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => setActiveTemplateTab('create')}
+                        >
+                          Customize Template
+                        </Button>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium mb-4">Verification Email</h3>
+                        <p className="text-muted-foreground">Default template for email verification.</p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => setActiveTemplateTab('create')}
+                        >
+                          Customize Template
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="custom" className="space-y-4">
