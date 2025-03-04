@@ -1291,9 +1291,104 @@ export default function AdminPortal() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
+                      {/* Recipient Filters */}
                       <div className="space-y-4">
+                        <h4 className="font-medium">Filter Recipients</h4>
+
+                        {/* Date Range Filter */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>From Date</Label>
+                            <DatePicker
+                              selected={segmentationCriteria.dateRange?.from}
+                              onSelect={(date) => setSegmentationCriteria(prev => ({
+                                ...prev,
+                                dateRange: {
+                                  from: date,
+                                  to: prev.dateRange?.to || new Date()
+                                }
+                              }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>To Date</Label>
+                            <DatePicker
+                              selected={segmentationCriteria.dateRange?.to}
+                              onSelect={(date) => setSegmentationCriteria(prev => ({
+                                ...prev,
+                                dateRange: {
+                                  from: prev.dateRange?.from || new Date(),
+                                  to: date
+                                }
+                              }))}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Location Filters */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Cities</Label>
+                            <Select
+                              value={segmentationCriteria.cities[0] || ''}
+                              onValueChange={(value) => setSegmentationCriteria(prev => ({
+                                ...prev,
+                                cities: value ? [value] : []
+                              }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a city" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from(new Set(waitlistEntries.map(entry => entry.city).filter(Boolean))).map(city => (
+                                  <SelectItem key={city} value={city as string}>{city}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ZIP Codes</Label>
+                            <Select
+                              value={segmentationCriteria.zipCodes[0] || ''}
+                              onValueChange={(value) => setSegmentationCriteria(prev => ({
+                                ...prev,
+                                zipCodes: value ? [value] : []
+                              }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a ZIP code" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from(new Set(waitlistEntries.map(entry => entry.zip_code).filter(Boolean))).map(zip => (
+                                  <SelectItem key={zip} value={zip as string}>{zip}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        <Button
+                          variant="outline"
+                          onClick={() => setSegmentationCriteria({
+                            dateRange: null,
+                            states: [],
+                            cities: [],
+                            zipCodes: []
+                          })}
+                          className="w-full"
+                        >
+                          Clear All Filters
+                        </Button>
+
+                        {/* Recipients List */}
                         <div>
-                          <Label>Recipients</Label>
+                          <div className="flex justify-between items-center mb-2">
+                            <Label>Recipients</Label>
+                            <p className="text-sm text-muted-foreground">
+                              {getFilteredRecipients().length} recipients match your filters
+                            </p>
+                          </div>
                           <div className="flex gap-2 mb-2">
                             <Input
                               placeholder="Search recipients..."
@@ -1309,7 +1404,7 @@ export default function AdminPortal() {
                           </div>
                           <ScrollArea className="h-32 border rounded-md">
                             <div className="p-2">
-                              {filteredWaitlistEntries.map((entry) => (
+                              {getFilteredRecipients().map((entry) => (
                                 <div key={entry.email} className="flex items-center space-x-2 py-1">
                                   <Checkbox
                                     checked={selectedRecipients.has(entry.email)}
@@ -1323,12 +1418,17 @@ export default function AdminPortal() {
                                       setSelectedRecipients(newSelected);
                                     }}
                                   />
-                                  <span>{entry.email}</span>
+                                  <span className="flex-1">{entry.email}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {entry.city && entry.state ? `${entry.city}, ${entry.state}` : entry.zip_code}
+                                  </span>
                                 </div>
                               ))}
                             </div>
                           </ScrollArea>
                         </div>
+
+                        {/* Email Builder */}
                         <EmailBuilder
                           onSave={async (template) => {
                             try {
@@ -1350,6 +1450,12 @@ export default function AdminPortal() {
                               });
                               setSelectedRecipients(new Set());
                               setRecipientSearchTerm('');
+                              setSegmentationCriteria({
+                                dateRange: null,
+                                states: [],
+                                cities: [],
+                                zipCodes: []
+                              });
                             } catch (error) {
                               toast({
                                 title: "Error",
@@ -1366,6 +1472,7 @@ export default function AdminPortal() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
             </Tabs>
           </Card>
         </TabsContent>
