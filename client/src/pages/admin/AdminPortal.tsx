@@ -142,7 +142,7 @@ export default function AdminPortal() {
   const [selectAllRecipients, setSelectAllRecipients] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
   const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | EmailTemplate | null>(null);
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
     dateRange: null,
@@ -1016,8 +1016,19 @@ export default function AdminPortal() {
               <TabsContent value="system" className="space-y-4">
                 <div className="space-y-4">
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle>Welcome Email</CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTemplate("welcome");
+                          setSendEmailDialogOpen(true);
+                        }}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Welcome Email
+                      </Button>
                     </CardHeader>
                     <CardContent>
                       <EmailBuilder
@@ -1076,8 +1087,19 @@ export default function AdminPortal() {
                   </Card>
 
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle>Verification Email</CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTemplate("verification");
+                          setSendEmailDialogOpen(true);
+                        }}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Verification Email
+                      </Button>
                     </CardHeader>
                     <CardContent>
                       <EmailBuilder
@@ -1146,10 +1168,20 @@ export default function AdminPortal() {
                         <h3 className="text-lg font-medium">Custom Templates</h3>
                         <p className="text-sm text-muted-foreground">Manage your saved email templates</p>
                       </div>
-                      <Button onClick={() => setActiveTemplateTab("create")} className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Create New Template
-                      </Button>
+                      <div className="space-x-2">
+                        <Button onClick={() => setActiveTemplateTab("create")} className="flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          Create New Template
+                        </Button>
+                        <Button 
+                          onClick={() => setActiveTemplateTab("send")}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          Send Custom Email
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-4">
                       {!customTemplates?.length ? (
@@ -1172,13 +1204,12 @@ export default function AdminPortal() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    // Implement send template functionality
                                     setSelectedTemplate(template);
                                     setSendEmailDialogOpen(true);
                                   }}
                                 >
                                   <Mail className="w-4 h-4 mr-2" />
-                                  Send
+                                  Send Template
                                 </Button>
                                 <Button
                                   variant="destructive"
