@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -42,6 +42,10 @@ export const emailTemplates = pgTable("email_templates", {
   name: text("name").notNull(),
   subject: text("subject").notNull(),
   html_content: text("html_content").notNull(),
+  // New fields for dynamic content
+  content_blocks: jsonb("content_blocks").default([]).notNull(),
+  variables: jsonb("variables").default([]).notNull(),
+  category: text("category").default("custom").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -85,10 +89,29 @@ export const verificationSchema = z.object({
   code: z.string().length(6, "Verification code must be exactly 6 digits").regex(/^\d+$/, "Verification code must be numeric"),
 });
 
+// Define type for content block
+const contentBlockSchema = z.object({
+  id: z.string(),
+  type: z.enum(['text', 'image', 'button', 'spacer', 'divider']),
+  content: z.string(),
+  styles: z.record(z.string()).optional(),
+  settings: z.record(z.unknown()).optional(),
+});
+
+const variableSchema = z.object({
+  name: z.string(),
+  defaultValue: z.string(),
+  description: z.string().optional(),
+});
+
+// Update email template schema with new fields
 export const insertEmailTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
   subject: z.string().min(1, "Email subject is required"),
   html_content: z.string().min(1, "Email content is required"),
+  content_blocks: z.array(contentBlockSchema).optional(),
+  variables: z.array(variableSchema).optional(),
+  category: z.string().optional(),
 });
 
 // Export types
@@ -111,3 +134,7 @@ export type SelectEmailTemplate = typeof emailTemplates.$inferSelect;
 export const selectEmailSegmentSchema = createSelectSchema(emailSegments);
 export type InsertEmailSegment = typeof emailSegments.$inferInsert;
 export type SelectEmailSegment = typeof emailSegments.$inferSelect;
+
+// Export content block types for frontend use
+export type ContentBlock = z.infer<typeof contentBlockSchema>;
+export type Variable = z.infer<typeof variableSchema>;
