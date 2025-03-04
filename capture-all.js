@@ -17,7 +17,6 @@ if (!fs.existsSync(screenshotsDir)) {
 const routes = [
   { path: '/', name: 'home' },
   { path: '/services', name: 'services' },
-  { path: '/how-it-works', name: 'how-it-works' },
   { path: '/blog', name: 'blog' },
   { path: '/pricing', name: 'pricing' },
   { path: '/quote', name: 'quote' },
