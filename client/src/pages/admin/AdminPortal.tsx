@@ -64,6 +64,8 @@ import {
 } from "@/components/ui/accordion";
 import { DatePicker } from "@/components/ui/date-picker";
 import { addDays, subDays, isWithinInterval } from 'date-fns';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+
 
 type WaitlistEntry = {
   id: number;
@@ -607,6 +609,8 @@ export default function AdminPortal() {
     );
   }
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
+
   return (
     <div className="container py-4 md:py-10 px-4 md:px-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
@@ -838,6 +842,7 @@ export default function AdminPortal() {
           </Card>
         </TabsContent>
 
+        {/* Analytics Tab Content */}
         <TabsContent value="waitlist-analytics" className="space-y-4">
           <Card className="p-4 md:p-6 relative">
             <LoadingOverlay
@@ -848,101 +853,73 @@ export default function AdminPortal() {
             <div className="flex flex-col gap-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Waitlist Analytics</h2>
-                <p className="text-muted-foreground">Track signup trends across different time periods.</p>
+                <p className="text-muted-foreground">Track signup trends and distribution</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Last Hour</h3>
-                  <p className="text-2xl font-bold mt-2">{analyticsData?.hourly?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">signups</p>
-                </Card>
+              {/* Key Metrics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="p-4">
                   <h3 className="text-sm font-medium text-muted-foreground">Today</h3>
                   <p className="text-2xl font-bold mt-2">{analyticsData?.daily?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                  <p className="text-xs text-muted-foreground mt-1">new signups</p>
                 </Card>
                 <Card className="p-4">
                   <h3 className="text-sm font-medium text-muted-foreground">This Month</h3>
                   <p className="text-2xl font-bold mt-2">{analyticsData?.monthly?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                  <p className="text-xs text-muted-foreground mt-1">total signups</p>
                 </Card>
                 <Card className="p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">This Year</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">Total Verified</h3>
                   <p className="text-2xl font-bold mt-2">{analyticsData?.yearly?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">signups</p>
+                  <p className="text-xs text-muted-foreground mt-1">verified users</p>
                 </Card>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Hourly Breakdown</h3>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Hour</TableHead>
-                          <TableHead>Signups</TableHead>
-                          <TableHead>Percentage</TableHead>
+              {/* Daily Breakdown */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Last 7 Days</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Signups</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {analyticsData?.daily?.breakdown?.slice(0, 7).map((day: any) => (
+                        <TableRow key={day.date}>
+                          <TableCell>{day.date}</TableCell>
+                          <TableCell>{day.count}</TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {analyticsData?.hourly?.breakdown?.map((hour: any) => (
-                          <TableRow key={hour.hour}>
-                            <TableCell>{hour.hour}:00</TableCell>
-                            <TableCell>{hour.count}</TableCell>
-                            <TableCell>{hour.percentage}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Daily Breakdown</h3>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Signups</TableHead>                          <TableHead>Percentage</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {analyticsData?.daily?.breakdown?.map((day: any) => (
-                          <TableRow key={day.date}>
-                            <TableCell>{day.date}</TableCell>
-                            <TableCell>{day.count}</TableCell>
-                            <TableCell>{day.percentage}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
+              </div>
 
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Monthly Breakdown</h3>
-                  <div className="overflow-xauto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Month</TableHead>
-                          <TableHead>Signups</TableHead>
-                          <TableHead>Percentage</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {analyticsData?.monthly?.breakdown?.map((month: any) => (
-                          <TableRow key={month.month}>
-                            <TableCell>{month.month}</TableCell>
-                            <TableCell>{month.count}</TableCell>
-                            <TableCell>{month.percentage}%</TableCell>
-                          </TableRow>
+              {/* ZIP Code Distribution */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Regional Distribution</h3>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analyticsData?.zipCodeDistribution || []}
+                        dataKey="count"
+                        nameKey="region"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label
+                      >
+                        {(analyticsData?.zipCodeDistribution || []).map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>

@@ -304,7 +304,6 @@ router.get('/api/waitlist', requireAuth, async (_req, res) => {
 router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
   try {
     const now = new Date();
-    const oneHourAgo = subHours(now, 1);
     const startOfToday = startOfDay(now);
     const startOfThisMonth = startOfMonth(now);
     const startOfThisYear = startOfYear(now);
@@ -315,20 +314,7 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
       orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
     });
 
-    // Calculate statistics
-    const hourly = {
-      total: entries.filter(entry => new Date(entry.created_at) >= oneHourAgo).length,
-      breakdown: Array.from({ length: 24 }, (_, i) => {
-        const hour = i;
-        const count = entries.filter(entry => {
-          const entryDate = new Date(entry.created_at);
-          return entryDate.getHours() === hour;
-        }).length;
-        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
-        return { hour, count, percentage };
-      })
-    };
-
+    // Calculate daily breakdown for last 7 days
     const daily = {
       total: entries.filter(entry => new Date(entry.created_at) >= startOfToday).length,
       breakdown: Array.from({ length: 7 }, (_, i) => {
@@ -336,32 +322,37 @@ router.get('/api/waitlist/analytics', requireAuth, async (_req, res) => {
         const count = entries.filter(entry => 
           format(new Date(entry.created_at), 'MMM dd') === date
         ).length;
-        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
-        return { date, count, percentage };
+        return { date, count };
       })
     };
 
     const monthly = {
-      total: entries.filter(entry => new Date(entry.created_at) >= startOfThisMonth).length,
-      breakdown: Array.from({ length: 12 }, (_, i) => {
-        const month = format(new Date(now.getFullYear(), i), 'MMMM');
-        const count = entries.filter(entry => 
-          format(new Date(entry.created_at), 'MMMM') === month
-        ).length;
-        const percentage = entries.length > 0 ? ((count / entries.length) * 100).toFixed(1) : '0.0';
-        return { month, count, percentage };
-      })
+      total: entries.filter(entry => new Date(entry.created_at) >= startOfThisMonth).length
     };
 
     const yearly = {
       total: entries.filter(entry => new Date(entry.created_at) >= startOfThisYear).length
     };
 
+    // Calculate ZIP code distribution
+    const zipCodeDistribution = entries.reduce((acc: Record<string, number>, entry) => {
+      if (entry.zip_code) {
+        const region = entry.zip_code.slice(0, 1); // First digit represents region
+        acc[region] = (acc[region] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const formattedZipDistribution = Object.entries(zipCodeDistribution).map(([region, count]) => ({
+      region: `Region ${region}`,
+      count
+    })).sort((a, b) => b.count - a.count);
+
     return res.json({
-      hourly,
       daily,
       monthly,
-      yearly
+      yearly,
+      zipCodeDistribution: formattedZipDistribution
     });
   } catch (error) {
     log('Error fetching analytics:', error instanceof Error ? error.message : 'Unknown error');
