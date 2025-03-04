@@ -1567,261 +1567,76 @@ export default function AdminPortal() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={sendEmailDialogOpen} onOpenChange={setSendEmailDialogOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+      {/* Customer Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Send Custom Email</DialogTitle>
-            <DialogDescription>
-              Send a custom email to segmented waitlist subscribers
-            </DialogDescription>
+            <DialogTitle>Customer Details</DialogTitle>
           </DialogHeader>
-
-          <div className="py-4 space-y-4">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="segmentation">
-                <AccordionTrigger className="text-sm font-medium">
-                  Segmentation Criteria
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 pt-2">
-                    {/* Date Range Selector */}
-                    <div className="space-y-2">
-                      <Label>Signup Date Range</Label>
-                      <div className="flex items-center gap-2">
-                        <DatePicker
-                          selected={segmentationCriteria.dateRange?.from}
-                          onSelect={(date) => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            dateRange: {
-                              from: date || new Date(),
-                              to: prev.dateRange?.to || new Date()
-                            }
-                          }))}
-                        />
-                        <span>to</span>
-                        <DatePicker
-                          selected={segmentationCriteria.dateRange?.to}
-                          onSelect={(date) => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            dateRange: {
-                              from: prev.dateRange?.from || new Date(),
-                              to: date || new Date()
-                            }
-                          }))}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            dateRange: null
-                          }))}
-                        >
-                          Clear
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Location Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>States</Label>
-                        <Select
-                          value={segmentationCriteria.states[0] || ''}
-                          onValueChange={(value) => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            states: value ? [value] : []
-                          }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from(new Set(waitlistEntries.map(e => e.state).filter(Boolean))).map(state => (
-                              <SelectItem key={state} value={state!}>{state}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Cities</Label>
-                        <Select
-                          value={segmentationCriteria.cities[0] || ''}
-                          onValueChange={(value) => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            cities: value ? [value] : []
-                          }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select city" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from(new Set(waitlistEntries.map(e => e.city).filter(Boolean))).map(city => (
-                              <SelectItem key={city} value={city!}>{city}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>ZIP Codes</Label>
-                        <Select
-                          value={segmentationCriteria.zipCodes[0] || ''}
-                          onValueChange={(value) => setSegmentationCriteria(prev => ({
-                            ...prev,
-                            zipCodes: value ? [value] : []
-                          }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select ZIP code" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from(new Set(waitlistEntries.map(e => e.zip_code).filter(Boolean))).map(zip => (
-                              <SelectItem key={zip} value={zip!}>{zip}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSegmentationCriteria({
-                          dateRange: null,
-                          states: [],
-                          cities: [],
-                          zipCodes: [],
-                        })}
-                      >
-                        Clear All Filters
-                      </Button>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="selectAll"
-                checked={selectAllRecipients}
-                onCheckedChange={(checked) => {
-                  setSelectAllRecipients(!!checked);
-                  if (checked) {
-                    setSelectedRecipients(new Set(getFilteredRecipients().map(e => e.email)));
-                  } else {
-                    setSelectedRecipients(new Set());
-                  }
-                }}
-              />
-              <label
-                htmlFor="selectAll"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Select All Filtered Recipients ({getFilteredRecipients().length})
-              </label>
-            </div>
-
-            {!selectAllRecipients && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search subscribers..."
-                    value={recipientSearchTerm}
-                    onChange={(e) => setRecipientSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+          {selectedEntry && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Email</Label>
+                  <p className="font-medium">{selectedEntry.email}</p>
                 </div>
-
-                <ScrollArea className="h-[200px] border rounded-md p-2">
-                  <div className="space-y-2">
-                    {getFilteredRecipients().map((entry) => (
-                      <div key={entry.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`recipient-${entry.id}`}
-                          checked={selectedRecipients.has(entry.email)}
-                          onCheckedChange={(checked) => {
-                            const newSelected = new Set(selectedRecipients);
-                            if (checked) {
-                              newSelected.add(entry.email);
-                            } else {
-                              newSelected.delete(entry.email);
-                            }
-                            setSelectedRecipients(newSelected);
-                          }}
-                        />
-                        <label
-                          htmlFor={`recipient-${entry.id}`}
-                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {entry.email}
-                          {entry.city && entry.state && (
-                            <span className="text-muted-foreground ml-2">
-                              ({entry.city}, {entry.state})
-                            </span>
-                          )}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                <div className="text-sm text-muted-foreground">
-                  Selected {selectedRecipients.size} of {getFilteredRecipients().length} filtered subscribers
+                <div>
+                  <Label className="text-muted-foreground">Sign-up Date</Label>
+                  <p className="font-medium">
+                    {format(new Date(selectedEntry.created_at), "MMM dd, yyyy 'at' h:mm a")}
+                  </p>
                 </div>
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label>Email Template</Label>
-              <Select
-                value={selectedTemplate || ''}
-                onValueChange={(value) => setSelectedTemplate(value as "welcome" | "verification" | EmailTemplate)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="welcome">Welcome Email</SelectItem>
-                  <SelectItem value="verification">Verification Email</SelectItem>
-                  {customTemplates?.map(template => (
-                    <SelectItem key={template.id} value={template}>{template.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">First Name</Label>
+                  <p className="font-medium">{selectedEntry.first_name || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Last Name</Label>
+                  <p className="font-medium">{selectedEntry.last_name || 'Not provided'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Phone Number</Label>
+                  <p className="font-medium">{selectedEntry.phone_number || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">ZIP Code</Label>
+                  <p className="font-medium">{selectedEntry.zip_code || 'Not provided'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">City</Label>
+                  <p className="font-medium">{selectedEntry.city || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">State</Label>
+                  <p className="font-medium">{selectedEntry.state || 'Not provided'}</p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-muted-foreground">Street Address</Label>
+                <p className="font-medium">{selectedEntry.street_address || 'Not provided'}</p>
+              </div>
+
+              <div>
+                <Label className="text-muted-foreground">Notes</Label>
+                <p className="font-medium whitespace-pre-wrap">
+                  {selectedEntry.notes || 'No notes available'}
+                </p>
+              </div>
             </div>
-          </div>
-
+          )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setSendEmailDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendEmails}
-              disabled={
-                isSendingEmails ||
-                selectedRecipients.size === 0 ||
-                !selectedTemplate
-              }
-            >
-              {isSendingEmails ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Email{selectedRecipients.size > 1 ? 's' : ''} ({selectedRecipients.size})
-                </>
-              )}
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
