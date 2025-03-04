@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
@@ -27,7 +27,8 @@ import {
   BarChart,
   Mail,
   CheckCircle,
-  Users
+  Users,
+  Plus
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -141,7 +142,7 @@ export default function AdminPortal() {
   const [selectAllRecipients, setSelectAllRecipients] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
   const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
     dateRange: null,
@@ -159,6 +160,7 @@ export default function AdminPortal() {
   const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
   const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
   const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState('');
 
 
   useEffect(() => {
@@ -560,12 +562,22 @@ export default function AdminPortal() {
     }
   };
 
+  const filteredWaitlistEntries = useMemo(() => {
+    return waitlistEntries.filter(entry =>
+      recipientSearchTerm
+        ? entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
+        : true
+    );
+  }, [waitlistEntries, recipientSearchTerm]);
 
-  const filteredWaitlistEntries = recipientSearchTerm
-    ? waitlistEntries.filter(entry =>
-      entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
-    )
-    : waitlistEntries;
+  useEffect(() => {
+    if (selectAllRecipients) {
+      const allEmails = filteredWaitlistEntries.map(entry => entry.email);
+      setSelectedRecipients(new Set(allEmails));
+    } else {
+      setSelectedRecipients(new Set());
+    }
+  }, [selectAllRecipients, filteredWaitlistEntries]);
 
   const handleSendEmails = async () => {
     try {
@@ -897,18 +909,16 @@ export default function AdminPortal() {
                               <TableCell>{day.count}</TableCell>
                             </TableRow>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </TableBody>                      </Table>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
+                  </AccordionContent>                </AccordionItem>
               </Accordion>
 
               {/* Location Distribution */}
               <div className="grid md:grid-cols-2 gap-6">
                 {/* City Distribution */}
                 <div>
-                  <h3 className="text-lg font-medium mb-4">TopCities</h3>
+                  <h3 className="text-lg font-medium mb-4">Top Cities</h3>
                   <div className="overflow-x-auto"><Table>
                       <TableHeader>
                         <TableRow>
@@ -995,15 +1005,12 @@ export default function AdminPortal() {
 
         <TabsContent value="email-templates">
           <Card className="p-4 md:p-6 relative">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
-              <p className="text-muted-foreground">Create and manage email templates using the visual builder</p>
-            </div>
-
             <Tabs value={activeTemplateTab} onValueChange={setActiveTemplateTab}>
               <TabsList>
                 <TabsTrigger value="system">System Templates</TabsTrigger>
                 <TabsTrigger value="custom">Custom Templates</TabsTrigger>
+                <TabsTrigger value="create">Create Template</TabsTrigger>
+                <TabsTrigger value="send">Send Custom Email</TabsTrigger>
               </TabsList>
 
               <TabsContent value="system" className="space-y-4">
@@ -1133,39 +1140,231 @@ export default function AdminPortal() {
                 {customTemplatesLoading ? (
                   <LoadingSpinner />
                 ) : (
-                  <div className="space-y-4">
-                    {customTemplates?.map((template) => (
-                      <Card key={template.id}>
-                        <CardHeader>
-                          <CardTitle>{template.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <EmailBuilder
-                            onSave={async (templateContent) => {
-                              try {
-                                await fetch(`/api/email-templates/custom/${template.id}`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify(templateContent)
-                                });
-                                toast({
-                                  title: "Template saved",
-                                  description: `${template.name} template has been updated.`
-                                });
-                              } catch (error) {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to save template",
-                                  variant: "destructive"
-                                });
-                              }
-                            }}
-                          />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <div>
+                        <h3 className="text-lg font-medium">Custom Templates</h3>
+                        <p className="text-sm text-muted-foreground">Manage your saved email templates</p>
+                      </div>
+                      <Button onClick={() => setActiveTemplateTab("create")} className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Create New Template
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {!customTemplates?.length ? (
+                        <Card className="p-8 text-center">
+                          <p className="text-muted-foreground mb-4">No custom templates yet</p>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setActiveTemplateTab("create")}
+                          >
+                            Create Your First Template
+                          </Button>
+                        </Card>
+                      ) : (
+                        customTemplates.map((template) => (
+                          <Card key={template.id}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                              <CardTitle className="text-lg font-medium">{template.name}</CardTitle>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Implement send template functionality
+                                    setSelectedTemplate(template);
+                                    setSendEmailDialogOpen(true);
+                                  }}
+                                >
+                                  <Mail className="w-4 h-4 mr-2" />
+                                  Send
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTemplateToDelete(template);
+                                    setDeleteTemplateDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <EmailBuilder
+                                defaultTemplate={{
+                                  subject: template.subject,
+                                  blocks: JSON.parse(template.html_content)
+                                }}
+                                onSave={async (templateContent) => {
+                                  try {
+                                    await fetch(`/api/email-templates/custom/${template.id}`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        ...templateContent,
+                                        name: template.name
+                                      })
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                                    toast({
+                                      title: "Template saved",
+                                      description: `${template.name} has been updated.`
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to save template",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              />
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  </>
                 )}
+              </TabsContent>
+
+              <TabsContent value="create">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Create New Template</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Template Name</Label>
+                        <Input
+                          placeholder="Enter template name..."
+                          value={newTemplateName}
+                          onChange={(e) => setNewTemplateName(e.target.value)}
+                        />
+                      </div>
+                      <EmailBuilder
+                        onSave={async (template) => {
+                          try {
+                            if (!newTemplateName.trim()) {
+                              throw new Error('Template name is required');
+                            }
+                            await fetch('/api/email-templates/custom', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                name: newTemplateName,
+                                ...template
+                              })
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+                            setActiveTemplateTab('custom');
+                            setNewTemplateName('');
+                            toast({
+                              title: "Success",
+                              description: "New template created successfully"
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: error instanceof Error ? error.message : "Failed to create template",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="send">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Send Custom Email</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Create and send a one-time email to selected recipients
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Recipients</Label>
+                          <div className="flex gap-2 mb-2">
+                            <Input
+                              placeholder="Search recipients..."
+                              value={recipientSearchTerm}
+                              onChange={(e) => setRecipientSearchTerm(e.target.value)}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => setSelectAllRecipients(!selectAllRecipients)}
+                            >
+                              {selectAllRecipients ? 'Deselect All' : 'Select All'}
+                            </Button>
+                          </div>
+                          <ScrollArea className="h-32 border rounded-md">
+                            <div className="p-2">
+                              {filteredWaitlistEntries.map((entry) => (
+                                <div key={entry.email} className="flex items-center space-x-2 py-1">
+                                  <Checkbox
+                                    checked={selectedRecipients.has(entry.email)}
+                                    onCheckedChange={(checked) => {
+                                      const newSelected = new Set(selectedRecipients);
+                                      if (checked) {
+                                        newSelected.add(entry.email);
+                                      } else {
+                                        newSelected.delete(entry.email);
+                                      }
+                                      setSelectedRecipients(newSelected);
+                                    }}
+                                  />
+                                  <span>{entry.email}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                        <EmailBuilder
+                          onSave={async (template) => {
+                            try {
+                              if (selectedRecipients.size === 0) {
+                                throw new Error('Please select at least one recipient');
+                              }
+                              setIsSendingEmails(true);
+                              await fetch('/api/email/send-custom', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  recipients: Array.from(selectedRecipients),
+                                  ...template
+                                })
+                              });
+                              toast({
+                                title: "Success",
+                                description: `Email sent to ${selectedRecipients.size} recipient(s)`
+                              });
+                              setSelectedRecipients(new Set());
+                              setRecipientSearchTerm('');
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: error instanceof Error ? error.message : "Failed to send email",
+                                variant: "destructive"
+                              });
+                            } finally {
+                              setIsSendingEmails(false);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </Card>
@@ -1443,7 +1642,7 @@ export default function AdminPortal() {
               <Label>Email Template</Label>
               <Select
                 value={selectedTemplate || ''}
-                onValueChange={(value) => setSelectedTemplate(value as "welcome" | "verification")}
+                onValueChange={(value) => setSelectedTemplate(value as "welcome" | "verification" | EmailTemplate)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a template" />
@@ -1451,6 +1650,9 @@ export default function AdminPortal() {
                 <SelectContent>
                   <SelectItem value="welcome">Welcome Email</SelectItem>
                   <SelectItem value="verification">Verification Email</SelectItem>
+                  {customTemplates?.map(template => (
+                    <SelectItem key={template.id} value={template}>{template.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
