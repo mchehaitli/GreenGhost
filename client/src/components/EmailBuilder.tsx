@@ -15,8 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, MoveUp, MoveDown, Eye } from 'lucide-react';
+import { Plus, Trash2, MoveUp, MoveDown, Eye, Smile } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type BlockType = 'header' | 'text' | 'button' | 'spacer';
 
@@ -40,10 +46,19 @@ interface EmailBuilderProps {
   onSave: (template: { html: string; text: string; subject: string }) => void;
 }
 
+const EMOJI_CATEGORIES = {
+  'Popular': ['👋', '👍', '🎉', '✨', '💡', '📧', '💌', '🌟', '❤️', '🙌'],
+  'Nature': ['🌺', '🌸', '🌼', '🌻', '🌿', '🍃', '🌱', '🌴', '🌈', '☀️'],
+  'Objects': ['📱', '💻', '📝', '📚', '🎯', '🎨', '🛠️', '📊', '💼', '🎁'],
+  'Symbols': ['✅', '❌', '⭐', '💫', '➡️', '⬅️', '❗', '❓', '💭', '♥️']
+};
+
 export function EmailBuilder({ defaultTemplate, onSave }: EmailBuilderProps) {
   const [blocks, setBlocks] = useState<EmailBlock[]>(defaultTemplate?.blocks || []);
   const [showPreview, setShowPreview] = useState(false);
   const [subject, setSubject] = useState(defaultTemplate?.subject || '');
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [activeEmojiCategory, setActiveEmojiCategory] = useState('Popular');
 
   const addBlock = (type: BlockType) => {
     setBlocks([...blocks, {
@@ -72,6 +87,23 @@ export function EmailBuilder({ defaultTemplate, onSave }: EmailBuilderProps) {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     [newBlocks[index], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[index]];
     setBlocks(newBlocks);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    if (!selectedBlockId) return;
+
+    const block = blocks.find(b => b.id === selectedBlockId);
+    if (!block || !block.content.text) return;
+
+    const textArea = document.querySelector(`textarea[data-block-id="${selectedBlockId}"]`) as HTMLTextAreaElement;
+    if (!textArea) return;
+
+    const start = textArea.selectionStart;
+    const end = textArea.selectionEnd;
+    const text = block.content.text;
+    const newText = text.substring(0, start) + emoji + text.substring(end);
+
+    updateBlock(selectedBlockId, { text: newText });
   };
 
   const generateHTML = () => {
@@ -247,10 +279,57 @@ export function EmailBuilder({ defaultTemplate, onSave }: EmailBuilderProps) {
                   <div className="space-y-4">
                     {(block.type === 'header' || block.type === 'text' || block.type === 'button') && (
                       <div className="space-y-2">
-                        <Label>Text</Label>
+                        <div className="flex items-center justify-between">
+                          <Label>Text</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedBlockId(block.id)}
+                              >
+                                <Smile className="w-4 h-4 mr-2" />
+                                Add Emoji
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <Tabs value={activeEmojiCategory} onValueChange={setActiveEmojiCategory}>
+                                <TabsList className="grid grid-cols-4 gap-4">
+                                  {Object.keys(EMOJI_CATEGORIES).map(category => (
+                                    <TabsTrigger 
+                                      key={category}
+                                      value={category}
+                                      className="px-2 py-1"
+                                    >
+                                      {category}
+                                    </TabsTrigger>
+                                  ))}
+                                </TabsList>
+                                {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
+                                  <TabsContent key={category} value={category}>
+                                    <div className="grid grid-cols-5 gap-2">
+                                      {emojis.map(emoji => (
+                                        <Button
+                                          key={emoji}
+                                          variant="outline"
+                                          className="h-10 w-10"
+                                          onClick={() => insertEmoji(emoji)}
+                                        >
+                                          {emoji}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </TabsContent>
+                                ))}
+                              </Tabs>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <Textarea
+                          data-block-id={block.id}
                           value={block.content.text || ''}
                           onChange={(e) => updateBlock(block.id, { text: e.target.value })}
+                          onFocus={() => setSelectedBlockId(block.id)}
                         />
                       </div>
                     )}
