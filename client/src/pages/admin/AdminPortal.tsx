@@ -1572,71 +1572,149 @@ export default function AdminPortal() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>
+              Edit customer information and save changes
+            </DialogDescription>
           </DialogHeader>
           {selectedEntry && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p className="font-medium">{selectedEntry.email}</p>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.email ?? selectedEntry.email}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'email', e.target.value)}
+                  />
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Sign-up Date</Label>
-                  <p className="font-medium">
+                <div className="space-y-2">
+                  <Label>Sign-up Date</Label>
+                  <p className="text-muted-foreground pt-2">
                     {format(new Date(selectedEntry.created_at), "MMM dd, yyyy 'at' h:mm a")}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">First Name</Label>
-                  <p className="font-medium">{selectedEntry.first_name || 'Not provided'}</p>
+                <div className="space-y-2">
+                  <Label>First Name</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
+                    placeholder="Enter first name"
+                  />
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Last Name</Label>
-                  <p className="font-medium">{selectedEntry.last_name || 'Not provided'}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Phone Number</Label>
-                  <p className="font-medium">{selectedEntry.phone_number || 'Not provided'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">ZIP Code</Label>
-                  <p className="font-medium">{selectedEntry.zip_code || 'Not provided'}</p>
+                <div className="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
+                    placeholder="Enter last name"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">City</Label>
-                  <p className="font-medium">{selectedEntry.city || 'Not provided'}</p>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
+                    placeholder="Enter phone number"
+                  />
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">State</Label>
-                  <p className="font-medium">{selectedEntry.state || 'Not provided'}</p>
+                <div className="space-y-2">
+                  <Label>ZIP Code</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={unsavedChanges[selectedEntry.id]?.zip_code ?? selectedEntry.zip_code ?? ''}
+                      onChange={(e) => {
+                        const zip = e.target.value;
+                        handleFieldChange(selectedEntry.id, 'zip_code', zip);
+                        if (zip.length === 5) {
+                          handleCityStateFromZip(zip, selectedEntry.id);
+                        }
+                      }}
+                      placeholder="Enter ZIP code"
+                    />
+                    {loadingZips[selectedEntry.id] && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label className="text-muted-foreground">Street Address</Label>
-                <p className="font-medium">{selectedEntry.street_address || 'Not provided'}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'city', e.target.value)}
+                    placeholder="Enter city"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Input
+                    value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
+                    onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
+                    placeholder="Enter state"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label className="text-muted-foreground">Notes</Label>
-                <p className="font-medium whitespace-pre-wrap">
-                  {selectedEntry.notes || 'No notes available'}
-                </p>
+              <div className="space-y-2">
+                <Label>Street Address</Label>
+                <Input
+                  value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
+                  onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
+                  placeholder="Enter street address"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea
+                  value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
+                  onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
+                  placeholder="Add notes about this customer"
+                  rows={4}
+                />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
-              Close
+          <DialogFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (selectedEntry) {
+                  delete unsavedChanges[selectedEntry.id];
+                  setUnsavedChanges({...unsavedChanges});
+                }
+                setShowDetailsDialog(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedEntry && unsavedChanges[selectedEntry.id]) {
+                  updateEntryMutation.mutate([{
+                    id: selectedEntry.id,
+                    ...unsavedChanges[selectedEntry.id]
+                  }]);
+                  setShowDetailsDialog(false);
+                }
+              }}
+              disabled={!selectedEntry || !unsavedChanges[selectedEntry.id] || isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
