@@ -49,14 +49,20 @@ async function getUserByUsername(username: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Set trust proxy for proper handling of HTTPS in production
+  app.set('trust proxy', 1);
+
   const store = new PostgresSessionStore({
     pool: sessionPool,
     createTableIfMissing: true,
     tableName: 'session'
   });
 
-  // Explicitly set session secret for development
+  // Ensure session secret is set
   if (!process.env.SESSION_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET must be set in production environment');
+    }
     log('SESSION_SECRET not found, using development secret');
     process.env.SESSION_SECRET = '0a0df83f14af11c0841035474b9e698664e5be1513c193db84a8b059ca9aef06';
   }
@@ -66,11 +72,14 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store,
+    proxy: true, // Trust the reverse proxy
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.replit.app' : undefined // Allow cookies on .replit.app subdomains
     },
     name: 'sid'
   };
@@ -88,6 +97,7 @@ export function setupAuth(app: Express) {
         }
         return done(null, user);
       } catch (error) {
+        log('Authentication error:', error);
         return done(error);
       }
     })
@@ -106,11 +116,12 @@ export function setupAuth(app: Express) {
         .limit(1);
       done(null, user);
     } catch (error) {
+      log('Deserialization error:', error);
       done(error);
     }
   });
 
-  // Authentication routes
+  // Add error logging to authentication routes
   app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -135,6 +146,7 @@ export function setupAuth(app: Express) {
 
       req.login(user, (loginErr: Error | null) => {
         if (loginErr) {
+          log('Login error after registration:', loginErr);
           return res.status(500).json({ error: "Login failed after registration" });
         }
         // Don't return password to client
@@ -142,7 +154,7 @@ export function setupAuth(app: Express) {
         return res.status(201).json(safeUser);
       });
     } catch (error) {
-      log(`Registration error: ${error instanceof Error ? error.message : String(error)}`);
+      log('Registration error:', error);
       res.status(500).json({ error: "Registration failed" });
     }
   });
@@ -150,6 +162,7 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: AuthInfo) => {
       if (err) {
+        log('Login error:', err);
         return next(err);
       }
       if (!user) {
@@ -157,9 +170,10 @@ export function setupAuth(app: Express) {
       }
       req.login(user, (loginErr: Error | null) => {
         if (loginErr) {
+          log('Login error:', loginErr);
           return next(loginErr);
         }
-        // Don't return password to the client
+        // Don't return password to client
         const { password, ...safeUser } = user;
         return res.json(safeUser);
       });
@@ -169,6 +183,7 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res) => {
     req.logout((err: Error | null) => {
       if (err) {
+        log('Logout error:', err);
         return res.status(500).json({ error: "Logout failed" });
       }
       res.sendStatus(200);
@@ -179,7 +194,7 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    
+
     // Return only safe user data (don't include password)
     const { password, ...safeUser } = req.user;
     res.json(safeUser);
