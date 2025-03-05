@@ -13,6 +13,10 @@ async function startServer() {
     log('Creating Express application...');
     const app = express();
 
+    // Set trust proxy for proper handling of HTTPS in production
+    app.set('trust proxy', 1);
+    log('Trust proxy setting enabled');
+
     // Health check endpoint
     app.get('/health', (_req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -66,13 +70,16 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // Always use port 5000
+      // ALWAYS serve on port 5000 as required by the workflow
       const port = 5000;
+      const host = '0.0.0.0';
 
-      server.listen(port, '0.0.0.0', () => {
-        log(`Server running at http://0.0.0.0:${port}`);
-        log('Environment:', process.env.NODE_ENV || 'development');
-        log('CORS:', 'enabled for all origins');
+      server.listen(port, host, () => {
+        log(`Server running on http://${host}:${port}`);
+        log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        log(`Server bound to address: ${host}`);
+        log(`CORS: enabled for all origins`);
+        log(`Trust proxy: enabled`);
       });
 
     } catch (error) {
