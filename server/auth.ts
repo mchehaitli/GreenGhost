@@ -67,22 +67,33 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = '0a0df83f14af11c0841035474b9e698664e5be1513c193db84a8b059ca9aef06';
   }
 
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieDomain = isProd ? '.replit.app' : undefined;
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store,
-    proxy: true, // Trust the reverse proxy
+    proxy: true,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      secure: isProd,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
-      domain: process.env.NODE_ENV === 'production' ? '.replit.app' : undefined // Allow cookies on .replit.app subdomains
+      domain: cookieDomain
     },
     name: 'sid'
   };
+
+  // Log session configuration
+  log('Session configuration:', {
+    isProd,
+    cookieDomain,
+    secure: sessionSettings.cookie?.secure,
+    sameSite: sessionSettings.cookie?.sameSite
+  });
 
   app.use(session(sessionSettings));
   app.use(passport.initialize());
@@ -95,6 +106,7 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: 'Invalid username or password' });
         }
+        log('User authenticated successfully:', username);
         return done(null, user);
       } catch (error) {
         log('Authentication error:', error);
@@ -104,6 +116,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => {
+    log('Serializing user:', user.id);
     done(null, user.id);
   });
 
@@ -114,6 +127,7 @@ export function setupAuth(app: Express) {
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
+      log('Deserialized user:', user.id);
       done(null, user);
     } catch (error) {
       log('Deserialization error:', error);
@@ -160,12 +174,14 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    log('Login attempt for user:', req.body.username);
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: AuthInfo) => {
       if (err) {
         log('Login error:', err);
         return next(err);
       }
       if (!user) {
+        log('Login failed:', info?.message);
         return res.status(401).json({ error: info?.message || "Authentication failed" });
       }
       req.login(user, (loginErr: Error | null) => {
@@ -173,6 +189,7 @@ export function setupAuth(app: Express) {
           log('Login error:', loginErr);
           return next(loginErr);
         }
+        log('Login successful for user:', user.username);
         // Don't return password to client
         const { password, ...safeUser } = user;
         return res.json(safeUser);
@@ -181,20 +198,24 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
+    const username = req.user?.username;
     req.logout((err: Error | null) => {
       if (err) {
         log('Logout error:', err);
         return res.status(500).json({ error: "Logout failed" });
       }
+      log('Logout successful for user:', username);
       res.sendStatus(200);
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
+      log('Unauthenticated access attempt to /api/user');
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    log('User data retrieved for:', req.user.username);
     // Return only safe user data (don't include password)
     const { password, ...safeUser } = req.user;
     res.json(safeUser);
