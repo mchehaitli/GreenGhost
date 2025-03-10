@@ -183,8 +183,10 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Add more detailed logging for production authentication debugging
   app.post("/api/login", (req, res, next) => {
     log('Login attempt for user:', req.body.username);
+    log('Request headers:', req.headers);
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: AuthInfo) => {
       if (err) {
         log('Login error:', err);
@@ -199,7 +201,16 @@ export function setupAuth(app: Express) {
           log('Login error:', loginErr);
           return next(loginErr);
         }
+
+        // Log successful login details
         log('Login successful for user:', user.username);
+        log('Session ID:', req.sessionID);
+        log('Cookie settings:', {
+          domain: req.headers.host,
+          secure: req.secure,
+          sameSite: req.headers['sec-fetch-site']
+        });
+
         // Don't return password to client
         const { password, ...safeUser } = user;
         return res.json(safeUser);
