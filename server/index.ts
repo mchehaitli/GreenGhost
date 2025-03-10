@@ -20,13 +20,13 @@ async function startServer() {
 
     // Configure CORS before other middleware
     log('Configuring CORS...');
-    const isProd = process.env.NODE_ENV === 'production';
     const corsOptions = {
-      origin: true, // Reflects the request origin. In production, this will be the Replit domain
-      credentials: true,
+      origin: true, // Reflects the request origin
+      credentials: true, // Important for cookies
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      exposedHeaders: ['Set-Cookie'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Set-Cookie', 'X-Auth-Success'],
+      maxAge: 86400 // Cache preflight requests for 24 hours
     };
     app.use(cors(corsOptions));
     log('CORS configured with credentials support');

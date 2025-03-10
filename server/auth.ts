@@ -68,9 +68,8 @@ export function setupAuth(app: Express) {
   }
 
   const isProd = process.env.NODE_ENV === 'production';
-  // In production, we need to handle both the main domain and any subdomains
-  const cookieDomain = isProd ? '.replit.app' : undefined;
-
+  
+  // Don't hardcode domain - let the cookie work on any domain
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
     resave: false,
@@ -81,9 +80,9 @@ export function setupAuth(app: Express) {
       secure: isProd, // Use secure cookies in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: isProd ? 'none' : 'lax', // Allow cross-origin cookies in production
-      path: '/',
-      domain: cookieDomain
+      sameSite: 'lax', // Use 'lax' which works better across browsers while still providing some CSRF protection
+      path: '/'
+      // Removed domain setting to allow the cookie to work on any domain
     },
     name: 'sid'
   };
@@ -91,9 +90,9 @@ export function setupAuth(app: Express) {
   // Log session configuration for debugging
   log('Session configuration:', {
     isProd,
-    cookieDomain,
     secure: sessionSettings.cookie?.secure,
-    sameSite: sessionSettings.cookie?.sameSite
+    sameSite: sessionSettings.cookie?.sameSite,
+    maxAge: sessionSettings.cookie?.maxAge
   });
 
   app.use(session(sessionSettings));
@@ -186,7 +185,9 @@ export function setupAuth(app: Express) {
   // Add more detailed logging for production authentication debugging
   app.post("/api/login", (req, res, next) => {
     log('Login attempt for user:', req.body.username);
-    log('Request headers:', req.headers);
+    log('Request origin:', req.headers.origin);
+    log('Request referer:', req.headers.referer);
+    
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: AuthInfo) => {
       if (err) {
         log('Login error:', err);
@@ -196,6 +197,7 @@ export function setupAuth(app: Express) {
         log('Login failed:', info?.message);
         return res.status(401).json({ error: info?.message || "Authentication failed" });
       }
+      
       req.login(user, (loginErr: Error | null) => {
         if (loginErr) {
           log('Login error:', loginErr);
@@ -205,10 +207,16 @@ export function setupAuth(app: Express) {
         // Log successful login details
         log('Login successful for user:', user.username);
         log('Session ID:', req.sessionID);
+        
+        // Set a custom header to indicate successful authentication
+        res.setHeader('X-Auth-Success', 'true');
+        
+        // Log detailed session and cookie info for debugging
+        log('Session:', req.session);
         log('Cookie settings:', {
           domain: req.headers.host,
           secure: req.secure,
-          sameSite: req.headers['sec-fetch-site']
+          'set-cookie': res.getHeader('set-cookie')
         });
 
         // Don't return password to client
