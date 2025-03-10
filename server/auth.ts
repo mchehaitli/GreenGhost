@@ -105,9 +105,10 @@ export function setupAuth(app: Express) {
       try {
         const [user] = await getUserByUsername(username);
         if (!user || !(await comparePasswords(password, user.password))) {
+          log('Authentication failed for user:', username);
           return done(null, false, { message: 'Invalid username or password' });
         }
-        log('User authenticated successfully:', username);
+        log('Authentication successful for user:', username);
         return done(null, user);
       } catch (error) {
         log('Authentication error:', error);
@@ -117,7 +118,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => {
-    log('Serializing user:', user.id);
+    log('Serializing user:', user.username);
     done(null, user.id);
   });
 
@@ -128,7 +129,13 @@ export function setupAuth(app: Express) {
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
-      log('Deserialized user:', user.id);
+
+      if (!user) {
+        log('User not found during deserialization:', id);
+        return done(null, false);
+      }
+
+      log('Deserialized user:', user.username);
       done(null, user);
     } catch (error) {
       log('Deserialization error:', error);
@@ -158,6 +165,8 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
         })
         .returning();
+
+      log('New user registered:', user.username);
 
       req.login(user, (loginErr: Error | null) => {
         if (loginErr) {
