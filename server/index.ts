@@ -24,12 +24,16 @@ async function startServer() {
 
     // Configure CORS before other middleware
     log('Configuring CORS...');
-    app.use(cors({
-      origin: true,
+    const isProd = process.env.NODE_ENV === 'production';
+    const corsOptions = {
+      origin: true, // Reflects the request origin. In production, this will be the Replit domain
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization'],
-    }));
+      exposedHeaders: ['Set-Cookie'],
+    };
+    app.use(cors(corsOptions));
+    log('CORS configured with credentials support');
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
@@ -78,7 +82,7 @@ async function startServer() {
         log(`Server running on http://${host}:${port}`);
         log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         log(`Server bound to address: ${host}`);
-        log(`CORS: enabled for all origins`);
+        log(`CORS: enabled with credentials`);
         log(`Trust proxy: enabled`);
       });
 

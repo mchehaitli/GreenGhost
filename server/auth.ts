@@ -68,26 +68,27 @@ export function setupAuth(app: Express) {
   }
 
   const isProd = process.env.NODE_ENV === 'production';
-  const cookieDomain = isProd ? '.replit.app' : undefined;
+  // In production, we need to handle both the main domain and any subdomains
+  const cookieDomain = isProd ? '.replit.dev' : undefined;
 
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
     store,
     proxy: true,
     cookie: {
-      secure: isProd,
+      secure: isProd, // Use secure cookies in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: isProd ? 'none' : 'lax', // Allow cross-origin cookies in production
       path: '/',
       domain: cookieDomain
     },
     name: 'sid'
   };
 
-  // Log session configuration
+  // Log session configuration for debugging
   log('Session configuration:', {
     isProd,
     cookieDomain,
