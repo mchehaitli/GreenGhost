@@ -35,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Fetching user auth data...");
       try {
         const response = await fetch("/api/user", {
-          credentials: 'include'
+          credentials: 'include',  // Important: Include credentials in all requests
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
         });
 
         console.log(`Auth response status: ${response.status}`);
@@ -61,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-  
+
   // Log authentication state changes for debugging
   useEffect(() => {
     console.log("Auth state:", { 
@@ -76,14 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: { username: string; password: string }) => {
       const response = await fetch("/api/login", {
         method: "POST",
+        credentials: 'include', // Important: Include credentials
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: credentials.username,
-          password: credentials.password
-        }),
-        credentials: 'include'
+        body: JSON.stringify(credentials)
       });
 
       if (!response.ok) {
@@ -91,10 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(errorData.error || 'Login failed');
       }
 
+      // Force a refetch of the user data after successful login
+      await refetch();
+
       return response.json();
     },
     onSuccess: () => {
-      refetch();
       toast({
         title: "Logged in successfully",
         description: "Welcome back!",
@@ -113,12 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async () => {
       const response = await fetch("/api/logout", {
         method: "POST",
-        credentials: 'include'
+        credentials: 'include' // Important: Include credentials
       });
 
       if (!response.ok) {
         throw new Error('Logout failed');
       }
+
+      // Clear the user data from the cache after logout
+      queryClient.setQueryData(["/api/user"], null);
     },
     onSuccess: () => {
       refetch();

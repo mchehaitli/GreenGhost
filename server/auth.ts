@@ -69,7 +69,7 @@ export function setupAuth(app: Express) {
 
   const isProd = process.env.NODE_ENV === 'production';
   // In production, we need to handle both the main domain and any subdomains
-  const cookieDomain = isProd ? '.replit.dev' : undefined;
+  const cookieDomain = isProd ? '.replit.app' : undefined;
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET!,
