@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>{{title}}</title>
+    <!--[if mso]>
+    <style type="text/css">
+        table {border-collapse: collapse; border-spacing: 0; margin: 0;}
+        div, td {padding: 0;}
+        div {margin: 0 !important;}
+    </style>
+    <noscript>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+    </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            background-color: #f8f9fa;
+            color: #333333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        /* Container */
+        .email-wrapper {
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .email-content {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Typography */
+        h1, h2, h3 {
+            color: #1a1a1a;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            margin: 0 0 20px;
+            line-height: 1.6;
+        }
+        
+        /* Button */
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #10B981;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            -webkit-transition: background-color 0.2s;
+            transition: background-color 0.2s;
+            margin: 20px 0;
+        }
+        
+        /* Logo container */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+        
+        .logo-container svg {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        
+        .brand-name {
+            display: inline-block;
+            font-size: 24px;
+            font-weight: 600;
+            color: #059669;
+            vertical-align: middle;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Mobile optimization */
+        @media screen and (max-width: 600px) {
+            .email-content {
+                padding: 20px;
+            }
+            
+            .button {
+                display: block;
+                text-align: center;
+                padding: 16px 24px;
+            }
+            
+            .brand-name {
+                font-size: 20px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #f8f9fa !important;
+            }
+            .email-content {
+                background-color: #ffffff !important;
+            }
+            h1, h2, h3, p {
+                color: #333333 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-content">
+            <div class="logo-container">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle;">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="#10B981"/>
+                    <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="#059669"/>
+                </svg>
+                <span class="brand-name">GreenGhost Tech</span>
+            </div>
+            
+            {{{content}}}
+            
+            <div class="footer">
+                <p>© 2025 GreenGhost Tech. All rights reserved.</p>
+                <p>123 Green Street, Austin, TX 78701</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

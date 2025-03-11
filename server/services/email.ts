@@ -3,6 +3,12 @@ import { log } from '../vite';
 import { db } from '../db';
 import { verificationTokens } from '../../db/schema';
 import { eq, and, gt } from 'drizzle-orm';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -12,83 +18,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Template rendering functions
-function renderVerificationEmail(email: string, code: string) {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #22c55e; margin-bottom: 20px;">Verify Your Email</h1>
-
-      <p style="color: #4b5563; line-height: 1.6;">
-        Thank you for joining our waitlist! Please use the following 6-digit code to verify your email address:
-      </p>
-
-      <div style="margin: 30px 0; text-align: center;">
-        <div style="
-          background-color: #f3f4f6;
-          padding: 20px;
-          border-radius: 8px;
-          font-size: 32px;
-          letter-spacing: 8px;
-          font-weight: bold;
-          color: #22c55e;
-        ">
-          ${code}
-        </div>
-      </div>
-
-      <p style="color: #4b5563; line-height: 1.6;">
-        This verification code will expire in 90 seconds. If you didn't request this code, please ignore this email.
-      </p>
-
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-        <p style="color: #6b7280; font-size: 0.875rem;">
-          GreenGhost Tech
-        </p>
-      </div>
-    </div>
-  `;
+// Template reading functions
+async function readTemplate(templateName: string): Promise<string> {
+  const templatePath = path.join(__dirname, '..', 'templates', templateName);
+  return await fs.readFile(templatePath, 'utf-8');
 }
 
-function renderWelcomeEmail(email: string, zipCode: string) {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #22c55e; margin-bottom: 20px;">Welcome to GreenGhost Tech!</h1>
-
-      <div style="text-align: center; margin: 20px 0;">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 10h.01" />
-          <path d="M15 10h.01" />
-          <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
-        </svg>
-      </div>
-
-      <p style="color: #4b5563; line-height: 1.6;">
-        Thank you for verifying your email! You're now officially part of our growing community of forward-thinking property owners in the ${zipCode} area.
-      </p>
-
-      <p style="color: #4b5563; line-height: 1.6;">
-        You're now entered for a chance to win a full year of FREE automated lawn maintenance! Winner will be announced at launch.
-      </p>
-
-      <h2 style="color: #22c55e; margin-top: 30px;">What's Next?</h2>
-
-      <ul style="color: #4b5563; line-height: 1.6;">
-        <li>Keep an eye on your inbox for updates about our launch</li>
-        <li>You'll be among the first to know when we're ready to begin service in your area</li>
-        <li>Early waitlist members get priority access and special pricing</li>
-      </ul>
-
-      <p style="color: #4b5563; line-height: 1.6; margin-top: 30px;">
-        Have questions? Contact us at support@greenghosttech.com
-      </p>
-
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-        <p style="color: #6b7280; font-size: 0.875rem;">
-          GreenGhost Tech
-        </p>
-      </div>
-    </div>
-  `;
+async function renderEmailTemplate(content: string, title: string): Promise<string> {
+  const baseTemplate = await readTemplate('base-email.html');
+  return baseTemplate.replace('{{{content}}}', content).replace('{{title}}', title);
 }
 
 async function generateVerificationCode(email: string): Promise<string> {
@@ -152,11 +90,17 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     const code = await generateVerificationCode(email);
     log(`Generated verification code ${code} for ${email}`);
 
+    const verificationTemplate = await readTemplate('verification-email.html');
+    const content = verificationTemplate
+      .replace('{{verificationCode}}', code);
+
+    const emailHtml = await renderEmailTemplate(content, 'Verify Your Email');
+
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Your GreenGhost Tech Verification Code",
-      html: renderVerificationEmail(email, code),
+      html: emailHtml,
     });
 
     log(`Verification email sent successfully to ${email}`);
@@ -171,11 +115,17 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
   try {
     log(`Sending welcome email to ${email}`);
 
+    const welcomeTemplate = await readTemplate('welcome-email.html');
+    const content = welcomeTemplate
+      .replace('{{dashboardUrl}}', 'https://app.greenghosttech.com/dashboard');
+
+    const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost Tech');
+
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Welcome to GreenGhost Tech's Waitlist!",
-      html: renderWelcomeEmail(email, zipCode),
+      html: emailHtml,
     });
 
     log(`Welcome email sent successfully to ${email}`);
