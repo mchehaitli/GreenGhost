@@ -55,7 +55,6 @@ const Navigation = () => {
           <div onClick={scrollToTop} className="cursor-pointer">
             <Link href="/">
               <div className="flex items-center space-x-2 group">
-                <GhostMascot size="sm" animated={false} />
                 <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
                 <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
               </div>
@@ -229,6 +228,11 @@ const Navigation = () => {
       </header>
 
       {/* Waitlist Dialog */}
+      {/* Ghost Mascot floating element */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <GhostMascot size="md" animated={true} className="cursor-pointer hover:opacity-90 transition-opacity duration-300" />
+      </div>
+
       <WaitlistDialog 
         open={showWaitlist} 
         onOpenChange={setShowWaitlist}
