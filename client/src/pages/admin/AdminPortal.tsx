@@ -10,6 +10,10 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EmailBuilder } from "@/components/EmailBuilder";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Search,
   MapPin,
@@ -117,6 +121,655 @@ type EmailHistoryEntry = {
   status: 'completed' | 'failed' | 'pending';
 };
 
+
+// User management panel component
+interface User {
+  id: number;
+  username: string;
+  is_admin?: boolean;
+  created_at: string;
+}
+
+// Form schema for adding a new user
+const addUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  is_admin: z.boolean().default(false)
+});
+
+type AddUserFormValues = z.infer<typeof addUserSchema>;
+
+// Form schema for updating user information
+const updateUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  is_admin: z.boolean().optional()
+});
+
+type UpdateUserFormValues = z.infer<typeof updateUserSchema>;
+
+interface UserManagementPanelProps {
+  currentUser: User | null;
+}
+
+function UserManagementPanel({ currentUser }: UserManagementPanelProps) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { toast } = useToast();
+  
+  // Form for adding a new user
+  const addUserForm = useForm<AddUserFormValues>({
+    resolver: zodResolver(addUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      is_admin: false
+    }
+  });
+  
+  // Form for editing an existing user
+  const editUserForm = useForm<UpdateUserFormValues>({
+    resolver: zodResolver(updateUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      is_admin: false
+    }
+  });
+  
+  // Fetch all users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          throw new Error(`Error fetching users: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setUsers(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        toast({
+          title: 'Error',
+          description: err instanceof Error ? err.message : 'Failed to load users',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [toast]);
+  
+  // Add a new user
+  const handleAddUser = async (data: AddUserFormValues) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
+      }
+      
+      const newUser = await response.json();
+      setUsers(prev => [...prev, newUser]);
+      setShowAddUserDialog(false);
+      addUserForm.reset();
+      
+      toast({
+        title: 'Success',
+        description: `User ${newUser.username} has been created`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to create user',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Select user for editing
+  const handleSelectUserForEdit = (user: User) => {
+    setSelectedUser(user);
+    editUserForm.reset({
+      username: user.username,
+      is_admin: user.is_admin || false
+    });
+    setShowEditUserDialog(true);
+  };
+  
+  // Select user for deletion
+  const handleSelectUserForDelete = (user: User) => {
+    setSelectedUser(user);
+    setShowDeleteDialog(true);
+  };
+  
+  // Update an existing user
+  const handleUpdateUser = async (data: UpdateUserFormValues) => {
+    if (!selectedUser) return;
+    
+    try {
+      const response = await fetch(`/api/users/${selectedUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update user');
+      }
+      
+      const updatedUser = await response.json();
+      setUsers(prev => prev.map(user => 
+        user.id === updatedUser.id ? updatedUser : user
+      ));
+      setShowEditUserDialog(false);
+      setSelectedUser(null);
+      
+      toast({
+        title: 'Success',
+        description: `User ${updatedUser.username} has been updated`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update user',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Delete a user
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      const response = await fetch(`/api/users/${selectedUser.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+      
+      setUsers(prev => prev.filter(user => user.id !== selectedUser.id));
+      setShowDeleteDialog(false);
+      setSelectedUser(null);
+      
+      toast({
+        title: 'Success',
+        description: `User ${selectedUser.username} has been deleted`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to delete user',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">User Management</h3>
+        <Button onClick={() => setShowAddUserDialog(true)}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add User
+        </Button>
+      </div>
+      
+      {/* User List */}
+      {isLoading ? (
+        <div className="flex justify-center p-6">
+          <LoadingSpinner />
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-500 p-4">
+          {error}
+        </div>
+      ) : (
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Username</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map(user => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.username}</TableCell>
+                    <TableCell>
+                      {user.is_admin ? (
+                        <Badge variant="default">Admin</Badge>
+                      ) : (
+                        <Badge variant="outline">User</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSelectUserForEdit(user)}
+                        disabled={currentUser?.id === user.id}
+                        title="Edit User"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSelectUserForDelete(user)}
+                        disabled={currentUser?.id === user.id}
+                        title="Delete User"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+      
+      {/* Add User Dialog */}
+      <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account with the specified permissions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...addUserForm}>
+            <form onSubmit={addUserForm.handleSubmit(handleAddUser)} className="space-y-4">
+              <FormField
+                control={addUserForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addUserForm.control}
+                name="is_admin"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Administrator</FormLabel>
+                      <FormDescription>
+                        This user will have full administrative privileges
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="submit" disabled={addUserForm.formState.isSubmitting}>
+                  {addUserForm.formState.isSubmitting && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
+                  Create User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit User Dialog */}
+      <Dialog open={showEditUserDialog} onOpenChange={setShowEditUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update the user's information and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editUserForm}>
+            <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)} className="space-y-4">
+              <FormField
+                control={editUserForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter username" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Enter new password (leave empty to keep current)" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty to keep the current password
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="is_admin"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Administrator</FormLabel>
+                      <FormDescription>
+                        This user will have full administrative privileges
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="submit" disabled={editUserForm.formState.isSubmitting}>
+                  {editUserForm.formState.isSubmitting && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
+                  Update User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete User Confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user "{selectedUser?.username}". 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// Account settings panel for the current user
+interface AccountSettingsPanelProps {
+  currentUser: User | null;
+}
+
+function AccountSettingsPanel({ currentUser }: AccountSettingsPanelProps) {
+  const { toast } = useToast();
+  
+  // Form schema for updating current user
+  const updateAccountSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters").optional(),
+    confirmPassword: z.string().optional()
+  })
+  .refine(data => !data.newPassword || data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"]
+  });
+  
+  type UpdateAccountFormValues = z.infer<typeof updateAccountSchema>;
+  
+  const form = useForm<UpdateAccountFormValues>({
+    resolver: zodResolver(updateAccountSchema),
+    defaultValues: {
+      username: currentUser?.username || "",
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    }
+  });
+  
+  // Update account settings when the current user changes
+  useEffect(() => {
+    if (currentUser) {
+      form.reset({
+        username: currentUser.username,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+    }
+  }, [currentUser, form]);
+  
+  // Handle account update submission
+  const onSubmit = async (data: UpdateAccountFormValues) => {
+    if (!currentUser) return;
+    
+    try {
+      const updateData: Record<string, any> = {
+        username: data.username
+      };
+      
+      // Only include new password if provided
+      if (data.newPassword) {
+        updateData.password = data.newPassword;
+      }
+      
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update account');
+      }
+      
+      // Reset the form but keep the username
+      form.reset({
+        username: data.username,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      
+      toast({
+        title: 'Success',
+        description: 'Your account has been updated',
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update account',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  if (!currentUser) {
+    return (
+      <div className="text-center p-6 text-muted-foreground">
+        You must be logged in to view account settings
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-2">My Account</h3>
+        <p className="text-muted-foreground">Update your account settings and change your password</p>
+      </div>
+      
+      <Card className="p-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter username" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Change Password</h4>
+              
+              <FormField
+                control={form.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter current password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter new password" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Leave empty to keep your current password
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Confirm new password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={form.formState.isSubmitting}
+              className="mt-4"
+            >
+              {form.formState.isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              Save Changes
+            </Button>
+          </form>
+        </Form>
+      </Card>
+    </div>
+  );
+}
 
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
@@ -1511,7 +2164,26 @@ export default function AdminPortal() {
         <TabsContent value="settings">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Settings</h2>
-            <p className="text-muted-foreground">Configure your application settings here.</p>
+            <Tabs defaultValue="user-management">
+              <TabsList className="mb-4">
+                <TabsTrigger value="user-management">
+                  <Users className="w-4 h-4 mr-2" />
+                  User Management
+                </TabsTrigger>
+                <TabsTrigger value="account">
+                  <User className="w-4 h-4 mr-2" />
+                  My Account
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="user-management">
+                <UserManagementPanel currentUser={user} />
+              </TabsContent>
+              
+              <TabsContent value="account">
+                <AccountSettingsPanel currentUser={user} />
+              </TabsContent>
+            </Tabs>
           </Card>
         </TabsContent>
         <TabsContent value="email-history" className="space-y-4">
