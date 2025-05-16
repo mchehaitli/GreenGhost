@@ -28,6 +28,7 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
+  Pencil,
   BarChart,
   Mail,
   CheckCircle,
@@ -1921,19 +1922,25 @@ export default function AdminPortal() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleEditUser(user)}
+                                  onClick={() => {
+                                    setUserToEdit(userItem);
+                                    setEditUserDialogOpen(true);
+                                  }}
                                   className="mr-2"
                                   title="Edit user"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Pencil className="h-4 w-4" />
                                   <span className="sr-only">Edit</span>
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                                  onClick={() => handleDeleteUser(user)}
-                                  disabled={user.id === (user as User).id} // Can't delete yourself
+                                  onClick={() => {
+                                    setUserToDelete(userItem);
+                                    setDeleteUserDialogOpen(true);
+                                  }}
+                                  disabled={userItem.id === user?.id} // Can't delete yourself
                                   title="Delete user"
                                 >
                                   <Trash2 className="h-4 w-4" />
