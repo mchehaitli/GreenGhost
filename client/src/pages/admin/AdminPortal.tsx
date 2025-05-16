@@ -73,7 +73,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function AdminPortal() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -611,9 +611,31 @@ export default function AdminPortal() {
     <div className="container py-10 max-w-7xl">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Admin Portal</h1>
-        <Badge variant="outline" className="px-3 py-1 text-sm">
-          Logged in as {user.username} {user.is_admin && "(Admin)"}
-        </Badge>
+        <div className="flex flex-col items-end space-y-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                await logout();
+                navigate("/");
+              } catch (error) {
+                toast({
+                  title: "Error",
+                  description: "Failed to log out",
+                  variant: "destructive"
+                });
+              }
+            }}
+            className="text-destructive border-destructive hover:bg-destructive/10"
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            Log out
+          </Button>
+          <Badge variant="outline" className="px-3 py-1 text-sm">
+            Logged in as {user.username} {user.is_admin && "(Admin)"}
+          </Badge>
+        </div>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
