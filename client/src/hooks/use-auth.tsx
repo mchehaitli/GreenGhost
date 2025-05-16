@@ -5,8 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 interface SelectUser {
   id: number;
   username: string;
-  is_admin: boolean;
-  created_at: string;
 }
 
 interface AuthContextType {

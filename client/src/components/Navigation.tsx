@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { GhostMascot } from "./GhostMascot";
 import WaitlistDialog from "./WaitlistDialog";
 import { useAuth } from "@/hooks/use-auth";
 

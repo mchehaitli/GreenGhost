@@ -25,14 +25,14 @@ export const GhostMascot = ({
   if (!animated) {
     return (
       <div className={cn("text-primary", sizes[size], className)}>
-        <Ghost className="w-full h-full" strokeWidth={2} />
+        <Ghost className="w-full h-full" />
       </div>
     );
   }
 
   return (
     <motion.div
-      className={cn("cursor-pointer text-primary", sizes[size], className)}
+      className={cn("cursor-pointer text-primary mt-4", sizes[size], className)}
       animate={isWaving ? {
         rotate: [0, -20, 20, -20, 20, 0],
         transition: {
@@ -56,7 +56,7 @@ export const GhostMascot = ({
         }
       }}
     >
-      <Ghost className="w-full h-full" strokeWidth={2} />
+      <Ghost className="w-full h-full" />
     </motion.div>
   );
 };

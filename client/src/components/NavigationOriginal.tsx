@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu, Settings, LogOut } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,23 +8,13 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import WaitlistDialog from "./WaitlistDialog";
-import { useAuth } from "@/hooks/use-auth";
 import { GhostMascot } from "./GhostMascot";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import WaitlistDialog from "./WaitlistDialog";
 
 const Navigation = () => {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
-  const { user, logout } = useAuth();
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -42,11 +32,6 @@ const Navigation = () => {
     e.preventDefault();
     setShowWaitlist(true);
   };
-  
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = "/";
-  };
 
   return (
     <>
@@ -55,7 +40,7 @@ const Navigation = () => {
           <div onClick={scrollToTop} className="cursor-pointer">
             <Link href="/">
               <div className="flex items-center space-x-2 group">
-                <GhostMascot size="sm" animated={false} className="mr-1" />
+                <GhostMascot size="sm" animated={false} />
                 <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
                 <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
               </div>
@@ -81,27 +66,13 @@ const Navigation = () => {
                 </Link>
               </div>
             ))}
-            
-            {user ? (
-              <div className="flex items-center space-x-2">
-                {user.is_admin && (
-                  <Link href="/admin">
-                    <Button variant="outline" size="sm" className="bg-primary/10 text-primary hover:bg-primary/20">
-                      <span className="mr-1">👑</span>
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            ) : (
-              <Button 
-                variant="outline" 
-                onClick={handleWaitlistClick}
-                className="bg-primary/10 text-primary hover:bg-primary/20"
-              >
-                Join Waitlist
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              onClick={handleWaitlistClick}
+              className="bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              Join Waitlist
+            </Button>
           </nav>
 
           {/* Mobile Navigation */}
@@ -113,20 +84,6 @@ const Navigation = () => {
             </SheetTrigger>
             <SheetContent>
               <div className="flex flex-col space-y-4 mt-4">
-                {user && (
-                  <div className="flex items-center p-2 mb-2 border-b pb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium mr-3">
-                      {user.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-medium">{user.username}</div>
-                      {user.is_admin && (
-                        <div className="text-xs text-muted-foreground">Administrator</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
                 {navItems.map((item) => (
                   <div key={item.href} onClick={() => {
                     setOpen(false);
@@ -146,66 +103,22 @@ const Navigation = () => {
                     </Link>
                   </div>
                 ))}
-                
-                {user ? (
-                  <>
-                    {user.is_admin && (
-                      <div onClick={() => {
-                        setOpen(false);
-                        scrollToTop();
-                      }}>
-                        <Link href="/admin">
-                          <div className="flex items-center text-sm font-medium p-2 rounded-md transition-all duration-300 cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5">
-                            <span className="mr-2">👑</span>
-                            Admin Portal
-                          </div>
-                        </Link>
-                      </div>
-                    )}
-                    
-                    <div onClick={() => {
-                      setOpen(false);
-                      scrollToTop();
-                    }}>
-                      <Link href="/settings">
-                        <div className="flex items-center text-sm font-medium p-2 rounded-md transition-all duration-300 cursor-pointer text-muted-foreground hover:text-primary hover:bg-primary/5">
-                          <Settings className="mr-2 h-4 w-4" />
-                          Settings
-                        </div>
-                      </Link>
-                    </div>
-                    
-                    <div 
-                      onClick={() => {
-                        setOpen(false);
-                        handleLogout();
-                      }}
-                      className="flex items-center text-sm font-medium p-2 rounded-md transition-all duration-300 cursor-pointer text-destructive hover:bg-destructive/10"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </div>
-                  </>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setOpen(false);
-                      setShowWaitlist(true);
-                    }}
-                    className="bg-primary/10 text-primary hover:bg-primary/20"
-                  >
-                    Join Waitlist
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOpen(false);
+                    setShowWaitlist(true);
+                  }}
+                  className="bg-primary/10 text-primary hover:bg-primary/20"
+                >
+                  Join Waitlist
+                </Button>
               </div>
             </SheetContent>
           </Sheet>
         </div>
       </header>
-
-      {/* No logout button below header */}
 
       {/* Waitlist Dialog */}
       <WaitlistDialog 

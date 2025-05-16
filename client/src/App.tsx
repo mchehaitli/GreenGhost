@@ -12,7 +12,6 @@ import Quote from "@/pages/Quote";
 import About from "@/pages/About";
 import Waitlist from "@/pages/Waitlist";
 import AdminPortal from "./pages/admin/AdminPortal";
-
 import ThemeCustomization from "@/pages/ThemeCustomization";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
@@ -53,7 +52,6 @@ function Router() {
       <Route path="/admin/capture">
         <ProtectedRouteWrapper component={CaptureScreenshots} />
       </Route>
-
       <Route component={NotFound} />
     </Switch>
   );
