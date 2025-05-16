@@ -33,7 +33,8 @@ import {
   Mail,
   CheckCircle,
   Users,
-  Plus
+  Plus,
+  Lock
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -48,94 +49,37 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import { Checkbox } from "@/components/ui/checkbox";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import WaitlistMapView from '@/components/WaitlistMapView';
+import WaitlistAnalytics from '@/components/WaitlistAnalytics';
 import { DatePicker } from "@/components/ui/date-picker";
-import { addDays, subDays, isWithinInterval } from 'date-fns';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-
-
-type WaitlistEntry = {
-  id: number;
-  email: string;
-  created_at: string;
-  first_name?: string;
-  last_name?: string;
-  phone_number?: string;
-  street_address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  notes?: string;
-};
-
-type DateRange = {
-  from: Date;
-  to: Date;
-} | null;
-
-type SegmentationCriteria = {
-  dateRange: DateRange;
-  states: string[];
-  cities: string[];
-  zipCodes: string[];
-};
-
-type SortDirection = 'asc' | 'desc';
-type SortField = 'created_at' | 'zip_code';
-
-let knownZipCodeMappings: Record<string, { city: string, state: string }> = {
-  '75033': { city: 'Frisco', state: 'TX' },
-  // Add any other problematic ZIP codes here
-};
-
-type EmailTemplate = {
-  id: number;
-  name: string;
-  subject: string;
-  html_content: string;
-}
-
-type EmailHistoryEntry = {
-  id: number;
-  template_name: string;
-  sent_at: string;
-  total_recipients: number;
-  status: 'completed' | 'failed' | 'pending';
-};
-
+import { Calendar } from "@/components/ui/calendar";
+import { queryClient } from '@/lib/queryClient';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function AdminPortal() {
-  const { user, isLoading: authLoading, logout } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("waitlist-entries");
+  
+  // State variables
+  const [activeTab, setActiveTab] = useState("waitlist");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [currentNotes, setCurrentNotes] = useState("");
-  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
-  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
-  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
-  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
@@ -148,7 +92,28 @@ export default function AdminPortal() {
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [settingsSubTab, setSettingsSubTab] = useState("account");
   
-  // Validation schemas for forms
+  // Email template state
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [emailViewOpen, setEmailViewOpen] = useState(false);
+  const [emailToView, setEmailToView] = useState<any>(null);
+  const [emailBuilderOpen, setEmailBuilderOpen] = useState(false);
+  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<any>(null);
+  
+  // Segmentation and campaign state
+  const [segmentationCriteria, setSegmentationCriteria] = useState<{
+    dateRange: { from: Date; to: Date } | null;
+    states: string[];
+    cities: string[];
+    zipCodes: string[];
+  }>({
+    dateRange: null,
+    states: [],
+    cities: [],
+    zipCodes: []
+  });
+  
+  // Validation schemas
   const userEditSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters"),
     password: z.string().optional(),
@@ -160,8 +125,23 @@ export default function AdminPortal() {
     password: z.string().min(6, "Password must be at least 6 characters"),
     is_admin: z.boolean().default(false)
   });
-  
-  // User management forms
+
+  const profileSchema = z.object({
+    current_username: z.string(),
+    new_username: z.string().min(3).optional(),
+    email: z.string().email().optional(),
+  });
+
+  const passwordSchema = z.object({
+    current_password: z.string().min(1, "Current password is required"),
+    new_password: z.string().min(6, "Password must be at least 6 characters"),
+    confirm_password: z.string().min(6, "Password must be at least 6 characters")
+  }).refine((data) => data.new_password === data.confirm_password, {
+    path: ['confirm_password'],
+    message: "Passwords do not match",
+  });
+
+  // Form hooks
   const userEditForm = useForm<z.infer<typeof userEditSchema>>({
     resolver: zodResolver(userEditSchema),
     defaultValues: {
@@ -179,7 +159,106 @@ export default function AdminPortal() {
       is_admin: false
     }
   });
+
+  const profileForm = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      current_username: user?.username || "",
+      new_username: "",
+      email: ""
+    }
+  });
+
+  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      current_password: "",
+      new_password: "",
+      confirm_password: ""
+    }
+  });
   
+  // Data fetching queries
+  const { data: waitlistEntries = [], isLoading: waitlistLoading } = useQuery({
+    queryKey: ['waitlist'],
+    queryFn: async () => {
+      const res = await fetch('/api/waitlist');
+      if (!res.ok) throw new Error('Failed to fetch waitlist');
+      return res.json();
+    },
+    enabled: activeTab === "waitlist"
+  });
+
+  const { data: analyticsData = {}, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['waitlist-analytics'],
+    queryFn: async () => {
+      const res = await fetch('/api/waitlist/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      return res.json();
+    },
+    enabled: activeTab === "waitlist-analytics"
+  });
+  
+  // Query for users list (admin only)
+  const { data: usersList = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const res = await fetch('/api/users');
+      if (!res.ok) {
+        if (res.status === 403) {
+          toast({
+            title: "Access denied",
+            description: "You do not have permission to view users",
+            variant: "destructive"
+          });
+          return [];
+        }
+        throw new Error('Failed to fetch users');
+      }
+      return res.json();
+    },
+    enabled: activeTab === 'settings' && settingsSubTab === "users" && user?.is_admin
+  });
+  
+  // Email template queries
+  const { data: emailTemplates = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['email-templates'],
+    queryFn: async () => {
+      const res = await fetch('/api/email-templates');
+      if (!res.ok) throw new Error('Failed to fetch email templates');
+      return res.json();
+    },
+    enabled: activeTab === 'email'
+  });
+  
+  // Mutations
+  const deleteWaitlistEntryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/waitlist/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete entry');
+      return res.json();
+    },
+    onSuccess: () => {
+      setDeleteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
+      queryClient.invalidateQueries({ queryKey: ['waitlist-analytics'] });
+      toast({
+        title: "Success",
+        description: "Waitlist entry deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // User management mutations
   const createUserMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
       const res = await fetch('/api/users', {
@@ -200,7 +279,7 @@ export default function AdminPortal() {
       });
       setNewUserDialogOpen(false);
       createUserForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: Error) => {
       toast({
@@ -238,7 +317,7 @@ export default function AdminPortal() {
         description: "User updated successfully",
       });
       setEditUserDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: Error) => {
       toast({
@@ -268,7 +347,7 @@ export default function AdminPortal() {
         description: "User deleted successfully",
       });
       setUserDeleteDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: Error) => {
       toast({
@@ -279,1726 +358,675 @@ export default function AdminPortal() {
     }
   });
   
-  // Validation schemas for forms
-  const newUserSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string(),
-    is_admin: z.boolean().default(false)
-  }).refine(data => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"]
-  });
-  
-  const editUserSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().optional(),
-    is_admin: z.boolean().default(false)
-  });
-  
-  const profileSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters")
-  });
-  
-  const passwordSchema = z.object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z.string().min(6, "New password must be at least 6 characters"),
-    confirmPassword: z.string()
-  }).refine(data => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"]
-  });
-  
-  // Form hooks
-  const newUserForm = useForm<z.infer<typeof newUserSchema>>({
-    resolver: zodResolver(newUserSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      confirmPassword: "",
-      is_admin: false
-    }
-  });
-  
-  const editUserForm = useForm<z.infer<typeof editUserSchema>>({
-    resolver: zodResolver(editUserSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      is_admin: false
-    }
-  });
-  
-  const profileForm = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      username: ""
-    }
-  });
-  
-  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    }
-  });
-  const [sortField, setSortField] = useState<SortField>('created_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
-  const [selectAllRecipients, setSelectAllRecipients] = useState(false);
-  const [selectedRecipients, setSelectedRecipients] = useState(new Set<string>());
-  const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<"welcome" | "verification" | EmailTemplate | null>(null);
-  const [isSendingEmails, setIsSendingEmails] = useState(false);
-  const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
-    dateRange: null,
-    states: [],
-    cities: [],
-    zipCodes: [],
-  });
-  const [activeTemplateTab, setActiveTemplateTab] = useState('system');
-  const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<EmailTemplate[]>({
-    queryKey: ['email-templates', 'custom'],
-    queryFn: () => fetch('/api/email-templates/custom').then(res => res.json()),
-    enabled: activeTab === 'email-templates' && activeTemplateTab === 'custom'
-  });
-  const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
-  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
-  const [deleteEmailHistoryDialogOpen, setDeleteEmailHistoryDialogOpen] = useState(false);
-  const [emailHistoryToDelete, setEmailHistoryToDelete] = useState<EmailHistoryEntry | null>(null);
-  const [newTemplateName, setNewTemplateName] = useState('');
-
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      setLocation('/login');
-    }
-  }, [user, authLoading, setLocation]);
-
-  const {
-    data: waitlistEntries = [],
-    isLoading: waitlistLoading,
-  } = useQuery<WaitlistEntry[]>({
-    queryKey: ['waitlist'],
-    queryFn: () => fetch('/api/waitlist').then(res => res.json()),
-    enabled: activeTab === "waitlist-entries" && !!user,
-  });
-
-  // Add new query for analytics data
-  const {
-    data: analyticsData,
-    isLoading: analyticsLoading
-  } = useQuery({
-    queryKey: ['waitlist-analytics'],
-    queryFn: async () => {
-      const res = await fetch('/api/waitlist/analytics');
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      return res.json();
-    },
-    enabled: activeTab === "waitlist-analytics"
-  });
-  
-  // Query for users list (admin only)
-  const { data: usersList = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const res = await fetch('/api/users');
-      if (!res.ok) {
-        if (res.status === 403) {
-          toast({
-            title: "Access denied",
-            description: "You do not have permission to view users",
-            variant: "destructive"
-          });
-          return [];
-        }
-        throw new Error('Failed to fetch users');
-      }
-      return res.json();
-    },
-    enabled: activeTab === 'settings' && user?.is_admin
-  });
-  
-  // Create user mutation
-  const createUserMutation = useMutation({
-    mutationFn: async (data: { username: string; password: string; is_admin: boolean }) => {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create user");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "User created",
-        description: "The user has been created successfully",
-      });
-      setNewUserDialogOpen(false);
-      newUserForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to create user",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Edit user mutation
-  const updateUserMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: { username?: string; password?: string; is_admin?: boolean };
-    }) => {
-      const response = await fetch(`/api/users/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update user");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "User updated",
-        description: "The user has been updated successfully",
-      });
-      setEditUserDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to update user",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete user mutation
-  const deleteUserMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete user");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "User deleted",
-        description: "The user has been deleted successfully",
-      });
-      setUserDeleteDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to delete user",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update profile mutation (for current user)
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { username: string }) => {
-      const response = await fetch("/api/users/me", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+    mutationFn: async (data: z.infer<typeof profileSchema>) => {
+      const res = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update profile");
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to update profile');
       }
-
-      return response.json();
+      
+      return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        title: "Success",
+        description: "Profile updated successfully",
       });
-      // Refresh auth data
+      profileForm.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Failed to update profile",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
-    },
+    }
   });
-
-  // Change password mutation
-  const changePasswordMutation = useMutation({
-    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      const response = await fetch("/api/users/me/password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+  
+  const updatePasswordMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof passwordSchema>) => {
+      const res = await fetch('/api/users/password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to change password");
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to update password');
       }
-
-      return response.json();
+      
+      return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Password changed",
-        description: "Your password has been changed successfully",
+        title: "Success",
+        description: "Password updated successfully",
       });
       passwordForm.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Failed to change password",
-        description: error instanceof Error ? error.message : "An error occurred",
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Template mutations
+  const createTemplateMutation = useMutation({
+    mutationFn: async (template: any) => {
+      const res = await fetch("/api/email-templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(template),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create template");
+      }
+      
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      setEmailBuilderOpen(false);
+      toast({
+        title: "Success",
+        description: "Email template created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
-
-  // Add this query for email history
-  const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery({
-    queryKey: ['email-history'],
-    queryFn: () => fetch('/api/email-history').then(res => res.json()),
-    enabled: activeTab === 'email-history'
-  });
-
-
-  const updateEntryMutation = useMutation({
-    mutationFn: async (entries: Array<{ id: number } & Partial<WaitlistEntry>>) => {
-      setIsSaving(true);
-      try {
-        const results = await Promise.all(
-          entries.map(async (entry) => {
-            const response = await fetch(`/api/waitlist/${entry.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(entry),
-            });
-
-            const responseData = await response.json();
-
-            if (!response.ok) {
-              throw new Error(responseData.details || responseData.error || 'Failed to update entry');
-            }
-
-            return responseData;
-          })
-        );
-        return results;
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
-      setUnsavedChanges({});
-      toast({
-        title: "Changes saved",
-        description: "All waitlist entries have been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to save changes",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const deleteEntryMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/waitlist/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete entry');
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
-      toast({
-        title: "Entry deleted",
-        description: "The waitlist entry has been deleted successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to delete entry",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const handleFieldChange = (entryId: number, field: keyof WaitlistEntry, value: string) => {
-    setUnsavedChanges(prev => ({
-      ...prev,
-      [entryId]: {
-        ...prev[entryId],
-        id: entryId,
-        [field]: value
-      }
-    }));
-  };
-
-  const handleSaveChanges = () => {
-    const changes = Object.values(unsavedChanges);
-    if (changes.length > 0) {
-      updateEntryMutation.mutate(changes);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    setEntryToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (entryToDelete) {
-      deleteEntryMutation.mutate(entryToDelete);
-    }
-    setDeleteDialogOpen(false);
-    setEntryToDelete(null);
-  };
   
-  // User management handlers
-  const onNewUserSubmit = (data: z.infer<typeof newUserSchema>) => {
-    const { confirmPassword, ...userData } = data;
-    createUserMutation.mutate(userData);
-  };
-  
-  const onEditUserSubmit = (data: z.infer<typeof editUserSchema>) => {
-    if (!userToEdit) return;
-    
-    // Only include password if provided
-    const updateData: any = {
-      username: data.username,
-      is_admin: data.is_admin
-    };
-    
-    if (data.password) {
-      updateData.password = data.password;
-    }
-    
-    updateUserMutation.mutate({
-      id: userToEdit.id,
-      data: updateData
-    });
-  };
-  
-  // Profile handlers
-  const onProfileSubmit = (data: z.infer<typeof profileSchema>) => {
-    updateProfileMutation.mutate(data);
-  };
-  
-  const onPasswordSubmit = (data: z.infer<typeof passwordSchema>) => {
-    const { confirmPassword, ...passwordData } = data;
-    changePasswordMutation.mutate(passwordData);
-  };
-  
-  // Reset edit user form when user changes
+  // Effect to set form values when user to edit changes
   useEffect(() => {
     if (userToEdit) {
-      editUserForm.reset({
+      userEditForm.reset({
         username: userToEdit.username,
-        password: "",
+        password: '',
         is_admin: userToEdit.is_admin
       });
     }
-  }, [userToEdit, editUserForm]);
+  }, [userToEdit, userEditForm]);
   
-  // Set initial profile form data
-  useEffect(() => {
-    if (user) {
-      profileForm.reset({
-        username: user.username
-      });
+  // Filtered waitlist entries
+  const filteredEntries = useMemo(() => {
+    if (!waitlistEntries) return [];
+    return waitlistEntries.filter((entry: any) => {
+      const searchString = searchTerm.toLowerCase();
+      return (
+        entry.email?.toLowerCase().includes(searchString) ||
+        entry.first_name?.toLowerCase().includes(searchString) ||
+        entry.last_name?.toLowerCase().includes(searchString) ||
+        entry.zip_code?.toLowerCase().includes(searchString)
+      );
+    });
+  }, [waitlistEntries, searchTerm]);
+  
+  // Handlers
+  const handleDateFromChange = (date: Date | null) => {
+    if (date) {
+      setSegmentationCriteria(prev => ({
+        ...prev,
+        dateRange: {
+          from: date,
+          to: prev.dateRange?.to || new Date()
+        }
+      }));
     }
-  }, [user, profileForm]);
-
-  const getFilteredRecipients = () => {
-    return waitlistEntries.filter(entry => {
-      // Filter by date range
-      if (segmentationCriteria.dateRange?.from && segmentationCriteria.dateRange?.to) {
-        const entryDate = new Date(entry.created_at);
-        if (!isWithinInterval(entryDate, {
-          start: segmentationCriteria.dateRange.from,
-          end: segmentationCriteria.dateRange.to
-        })) {
-          return false;
+  };
+  
+  const handleDateToChange = (date: Date | null) => {
+    if (date) {
+      setSegmentationCriteria(prev => ({
+        ...prev,
+        dateRange: {
+          from: prev.dateRange?.from || new Date(),
+          to: date
         }
-      }
-
-      // Filter by state
-      if (segmentationCriteria.states.length > 0) {
-        if (!entry.state || !segmentationCriteria.states.includes(entry.state)) {
-          return false;
-        }
-      }
-
-      // Filter by city
-      if (segmentationCriteria.cities.length > 0) {
-        if (!entry.city || !segmentationCriteria.cities.includes(entry.city)) {
-          return false;
-        }
-      }
-
-      // Filter by ZIP code
-      if (segmentationCriteria.zipCodes.length > 0) {
-        if (!entry.zip_code || !segmentationCriteria.zipCodes.includes(entry.zip_code)) {
-          return false;
-        }
-      }
-
-      return true;
+      }));
+    }
+  };
+  
+  const handleSaveTemplate = async (templateData: any) => {
+    try {
+      await createTemplateMutation.mutateAsync({
+        name: templateData.name || "New Template",
+        subject: templateData.subject,
+        html_content: templateData.html,
+        plain_content: templateData.text
+      });
+    } catch (error) {
+      console.error("Failed to save template:", error);
+    }
+  };
+  
+  const handleDeleteEntry = (id: number) => {
+    setEntryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleExportWaitlist = () => {
+    const dataToExport = filteredEntries.map((entry: any) => ({
+      Email: entry.email,
+      FirstName: entry.first_name || '',
+      LastName: entry.last_name || '',
+      Phone: entry.phone_number || '',
+      Address: entry.street_address || '',
+      City: entry.city || '',
+      State: entry.state || '',
+      ZipCode: entry.zip_code || '',
+      JoinedOn: entry.created_at ? format(new Date(entry.created_at), 'MM/dd/yyyy') : '',
+      Notes: entry.notes || ''
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Waitlist");
+    XLSX.writeFile(wb, `GreenGhost_Waitlist_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    
+    toast({
+      title: "Success",
+      description: "Waitlist data exported successfully",
     });
   };
-
-  const filteredEntries = getFilteredRecipients().filter(entry => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
+  
+  // User management handlers
+  const onSubmitUserEdit = (data: z.infer<typeof userEditSchema>) => {
+    if (!userToEdit) return;
+    
+    updateUserMutation.mutate({
+      ...data,
+      id: userToEdit.id
+    });
+  };
+  
+  const onSubmitCreateUser = (data: z.infer<typeof createUserSchema>) => {
+    createUserMutation.mutate(data);
+  };
+  
+  const onSubmitProfile = (data: z.infer<typeof profileSchema>) => {
+    updateProfileMutation.mutate(data);
+  };
+  
+  const onSubmitPassword = (data: z.infer<typeof passwordSchema>) => {
+    updatePasswordMutation.mutate(data);
+  };
+  
+  // If not authenticated or not admin, show access denied
+  if (!user) {
     return (
-      entry.email.toLowerCase().includes(searchLower) ||
-      entry.first_name?.toLowerCase().includes(searchLower) ||
-      entry.last_name?.toLowerCase().includes(searchLower) ||
-      entry.zip_code?.includes(searchTerm)
-    );
-  });
-
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const modifier = sortDirection === 'asc' ? 1 : -1;
-
-    if (sortField === 'created_at') {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return (dateA - dateB) * modifier;
-    } else {
-      // ZIP code sorting
-      const zipA = a.zip_code || '';
-      const zipB = b.zip_code || '';
-      return zipA.localeCompare(zipB) * modifier;
-    }
-  });
-
-  const handleViewDetails = (entry: WaitlistEntry) => {
-    setSelectedEntry(entry);
-    setShowDetailsDialog(true);
-  };
-
-  const handleCityStateFromZip = async (zip: string, entryId: number) => {
-    if (!/^\d{5}$/.test(zip)) {
-      toast({
-        title: "Invalid ZIP Code",
-        description: "ZIP code must be 5 digits",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    try {
-      setLoadingZips(prev => ({ ...prev, [entryId]: true }));
-
-      if (knownZipCodeMappings[zip]) {
-        await updateEntryMutation.mutateAsync([{
-          id: entryId,
-          city: knownZipCodeMappings[zip].city,
-          state: knownZipCodeMappings[zip].state
-        }]);
-        return true;
-      }
-
-      let retries = 3;
-      let response;
-      while (retries >= 0) {
-        try {
-          response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-          if (response.ok) break;
-
-          if (response.status === 429) {
-            const backoffTime = Math.pow(2, 3 - retries) * 2000;
-            await new Promise(resolve => setTimeout(resolve, backoffTime));
-          } else {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-
-          retries--;
-          if (retries < 0) {
-            throw new Error(`ZIP code lookup failed after all retries: ${response?.statusText || 'Unknown error'}`);
-          }
-        } catch (fetchError) {
-          if (retries < 0) throw fetchError;
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          retries--;
-        }
-      }
-
-      if (!response?.ok) {
-        throw new Error('Failed to get response from ZIP API');
-      }
-
-      const data = await response.json();
-
-      if (data && data.places && data.places.length > 0 && data.places[0]) {
-        const place = data.places[0];
-        if (place['place name'] && place['state abbreviation']) {
-          await updateEntryMutation.mutateAsync([{
-            id: entryId,
-            city: place['place name'],
-            state: place['state abbreviation']
-          }]);
-          toast({
-            title: "ZIP Code Validated",
-            description: `Updated to ${place['place name']}, ${place['state abbreviation']}`,
-            variant: "default"
-          });
-          return true;
-        } else {
-          throw new Error('Invalid location data format in API response');
-        }
-      } else {
-        if (data && data['post code'] === zip) {
-          throw new Error('API returned data but in an unexpected format');
-        } else {
-          throw new Error('No location data found for this ZIP code');
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleCityStateFromZip:', error);
-      toast({
-        title: "ZIP Code Validation Failed",
-        description: error instanceof Error ? error.message : "Please enter city and state manually",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
-    }
-  };
-
-  const handleAutoPopulateAll = async () => {
-    setIsAutoPopulating(true);
-    let successCount = 0;
-    let failCount = 0;
-    let failedZips: string[] = [];
-
-    try {
-      const entriesToUpdate = filteredEntries.filter(
-        entry => entry.zip_code && (!entry.city || !entry.state)
-      );
-
-      if (entriesToUpdate.length === 0) {
-        toast({
-          title: "No entries to update",
-          description: "All entries with ZIP codes already have city and state information.",
-        });
-        return;
-      }
-
-      for (const entry of entriesToUpdate) {
-        if (!entry.zip_code) continue;
-
-        try {
-          const success = await handleCityStateFromZip(entry.zip_code, entry.id);
-          if (success) {
-            successCount++;
-          } else {
-            failCount++;
-            failedZips.push(entry.zip_code);
-          }
-          if (successCount + failCount < entriesToUpdate.length) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        } catch (error) {
-          failCount++;
-          failedZips.push(entry.zip_code);
-        }
-      }
-
-      let description = `Successfully updated ${successCount} entries.`;
-      if (failCount > 0) {
-        description += `\nFailed entries: ${failedZips.join(', ')}`;
-      }
-
-      toast({
-        title: "Auto-population Complete",
-        description: description,
-        duration: 5000,
-        variant: successCount > 0 ? "default" : "destructive"
-      });
-    } catch (error) {
-      toast({
-        title: "Auto-population Failed",
-        description: "An error occurred while updating locations.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAutoPopulating(false);
-    }
-  };
-
-  const handleExportToExcel = () => {
-    try {
-      const workbook = XLSX.utils.book_new();
-      const excelData = filteredEntries.map(entry => ({
-        'Email': entry.email,
-        'Sign-up Date': format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a"),
-        'First Name': entry.first_name || '',
-        'Last Name': entry.last_name || '',
-        'Phone Number': entry.phone_number || '',
-        'Street Address': entry.street_address || '',
-        'City': entry.city || '',
-        'State': entry.state || '',
-        'ZIP Code': entry.zip_code || '',
-        'Notes': entry.notes || ''
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Waitlist Entries');
-      XLSX.writeFile(workbook, `waitlist-entries-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-
-      toast({
-        title: "Export Successful",
-        description: "Waitlist entries have been exported to Excel.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export waitlist entries.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const filteredWaitlistEntries = useMemo(() => {
-    return waitlistEntries.filter(entry =>
-      recipientSearchTerm
-        ? entry.email.toLowerCase().includes(recipientSearchTerm.toLowerCase())
-        : true
-    );
-  }, [waitlistEntries, recipientSearchTerm]);
-
-  useEffect(() => {
-    if (selectAllRecipients) {
-      const allEmails = filteredWaitlistEntries.map(entry => entry.email);
-      setSelectedRecipients(new Set(allEmails));
-    } else {
-      setSelectedRecipients(new Set());
-    }
-  }, [selectAllRecipients, filteredWaitlistEntries]);
-
-  const handleSendEmails = async () => {
-    try {
-      setIsSendingEmails(true);
-      const recipients = Array.from(selectedRecipients);
-
-      const response = await fetch('/api/email/send-bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          template: selectedTemplate as string, //Type assertion to remove type error
-          recipients: recipients
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send emails');
-      }
-
-      toast({
-        title: "Success",
-        description: `Sent ${recipients.length} email${recipients.length > 1 ? 's' : ''} successfully.`,
-      });
-      setSendEmailDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send emails",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSendingEmails(false);
-    }
-  };
-
-  if (authLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-200px)]">
-        <LoadingSpinner size="lg" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
+        <p className="text-muted-foreground mb-6">You must be logged in to access this page.</p>
+        <Button onClick={() => navigate("/login")}>Login</Button>
       </div>
     );
   }
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
-
-  return (
-    <div className="container py-4 md:py-10 px-4 md:px-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Admin Portal</h1>
-          <p className="text-muted-foreground mt-1">Manage your platform content and settings</p>
-        </div>
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-          <Badge variant="outline" className="flex gap-1 px-3 py-1">
-            <User className="w-3 h-3" /> {user?.username}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              try {
-                await logout();
-                setLocation('/login');
-              } catch (error) {
-                toast({
-                  title: "Logout Failed",
-                  description: "Could not log out. Please try again.",
-                  variant: "destructive"
-                });
-              }
-            }}
-          >
-            Logout
-          </Button>
-        </div>
+  
+  // For non-admin users who are logged in
+  if (!user.is_admin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
+        <p className="text-muted-foreground mb-6">This area is restricted to administrators only.</p>
+        <Button onClick={() => navigate("/")}>Return Home</Button>
       </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="w-full md:w-auto overflow-x-auto flex whitespace-nowrap">
-          <TabsTrigger value="waitlist-entries">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Waitlist Entries
+    );
+  }
+  
+  return (
+    <div className="container py-10 max-w-7xl">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">Admin Portal</h1>
+        <Badge variant="outline" className="px-3 py-1 text-sm">
+          Logged in as {user.username} {user.is_admin && "(Admin)"}
+        </Badge>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="mb-6">
+          <TabsTrigger value="waitlist" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Waitlist
           </TabsTrigger>
-          <TabsTrigger value="waitlist-analytics">
-            <BarChart className="w-4 h-4 mr-2" />
+          <TabsTrigger value="waitlist-analytics" className="flex items-center gap-2">
+            <BarChart className="h-4 w-4" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="email-templates">
-            <FileText className="w-4 h-4 mr-2" />
+          <TabsTrigger value="email" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
             Email Templates
           </TabsTrigger>
-          <TabsTrigger value="email-history">
-            <Mail className="w-4 h-4 mr-2"/>
-            Email History
+          <TabsTrigger value="map" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Map View
           </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="w-4 h-4 mr-2" />
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
             Settings
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="waitlist-entries" className="space-y-4">
-          <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay
-              isLoading={waitlistLoading}
-              text="Loading entries..."
-            />
-            <LoadingOverlay
-              isLoading={isSaving}
-              text="Saving changes..."
-            />
-            <LoadingOverlay
-              isLoading={isAutoPopulating}
-              text="Auto-populating locations..."
-            />
-
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div className="w-full md:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search entries..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+        
+        {/* Waitlist Tab */}
+        <TabsContent value="waitlist" className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle>Waitlist Management</CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleExportWaitlist}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleExportToExcel}
-                  className="bg-primary/10 text-primary hover:bg-primary/20"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export to Excel
-                </Button>
-                <Button
-                  onClick={handleAutoPopulateAll}
-                  disabled={isAutoPopulating}
-                >
-                  {isAutoPopulating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Auto Populate City/State
-                    </>
-                  )}
-                </Button>
+              <div className="relative mt-2">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search by email, name, or zip code..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <div className="rounded-md border min-w-[800px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead
-                        onClick={() => handleSort('zip_code')}
-                        className="cursor-pointer hover:text-primary transition-colors duration-200"
-                      >
-                        ZIP Code
-                        {sortField === 'zip_code' && (
-                          sortDirection === 'asc' ? (
-                            <ChevronUp className="ml-2 h-4 w-4 inline-block" />
-                          ) : (
-                            <ChevronDown className="ml-2 h-4 w-4 inline-block" />
-                          )
-                        )}
-                      </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('created_at')}
-                        className="cursor-pointer hover:text-primary transition-colors duration-200"
-                      >
-                        Sign-up Date/Time
-                        {sortField === 'created_at' && (
-                          sortDirection === 'asc' ? (
-                            <ChevronUp className="ml-2 h-4 w-4 inline-block" />
-                          ) : (
-                            <ChevronDown className="ml-2 h-4 w-4 inline-block" />
-                          )
-                        )}
-                      </TableHead>
-                      <TableHead className="w-[200px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedEntries.map((entry) => (
-                      <TableRow
-                        key={entry.id}
-                        className="transition-colors duration-200 hover:bg-primary/5 group"
-                      >
-                        <TableCell className="font-medium">
-                          <Input
-                            value={unsavedChanges[entry.id]?.email ?? entry.email}
-                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                            className="transition-all duration-200 group-hover:border-primary/50"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code ?? ''}
-                              onChange={(e) => {
-                                const zip = e.target.value;
-                                handleFieldChange(entry.id, 'zip_code', zip);
-                                if (zip.length === 5) {
-                                  handleCityStateFromZip(zip, entry.id);
-                                }
-                              }}
-                              className="max-w-[100px] transition-all duration-200 group-hover:border-primary/50"
-                            />
-                            {loadingZips[entry.id] && (
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {format(new Date(entry.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col md:flex-row items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetails(entry)}
-                              className="transition-all duration-200 group-hover:border-primary/50 group-hover:bg-primary/10"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(entry.id)}
-                              className="transition-all duration-200 group-hover:bg-destructive/90"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
-            <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8">
-              <Button
-                onClick={handleSaveChanges}
-                disabled={Object.keys(unsavedChanges).length === 0 || isSaving}
-                size="lg"
-                className="relative"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Tab Content */}
-        <TabsContent value="waitlist-analytics" className="space-y-4">
-          <Card className="p-4 md:p-6 relative">
-            <LoadingOverlay
-              isLoading={analyticsLoading}
-              text="Loading analytics..."
-            />
-
-            <div className="flex flex-col gap-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Waitlist Analytics</h2>
-                <p className="text-muted-foreground">Track signup trends and location distribution</p>
-              </div>
-
-              {/* Key Metrics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Today</h3>
-                  <p className="text-2xl font-bold mt-2">{analyticsData?.daily?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">new signups</p>
-                </Card>
-                <Card className="p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">This Month</h3>
-                  <p className="text-2xl font-bold mt-2">{analyticsData?.monthly?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">total signups</p>
-                </Card>
-                <Card className="p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Total Verified</h3>
-                  <p className="text-2xl font-bold mt-2">{analyticsData?.yearly?.total || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">verified users</p>
-                </Card>
-              </div>
-
-              {/* Daily Breakdown - Now Collapsible */}
-              <Accordion type="single" collapsible>
-                <AccordionItem value="daily-breakdown">
-                  <AccordionTrigger>
-                    <h3 className="text-lg font-medium">Last 7 Days Breakdown</h3>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="overflow-x-auto pt-4">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Signups</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {analyticsData?.daily?.breakdown?.map((day: any) => (
-                            <TableRow key={day.date}>
-                              <TableCell>{day.date}</TableCell>
-                              <TableCell>{day.count}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>                      </Table>
-                    </div>
-                  </AccordionContent>                </AccordionItem>
-              </Accordion>
-
-              {/* Location Distribution */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* City Distribution */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Top Cities</h3>
-                  <div className="overflow-x-auto"><Table>
-                      <TableHeader>
-                        <TableRow>
-                                                    <TableHead>City</TableHead>
-                          <TableHead>Signups</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {analyticsData?.cityDistribution?.map((city: any) => (
-                          <TableRow key={city.name}>
-                            <TableCell>{city.name}</TableCell>
-                            <TableCell>{city.count}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+            </CardHeader>
+            <CardContent>
+              {waitlistLoading ? (
+                <div className="flex justify-center py-10">
+                  <LoadingSpinner />
                 </div>
-
-                {/* ZIP Distribution */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Top ZIP Codes</h3>
-                  <div className="overflow-x-auto">
+              ) : filteredEntries.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  {searchTerm ? "No results found" : "No waitlist entries yet"}
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <ScrollArea className="h-[600px]">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>ZIP Code</TableHead>
-                          <TableHead>Signups</TableHead>
+                          <TableHead className="w-[20%]">Email</TableHead>
+                          <TableHead className="w-[15%]">Name</TableHead>
+                          <TableHead className="w-[10%]">Zip Code</TableHead>
+                          <TableHead className="w-[15%]">Phone</TableHead>
+                          <TableHead className="w-[15%]">Date Added</TableHead>
+                          <TableHead className="w-[10%]">Status</TableHead>
+                          <TableHead className="w-[15%] text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {analyticsData?.zipDistribution?.map((zip: any) => (
-                          <TableRow key={zip.name}>
-                            <TableCell>{zip.name}</TableCell>
-                            <TableCell>{zip.count}</TableCell>
+                        {filteredEntries.map((entry: any) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.email}</TableCell>
+                            <TableCell>
+                              {entry.first_name} {entry.last_name}
+                            </TableCell>
+                            <TableCell>{entry.zip_code}</TableCell>
+                            <TableCell>{entry.phone_number || "-"}</TableCell>
+                            <TableCell>
+                              {entry.created_at
+                                ? format(new Date(entry.created_at), "MMM d, yyyy")
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Active
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    /* View entry details */
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    /* Edit entry */
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                  </ScrollArea>
                 </div>
-              </div>
-
-              {/* Latest Signups by ZIP */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">Latest Signups by ZIP Code</h3>
-                <div className="space-y-6">
-                  {analyticsData?.zipDistribution?.map((zip: any) => (
-                    <Card key={zip.name} className="p-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-md font-medium">ZIP Code: {zip.name}</h4>
-                        <Badge variant="secondary">{zip.count} total signups</Badge>
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead>Signed Up</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {zip.latest?.map((signup: any) => (
-                            <TableRow key={signup.email}>
-                              <TableCell>{signup.email}</TableCell>
-                              <TableCell>
-                                {signup.city ? `${signup.city}, ${signup.state}` : signup.zip_code}
-                              </TableCell>
-                              <TableCell>
-                                {format(new Date(signup.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="email-templates">
-          <Card className="p-4 md:p-6 relative">
-            <Tabs value={activeTemplateTab} onValueChange={setActiveTemplateTab}>
-              <TabsList>
-                <TabsTrigger value="system">System Templates</TabsTrigger>
-                <TabsTrigger value="custom">Custom Templates</TabsTrigger>
-                <TabsTrigger value="create">Create Template</TabsTrigger>
-                <TabsTrigger value="send">Send Custom Email</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="system" className="space-y-4">
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle>Welcome Email</CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTemplate("welcome");
-                          setSendEmailDialogOpen(true);
-                        }}
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Send Welcome Email
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <EmailBuilder
-                        defaultTemplate={{
-                          subject: "Welcome to Our Platform",
-                          blocks: [
-                            {
-                              id: "welcome-header",
-                              type: "header",
-                              content: {
-                                text: "Welcome to Our Platform!",
-                                size: "32px",
-                                align: "center"
-                              }
-                            },
-                            {
-                              id: "welcome-text",
-                              type: "text",
-                              content: {
-                                text: "Thank you for joining our waitlist. We're excited to have you with us.",
-                                align: "left"
-                              }
-                            },
-                            {
-                              id: "welcome-button",
-                              type: "button",
-                              content: {
-                                text: "Visit Our Website",
-                                url: "https://ourplatform.com",
-                                align: "center"
-                              }
-                            }
-                          ]
-                        }}
-                        onSave={async (template) => {
-                          try {
-                            await fetch('/api/email-templates/welcome', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(template)
-                            });
-                            toast({
-                              title: "Template saved",
-                              description: "Welcome email template has been updated."
-                            });
-                          } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: "Failed to save template",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle>Verification Email</CardTitle>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTemplate("verification");
-                          setSendEmailDialogOpen(true);
-                        }}
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Send Verification Email
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <EmailBuilder
-                        defaultTemplate={{
-                          subject: "Verify Your Email",
-                          blocks: [
-                            {
-                              id: "verify-header",
-                              type: "header",
-                              content: {
-                                text: "Verify Your Email",
-                                size: "32px",
-                                align: "center"
-                              }
-                            },
-                            {
-                              id: "verify-text",
-                              type: "text",
-                              content: {
-                                text: "Your verification code is: {verificationCode}",
-                                align: "center"
-                              }
-                            },
-                            {
-                              id: "verify-instructions",
-                              type: "text",
-                              content: {
-                                text: "Enter this code to verify your email address.",
-                                align: "left"
-                              }
-                            }
-                          ]
-                        }}
-                        onSave={async (template) => {
-                          try {
-                            await fetch('/api/email-templates/verification', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(template)
-                            });
-                            toast({
-                              title: "Template saved",
-                              description: "Verification email template has been updated."
-                            });
-                          } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: "Failed to save template",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="custom" className="space-y-4">
-                {customTemplatesLoading ? (
+        
+        {/* Waitlist Analytics Tab */}
+        <TabsContent value="waitlist-analytics">
+          <Card>
+            <CardHeader>
+              <CardTitle>Waitlist Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="flex justify-center py-10">
                   <LoadingSpinner />
-                ) : (
-                  <>
-                    <div className="flex justify-between items-center mb-6">
-                      <div>
-                        <h3 className="text-lg font-medium">Custom Templates</h3>
-                        <p className="text-sm text-muted-foreground">Manage your saved email templates</p>
-                      </div>
-                      <div className="space-x-2">
-                        <Button onClick={() => setActiveTemplateTab("create")} className="flex items-center gap-2">
-                          <Plus className="w-4 h-4" />
-                          Create New Template
-                        </Button>
-                        <Button 
-                          onClick={() => setActiveTemplateTab("send")}
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          <Mail className="w-4 h-4" />
-                          Send Custom Email
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      {!customTemplates?.length ? (
-                        <Card className="p-8 text-center">
-                          <p className="text-muted-foreground mb-4">No custom templates yet</p>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setActiveTemplateTab("create")}
+                </div>
+              ) : (
+                <WaitlistAnalytics entries={waitlistEntries} />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Email Templates Tab */}
+        <TabsContent value="email" className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle>Email Templates</CardTitle>
+                <Button 
+                  onClick={() => setEmailBuilderOpen(true)}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Template
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {templatesLoading ? (
+                <div className="flex justify-center py-10">
+                  <LoadingSpinner />
+                </div>
+              ) : emailTemplates.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  No email templates created yet
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[30%]">Name</TableHead>
+                        <TableHead className="w-[40%]">Subject</TableHead>
+                        <TableHead className="w-[15%]">Created</TableHead>
+                        <TableHead className="w-[15%] text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {emailTemplates.map((template: any) => (
+                        <TableRow key={template.id}>
+                          <TableCell className="font-medium">{template.name}</TableCell>
+                          <TableCell>{template.subject}</TableCell>
+                          <TableCell>
+                            {template.created_at
+                              ? format(new Date(template.created_at), "MMM d, yyyy")
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEmailToView(template);
+                                  setEmailViewOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedTemplateId(template.id);
+                                  /* Edit template implementation */
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  setTemplateToDelete(template);
+                                  setDeleteTemplateDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Map View Tab */}
+        <TabsContent value="map">
+          <Card>
+            <CardHeader>
+              <CardTitle>Waitlist Geographic Distribution</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="h-[600px] w-full">
+                <WaitlistMapView entries={waitlistEntries} />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle>Settings</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs 
+                value={settingsSubTab} 
+                onValueChange={setSettingsSubTab} 
+                className="space-y-6"
+              >
+                <TabsList>
+                  <TabsTrigger value="account">
+                    <User className="mr-2 h-4 w-4" />
+                    Account
+                  </TabsTrigger>
+                  <TabsTrigger value="users">
+                    <Users className="mr-2 h-4 w-4" />
+                    Users
+                  </TabsTrigger>
+                  <TabsTrigger value="system">
+                    <Settings className="mr-2 h-4 w-4" />
+                    System
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Account Tab */}
+                <TabsContent value="account" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Profile Information</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...profileForm}>
+                          <form
+                            onSubmit={profileForm.handleSubmit(onSubmitProfile)}
+                            className="space-y-4"
                           >
-                            Create Your First Template
-                          </Button>
-                        </Card>
-                      ) : (
-                        customTemplates.map((template) => (
-                          <Card key={template.id}>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                              <CardTitle className="text-lg font-medium">{template.name}</CardTitle>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedTemplate(template);
-                                    setSendEmailDialogOpen(true);
-                                  }}
-                                >
-                                  <Mail className="w-4 h-4 mr-2" />
-                                  Send Template
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    setTemplateToDelete(template);
-                                    setDeleteTemplateDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </CardHeader>
-                            <CardContent>
-                              <EmailBuilder
-                                defaultTemplate={{
-                                  subject: template.subject,
-                                  blocks: JSON.parse(template.html_content)
-                                }}
-                                onSave={async (templateContent) => {
-                                  try {
-                                    await fetch(`/api/email-templates/custom/${template.id}`, {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        ...templateContent,
-                                        name: template.name
-                                      })
-                                    });
-                                    queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-                                    toast({
-                                      title: "Template saved",
-                                      description: `${template.name} has been updated.`
-                                    });
-                                  } catch (error) {
-                                    toast({
-                                      title: "Error",
-                                      description: "Failed to save template",
-                                      variant: "destructive"
-                                    });
-                                  }
-                                }}
-                              />
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
-                    </div>
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="create">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create New Template</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Template Name</Label>
-                        <Input
-                          placeholder="Enter template name..."
-                          value={newTemplateName}
-                          onChange={(e) => setNewTemplateName(e.target.value)}
-                        />
-                      </div>
-                      <EmailBuilder
-                        onSave={async (template) => {
-                          try {
-                            if (!newTemplateName.trim()) {
-                              throw new Error('Template name is required');
-                            }
-                            await fetch('/api/email-templates/custom', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                name: newTemplateName,
-                                ...template
-                              })
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-                            setActiveTemplateTab('custom');
-                            setNewTemplateName('');
-                            toast({
-                              title: "Success",
-                              description: "New template created successfully"
-                            });
-                          } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: error instanceof Error ? error.message : "Failed to create template",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="send">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Send Custom Email</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Create and send a one-time email to selected recipients
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {/* Recipient Filters */}
-                      <div className="space-y-4">
-                        <h4 className="font-medium">Filter Recipients</h4>
-
-                        {/* Date Range Filter */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>From Date</Label>
-                            <DatePicker
-                              selected={segmentationCriteria.dateRange?.from}
-                              onSelect={(date) => setSegmentationCriteria(prev => ({
-                                ...prev,
-                                dateRange: {
-                                  from: date,
-                                  to: prev.dateRange?.to || new Date()
-                                }
-                              }))}
+                            <FormField
+                              control={profileForm.control}
+                              name="current_username"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Current Username</FormLabel>
+                                  <FormControl>
+                                    <Input disabled {...field} />
+                                  </FormControl>
+                                </FormItem>
+                              )}
                             />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>To Date</Label>
-                            <DatePicker
-                              selected={segmentationCriteria.dateRange?.to}
-                              onSelect={(date) => setSegmentationCriteria(prev => ({
-                                ...prev,
-                                dateRange: {
-                                  from: prev.dateRange?.from || new Date(),
-                                  to: date
-                                }
-                              }))}
+                            <FormField
+                              control={profileForm.control}
+                              name="new_username"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Username (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
-                          </div>
-                        </div>
-
-                        {/* Location Filters */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Cities</Label>
-                            <Select
-                              value={segmentationCriteria.cities[0] || ''}
-                              onValueChange={(value) => setSegmentationCriteria(prev => ({
-                                ...prev,
-                                cities: value ? [value] : []
-                              }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a city" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from(new Set(waitlistEntries.map(entry => entry.city).filter(Boolean))).map(city => (
-                                  <SelectItem key={city} value={city as string}>{city}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>ZIP Codes</Label>
-                            <Select
-                              value={segmentationCriteria.zipCodes[0] || ''}
-                              onValueChange={(value) => setSegmentationCriteria(prev => ({
-                                ...prev,
-                                zipCodes: value ? [value] : []
-                              }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a ZIP code" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from(new Set(waitlistEntries.map(entry => entry.zip_code).filter(Boolean))).map(zip => (
-                                  <SelectItem key={zip} value={zip as string}>{zip}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {/* Clear Filters Button */}
-                        <Button
-                          variant="outline"
-                          onClick={() => setSegmentationCriteria({
-                            dateRange: null,
-                            states: [],
-                            cities: [],
-                            zipCodes: []
-                          })}
-                          className="w-full"
-                        >
-                          Clear All Filters
-                        </Button>
-
-                        {/* Recipients List */}
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <Label>Recipients</Label>
-                            <p className="text-sm text-muted-foreground">
-                              {getFilteredRecipients().length} recipients match your filters
-                            </p>
-                          </div>
-                          <div className="flex gap-2 mb-2">
-                            <Input
-                              placeholder="Search recipients..."
-                              value={recipientSearchTerm}
-                              onChange={(e) => setRecipientSearchTerm(e.target.value)}
+                            <FormField
+                              control={profileForm.control}
+                              name="email"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Email Address (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input type="email" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
                             <Button
-                              variant="outline"
-                              onClick={() => setSelectAllRecipients(!selectAllRecipients)}
+                              type="submit"
+                              disabled={updateProfileMutation.isPending}
                             >
-                              {selectAllRecipients ? 'Deselect All' : 'Select All'}
+                              {updateProfileMutation.isPending && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              )}
+                              Update Profile
                             </Button>
-                          </div>
-                          <ScrollArea className="h-32 border rounded-md">
-                            <div className="p-2">
-                              {getFilteredRecipients().map((entry) => (
-                                <div key={entry.email} className="flex items-center space-x-2 py-1">
-                                  <Checkbox
-                                    checked={selectedRecipients.has(entry.email)}
-                                    onCheckedChange={(checked) => {
-                                      const newSelected = new Set(selectedRecipients);
-                                      if (checked) {
-                                        newSelected.add(entry.email);
-                                      } else {
-                                        newSelected.delete(entry.email);
-                                      }
-                                      setSelectedRecipients(newSelected);
-                                    }}
-                                  />
-                                  <span className="flex-1">{entry.email}</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    {entry.city && entry.state ? `${entry.city}, ${entry.state}` : entry.zip_code}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        </div>
-
-                        {/* Email Builder */}
-                        <EmailBuilder
-                          onSave={async (template) => {
-                            try {
-                              if (selectedRecipients.size === 0) {
-                                throw new Error('Please select at least one recipient');
-                              }
-                              setIsSendingEmails(true);
-                              await fetch('/api/email/send-custom', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  recipients: Array.from(selectedRecipients),
-                                  ...template
-                                })
-                              });
-                              toast({
-                                title: "Success",
-                                description: `Email sent to ${selectedRecipients.size} recipient(s)`
-                              });
-                              setSelectedRecipients(new Set());
-                              setRecipientSearchTerm('');
-                              setSegmentationCriteria({
-                                dateRange: null,
-                                states: [],
-                                cities: [],
-                                zipCodes: []
-                              });
-                            } catch (error) {
-                              toast({
-                                title: "Error",
-                                description: error instanceof Error ? error.message : "Failed to send email",
-                                variant: "destructive"
-                              });
-                            } finally {
-                              setIsSendingEmails(false);
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-            </Tabs>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <Card className="p-6">
-            <div className="flex items-center mb-6">
-              <Settings className="h-6 w-6 mr-3 text-primary" />
-              <h2 className="text-xl font-semibold">Settings</h2>
-            </div>
-            
-            <Tabs defaultValue="users" className="w-full space-y-6">
-              <TabsList>
-                <TabsTrigger value="users" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>User Management</span>
-                </TabsTrigger>
-                <TabsTrigger value="account" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>My Account</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              {/* User Management Tab */}
-              <TabsContent value="users">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Change Password</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...passwordForm}>
+                          <form
+                            onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
+                            className="space-y-4"
+                          >
+                            <FormField
+                              control={passwordForm.control}
+                              name="current_password"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Current Password</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={passwordForm.control}
+                              name="new_password"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Password</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={passwordForm.control}
+                              name="confirm_password"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Confirm Password</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button
+                              type="submit"
+                              disabled={updatePasswordMutation.isPending}
+                            >
+                              {updatePasswordMutation.isPending && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              )}
+                              Update Password
+                            </Button>
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+                
+                {/* Users Tab */}
+                <TabsContent value="users" className="space-y-6">
+                  <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">User Management</h3>
-                    <Button
-                      onClick={() => {
-                        setNewUserDialogOpen(true);
-                      }}
+                    <Button 
+                      onClick={() => setNewUserDialogOpen(true)}
                       size="sm"
                       className="flex items-center gap-2"
                     >
@@ -2006,13 +1034,13 @@ export default function AdminPortal() {
                       Add User
                     </Button>
                   </div>
-
+                  
                   {usersLoading ? (
-                    <div className="flex justify-center py-8">
-                      <LoadingSpinner size="lg" />
+                    <div className="flex justify-center py-10">
+                      <LoadingSpinner />
                     </div>
                   ) : usersList.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-10 text-muted-foreground">
                       No users found
                     </div>
                   ) : (
@@ -2020,63 +1048,54 @@ export default function AdminPortal() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Username</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[40%]">Username</TableHead>
+                            <TableHead className="w-[20%]">Role</TableHead>
+                            <TableHead className="w-[20%]">Created</TableHead>
+                            <TableHead className="w-[20%] text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {usersList.map((userItem) => (
                             <TableRow key={userItem.id}>
-                              <TableCell>{userItem.id}</TableCell>
-                              <TableCell>{userItem.username}</TableCell>
+                              <TableCell className="font-medium">{userItem.username}</TableCell>
                               <TableCell>
-                                {userItem.is_admin ? (
-                                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                    Admin
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                                    User
-                                  </span>
-                                )}
+                                <Badge variant={userItem.is_admin ? "default" : "outline"}>
+                                  {userItem.is_admin ? "Admin" : "User"}
+                                </Badge>
                               </TableCell>
                               <TableCell>
-                                {format(
-                                  new Date(userItem.created_at),
-                                  "MMM d, yyyy"
-                                )}
+                                {userItem.created_at
+                                  ? format(new Date(userItem.created_at), "MMM d, yyyy")
+                                  : "-"}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setUserToEdit(userItem);
-                                    setEditUserDialogOpen(true);
-                                  }}
-                                  className="mr-2"
-                                  title="Edit user"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                  <span className="sr-only">Edit</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                                  onClick={() => {
-                                    setUserToDelete(userItem);
-                                    setUserDeleteDialogOpen(true);
-                                  }}
-                                  disabled={userItem.id === user?.id} // Can't delete yourself
-                                  title="Delete user"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Delete</span>
-                                </Button>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setUserToEdit(userItem);
+                                      setEditUserDialogOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                    onClick={() => {
+                                      setUserToDelete(userItem);
+                                      setUserDeleteDialogOpen(true);
+                                    }}
+                                    disabled={userItem.id === user?.id} // Can't delete yourself
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -2084,352 +1103,117 @@ export default function AdminPortal() {
                       </Table>
                     </div>
                   )}
-                </div>
-              </TabsContent>
-              
-              {/* Account Settings Tab */}
-              <TabsContent value="account">
-                <div className="space-y-6 max-w-xl">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Profile Settings</h3>
-                    <div>
-                      <form 
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          if (profileFormData.username) {
-                            updateProfileMutation.mutate({ username: profileFormData.username });
-                          }
-                        }}
-                        className="space-y-4"
-                      >
-                        <div className="grid gap-2">
-                          <Label htmlFor="username">Username</Label>
-                          <Input 
-                            id="username" 
-                            value={profileFormData.username}
-                            onChange={(e) => setProfileFormData({...profileFormData, username: e.target.value})}
-                            placeholder={user?.username || ""}
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            This is your public display name.
-                          </p>
+                </TabsContent>
+                
+                {/* System Tab */}
+                <TabsContent value="system" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>System Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                              Application Version
+                            </h4>
+                            <p>1.0.0</p>
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                              Environment
+                            </h4>
+                            <p>Production</p>
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                              Database Status
+                            </h4>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              Connected
+                            </Badge>
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                              Last Backup
+                            </h4>
+                            <p>{format(new Date(), "MMM d, yyyy HH:mm")}</p>
+                          </div>
                         </div>
-                        <Button 
-                          type="submit" 
-                          className="mt-4"
-                          disabled={updateProfileMutation.isPending || !profileFormData.username}
-                        >
-                          {updateProfileMutation.isPending ? (
-                            <LoadingSpinner size="sm" className="mr-2" />
-                          ) : (
-                            <Save className="h-4 w-4 mr-2" />
-                          )}
-                          Save Changes
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Security Settings</h3>
-                    <div>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          if (
-                            passwordFormData.currentPassword &&
-                            passwordFormData.newPassword &&
-                            passwordFormData.newPassword === passwordFormData.confirmPassword
-                          ) {
-                            changePasswordMutation.mutate({ 
-                              currentPassword: passwordFormData.currentPassword,
-                              newPassword: passwordFormData.newPassword 
-                            });
-                          } else if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
-                            toast({
-                              title: "Passwords don't match",
-                              description: "Please ensure your new password and confirm password fields match.",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                        className="space-y-4"
-                      >
-                        <div className="grid gap-2">
-                          <Label htmlFor="currentPassword">Current Password</Label>
-                          <Input 
-                            id="currentPassword" 
-                            type="password"
-                            value={passwordFormData.currentPassword}
-                            onChange={(e) => setPasswordFormData({...passwordFormData, currentPassword: e.target.value})}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="newPassword">New Password</Label>
-                          <Input 
-                            id="newPassword" 
-                            type="password"
-                            value={passwordFormData.newPassword}
-                            onChange={(e) => setPasswordFormData({...passwordFormData, newPassword: e.target.value})}
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            Must be at least 6 characters.
-                          </p>
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                          <Input 
-                            id="confirmPassword" 
-                            type="password"
-                            value={passwordFormData.confirmPassword}
-                            onChange={(e) => setPasswordFormData({...passwordFormData, confirmPassword: e.target.value})}
-                          />
-                        </div>
-                        <Button 
-                          type="submit" 
-                          className="mt-4"
-                          disabled={
-                            changePasswordMutation.isPending || 
-                            !passwordFormData.currentPassword || 
-                            !passwordFormData.newPassword ||
-                            !passwordFormData.confirmPassword
-                          }
-                        >
-                          {changePasswordMutation.isPending ? (
-                            <LoadingSpinner size="sm" className="mr-2" />
-                          ) : (
-                            <Lock className="h-4 w-4 mr-2" />
-                          )}
-                          Change Password
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </TabsContent>
-        <TabsContent value="email-history" className="space-y-4">
-          <Card className="p-4 md:p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-2">Email History</h2>
-              <p className="text-muted-foreground">
-                Track all sent emails and their delivery statistics
-              </p>
-            </div>
-
-            {emailHistoryLoading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Template Name</TableHead>
-                      <TableHead>Sent At</TableHead>
-                      <TableHead>Recipients</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Array.isArray(emailHistory) ? emailHistory.map((history: EmailHistoryEntry) => (
-                      <TableRow key={history.id}>
-                        <TableCell className="font-medium">
-                          {history.template_name}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(history.sent_at), "MMM dd, yyyy 'at' h:mm a")}
-                        </TableCell>
-                        <TableCell>{history.total_recipients}</TableCell>
-                        <TableCell>
-                          <Badge variant={history.status === 'completed' ? 'default' : 'destructive'}>
-                            {history.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    )) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                          No email history available
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Customer Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Customer Details</DialogTitle>
-            <DialogDescription>
-              Edit customer information and save changes
-            </DialogDescription>
-          </DialogHeader>
-          {selectedEntry && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.email ?? selectedEntry.email}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'email', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sign-up Date</Label>
-                  <p className="text-muted-foreground pt-2">
-                    {format(new Date(selectedEntry.created_at), "MMM dd, yyyy 'at' h:mm a")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>First Name</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.first_name ?? selectedEntry.first_name ?? ''}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'first_name', e.target.value)}
-                    placeholder="Enter first name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Last Name</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.last_name ?? selectedEntry.last_name ?? ''}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'last_name', e.target.value)}
-                    placeholder="Enter last name"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Phone Number</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.phone_number ?? selectedEntry.phone_number ?? ''}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'phone_number', e.target.value)}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>ZIP Code</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={unsavedChanges[selectedEntry.id]?.zip_code ?? selectedEntry.zip_code ?? ''}
-                      onChange={(e) => {
-                        const zip = e.target.value;
-                        handleFieldChange(selectedEntry.id, 'zip_code', zip);
-                        if (zip.length === 5) {
-                          handleCityStateFromZip(zip, selectedEntry.id);
-                        }
-                      }}
-                      placeholder="Enter ZIP code"
-                    />
-                    {loadingZips[selectedEntry.id] && (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.city ?? selectedEntry.city ?? ''}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'city', e.target.value)}
-                    placeholder="Enter city"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>State</Label>
-                  <Input
-                    value={unsavedChanges[selectedEntry.id]?.state ?? selectedEntry.state ?? ''}
-                    onChange={(e) => handleFieldChange(selectedEntry.id, 'state', e.target.value)}
-                    placeholder="Enter state"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Street Address</Label>
-                <Input
-                  value={unsavedChanges[selectedEntry.id]?.street_address ?? selectedEntry.street_address ?? ''}
-                  onChange={(e) => handleFieldChange(selectedEntry.id, 'street_address', e.target.value)}
-                  placeholder="Enter street address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  value={unsavedChanges[selectedEntry.id]?.notes ?? selectedEntry.notes ?? ''}
-                  onChange={(e) => handleFieldChange(selectedEntry.id, 'notes', e.target.value)}
-                  placeholder="Add notes about this customer"
-                  rows={4}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (selectedEntry) {
-                  delete unsavedChanges[selectedEntry.id];
-                  setUnsavedChanges({...unsavedChanges});
-                }
-                setShowDetailsDialog(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedEntry && unsavedChanges[selectedEntry.id]) {
-                  updateEntryMutation.mutate([{
-                    id: selectedEntry.id,
-                    ...unsavedChanges[selectedEntry.id]
-                  }]);
-                  setShowDetailsDialog(false);
-                }
-              }}
-              disabled={!selectedEntry || !unsavedChanges[selectedEntry.id] || isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the waitlist entry.
+              This will permanently delete this waitlist entry.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                if (entryToDelete !== null) {
+                  deleteWaitlistEntryMutation.mutate(entryToDelete);
+                }
+              }}
+              disabled={deleteWaitlistEntryMutation.isPending}
+            >
+              {deleteWaitlistEntryMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Email Template Viewer */}
+      <Dialog open={emailViewOpen} onOpenChange={setEmailViewOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{emailToView?.name}</DialogTitle>
+            <DialogDescription>
+              {emailToView?.subject}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="border rounded-md p-4 h-[500px] overflow-auto">
+            <div dangerouslySetInnerHTML={{ __html: emailToView?.html_content }} />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Email Builder Dialog */}
+      <Dialog open={emailBuilderOpen} onOpenChange={setEmailBuilderOpen}>
+        <DialogContent className="sm:max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Create Email Template</DialogTitle>
+            <DialogDescription>
+              Design your email template below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col h-full">
+            <EmailBuilder onSave={handleSaveTemplate} />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       {/* Delete Template Confirmation Dialog */}
       <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
         <AlertDialogContent>
