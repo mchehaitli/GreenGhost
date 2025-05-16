@@ -168,10 +168,6 @@ export default function AdminPortal() {
   });
   
   // User management mutations
-  const { data: usersList = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/users'],
-    enabled: settingsSubTab === "users"
-  });
   
   const createUserMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
@@ -273,17 +269,6 @@ export default function AdminPortal() {
   });
   
   // Validation schemas for forms
-  const userEditSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().optional(),
-    is_admin: z.boolean().default(false)
-  });
-
-  const createUserSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    is_admin: z.boolean().default(false)
-  });
   const newUserSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters"),
     password: z.string().min(6, "Password must be at least 6 characters"),
