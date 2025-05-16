@@ -402,7 +402,11 @@ export default function AdminPortal() {
       const res = await fetch('/api/users/password', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          current_password: data.current_password,
+          new_password: data.new_password,
+          confirm_password: data.confirm_password
+        })
       });
       
       if (!res.ok) {
