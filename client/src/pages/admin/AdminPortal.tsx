@@ -1510,8 +1510,235 @@ export default function AdminPortal() {
 
         <TabsContent value="settings">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Settings</h2>
-            <p className="text-muted-foreground">Configure your application settings here.</p>
+            <div className="flex items-center mb-6">
+              <Settings className="h-6 w-6 mr-3 text-primary" />
+              <h2 className="text-xl font-semibold">Settings</h2>
+            </div>
+            
+            <Tabs defaultValue="users" className="w-full space-y-6">
+              <TabsList>
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span>User Management</span>
+                </TabsTrigger>
+                <TabsTrigger value="account" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>My Account</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              {/* User Management Tab */}
+              <TabsContent value="users">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">User Management</h3>
+                    <Button
+                      onClick={() => {
+                        setNewUserDialogOpen(true);
+                      }}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Add User
+                    </Button>
+                  </div>
+
+                  {usersLoading ? (
+                    <div className="flex justify-center py-8">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No users found
+                    </div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Username</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>{user.id}</TableCell>
+                              <TableCell>{user.username}</TableCell>
+                              <TableCell>
+                                {user.is_admin ? (
+                                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                    Admin
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
+                                    User
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {format(
+                                  new Date(user.created_at),
+                                  "MMM d, yyyy"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditUser(user)}
+                                  className="mr-2"
+                                  title="Edit user"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span className="sr-only">Edit</span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                  onClick={() => handleDeleteUser(user)}
+                                  disabled={user.id === (user as User).id} // Can't delete yourself
+                                  title="Delete user"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              {/* Account Settings Tab */}
+              <TabsContent value="account">
+                <div className="space-y-6 max-w-xl">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Profile Settings</h3>
+                    <div>
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (profileFormData.username) {
+                            updateProfileMutation.mutate({ username: profileFormData.username });
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="grid gap-2">
+                          <Label htmlFor="username">Username</Label>
+                          <Input 
+                            id="username" 
+                            value={profileFormData.username}
+                            onChange={(e) => setProfileFormData({...profileFormData, username: e.target.value})}
+                            placeholder={user?.username || ""}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            This is your public display name.
+                          </p>
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="mt-4"
+                          disabled={updateProfileMutation.isPending || !profileFormData.username}
+                        >
+                          {updateProfileMutation.isPending ? (
+                            <LoadingSpinner size="sm" className="mr-2" />
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          Save Changes
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Security Settings</h3>
+                    <div>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (
+                            passwordFormData.currentPassword &&
+                            passwordFormData.newPassword &&
+                            passwordFormData.newPassword === passwordFormData.confirmPassword
+                          ) {
+                            changePasswordMutation.mutate({ 
+                              currentPassword: passwordFormData.currentPassword,
+                              newPassword: passwordFormData.newPassword 
+                            });
+                          } else if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+                            toast({
+                              title: "Passwords don't match",
+                              description: "Please ensure your new password and confirm password fields match.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="grid gap-2">
+                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <Input 
+                            id="currentPassword" 
+                            type="password"
+                            value={passwordFormData.currentPassword}
+                            onChange={(e) => setPasswordFormData({...passwordFormData, currentPassword: e.target.value})}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <Input 
+                            id="newPassword" 
+                            type="password"
+                            value={passwordFormData.newPassword}
+                            onChange={(e) => setPasswordFormData({...passwordFormData, newPassword: e.target.value})}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Must be at least 6 characters.
+                          </p>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                          <Input 
+                            id="confirmPassword" 
+                            type="password"
+                            value={passwordFormData.confirmPassword}
+                            onChange={(e) => setPasswordFormData({...passwordFormData, confirmPassword: e.target.value})}
+                          />
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="mt-4"
+                          disabled={
+                            changePasswordMutation.isPending || 
+                            !passwordFormData.currentPassword || 
+                            !passwordFormData.newPassword ||
+                            !passwordFormData.confirmPassword
+                          }
+                        >
+                          {changePasswordMutation.isPending ? (
+                            <LoadingSpinner size="sm" className="mr-2" />
+                          ) : (
+                            <Lock className="h-4 w-4 mr-2" />
+                          )}
+                          Change Password
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </Card>
         </TabsContent>
         <TabsContent value="email-history" className="space-y-4">
