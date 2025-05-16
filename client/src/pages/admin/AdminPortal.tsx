@@ -148,6 +148,19 @@ export default function AdminPortal() {
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [settingsSubTab, setSettingsSubTab] = useState("account");
   
+  // Validation schemas for forms
+  const userEditSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().optional(),
+    is_admin: z.boolean().default(false)
+  });
+
+  const createUserSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    is_admin: z.boolean().default(false)
+  });
+  
   // User management forms
   const userEditForm = useForm<z.infer<typeof userEditSchema>>({
     resolver: zodResolver(userEditSchema),
@@ -166,8 +179,6 @@ export default function AdminPortal() {
       is_admin: false
     }
   });
-  
-  // User management mutations
   
   const createUserMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
