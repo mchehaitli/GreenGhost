@@ -134,6 +134,20 @@ export default function AdminPortal() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  
+  // User management state
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<any>(null);
+  const [userDeleteDialogOpen, setUserDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({ username: "" });
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [settingsSubTab, setSettingsSubTab] = useState("account");
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);

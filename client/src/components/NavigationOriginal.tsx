@@ -101,12 +101,6 @@ const Navigation = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <Link href="/settings">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-                  </Link>
                   {user.is_admin && (
                     <Link href="/admin">
                       <DropdownMenuItem className="cursor-pointer">
