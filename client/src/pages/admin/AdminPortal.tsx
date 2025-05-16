@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -141,13 +144,73 @@ export default function AdminPortal() {
   const [userDeleteDialogOpen, setUserDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
-  const [profileFormData, setProfileFormData] = useState({ username: "" });
-  const [passwordFormData, setPasswordFormData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
-  });
   const [settingsSubTab, setSettingsSubTab] = useState("account");
+  
+  // Validation schemas for forms
+  const newUserSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    is_admin: z.boolean().default(false)
+  }).refine(data => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"]
+  });
+  
+  const editUserSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().optional(),
+    is_admin: z.boolean().default(false)
+  });
+  
+  const profileSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters")
+  });
+  
+  const passwordSchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters"),
+    confirmPassword: z.string()
+  }).refine(data => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"]
+  });
+  
+  // Form hooks
+  const newUserForm = useForm<z.infer<typeof newUserSchema>>({
+    resolver: zodResolver(newUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      confirmPassword: "",
+      is_admin: false
+    }
+  });
+  
+  const editUserForm = useForm<z.infer<typeof editUserSchema>>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      is_admin: false
+    }
+  });
+  
+  const profileForm = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      username: ""
+    }
+  });
+  
+  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    }
+  });
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
@@ -204,6 +267,204 @@ export default function AdminPortal() {
       return res.json();
     },
     enabled: activeTab === "waitlist-analytics"
+  });
+  
+  // Query for users list (admin only)
+  const { data: usersList = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const res = await fetch('/api/users');
+      if (!res.ok) {
+        if (res.status === 403) {
+          toast({
+            title: "Access denied",
+            description: "You do not have permission to view users",
+            variant: "destructive"
+          });
+          return [];
+        }
+        throw new Error('Failed to fetch users');
+      }
+      return res.json();
+    },
+    enabled: activeTab === 'settings' && user?.is_admin
+  });
+  
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (data: { username: string; password: string; is_admin: boolean }) => {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create user");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created",
+        description: "The user has been created successfully",
+      });
+      setNewUserDialogOpen(false);
+      newUserForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create user",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Edit user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { username?: string; password?: string; is_admin?: boolean };
+    }) => {
+      const response = await fetch(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update user");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User updated",
+        description: "The user has been updated successfully",
+      });
+      setEditUserDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update user",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/users/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete user");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted",
+        description: "The user has been deleted successfully",
+      });
+      setUserDeleteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete user",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update profile mutation (for current user)
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { username: string }) => {
+      const response = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update profile");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully",
+      });
+      // Refresh auth data
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update profile",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const response = await fetch("/api/users/me/password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to change password");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password changed",
+        description: "Your password has been changed successfully",
+      });
+      passwordForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to change password",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
   });
 
   // Add this query for email history
@@ -314,6 +575,61 @@ export default function AdminPortal() {
     setDeleteDialogOpen(false);
     setEntryToDelete(null);
   };
+  
+  // User management handlers
+  const onNewUserSubmit = (data: z.infer<typeof newUserSchema>) => {
+    const { confirmPassword, ...userData } = data;
+    createUserMutation.mutate(userData);
+  };
+  
+  const onEditUserSubmit = (data: z.infer<typeof editUserSchema>) => {
+    if (!userToEdit) return;
+    
+    // Only include password if provided
+    const updateData: any = {
+      username: data.username,
+      is_admin: data.is_admin
+    };
+    
+    if (data.password) {
+      updateData.password = data.password;
+    }
+    
+    updateUserMutation.mutate({
+      id: userToEdit.id,
+      data: updateData
+    });
+  };
+  
+  // Profile handlers
+  const onProfileSubmit = (data: z.infer<typeof profileSchema>) => {
+    updateProfileMutation.mutate(data);
+  };
+  
+  const onPasswordSubmit = (data: z.infer<typeof passwordSchema>) => {
+    const { confirmPassword, ...passwordData } = data;
+    changePasswordMutation.mutate(passwordData);
+  };
+  
+  // Reset edit user form when user changes
+  useEffect(() => {
+    if (userToEdit) {
+      editUserForm.reset({
+        username: userToEdit.username,
+        password: "",
+        is_admin: userToEdit.is_admin
+      });
+    }
+  }, [userToEdit, editUserForm]);
+  
+  // Set initial profile form data
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        username: user.username
+      });
+    }
+  }, [user, profileForm]);
 
   const getFilteredRecipients = () => {
     return waitlistEntries.filter(entry => {
