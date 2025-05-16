@@ -21,6 +21,7 @@ import CaptureScreenshots from "@/pages/CaptureScreenshots";
 import NotFound from "@/pages/not-found";
 import WaitlistDialog from "@/components/WaitlistDialog";
 import Login from "@/pages/Login";
+import AdminPasswordReset from "@/pages/AdminPasswordReset";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 // Helper for protected routes that preserves component type
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/waitlist" component={Waitlist} />
       <Route path="/theme" component={ThemeCustomization} />
       <Route path="/login" component={Login} />
+      <Route path="/admin/reset-password" component={AdminPasswordReset} />
       <Route path="/admin">
         <ProtectedRouteWrapper component={AdminPortal} />
       </Route>
