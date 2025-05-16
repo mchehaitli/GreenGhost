@@ -297,10 +297,15 @@ export default function SettingsPage() {
       id: number;
       data: z.infer<typeof newUserSchema>;
     }) => {
-      // If password is empty, remove it from the request
-      const requestData = { ...data };
-      if (!requestData.password) {
-        delete requestData.password;
+      // If password is empty, only send relevant data
+      const requestData = { 
+        username: data.username,
+        is_admin: data.is_admin 
+      };
+      
+      // Only include password if it's not empty
+      if (data.password) {
+        Object.assign(requestData, { password: data.password });
       }
 
       const response = await fetch(`/api/users/${id}`, {
