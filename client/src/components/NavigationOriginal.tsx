@@ -83,39 +83,16 @@ const Navigation = () => {
             ))}
             
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative rounded-full h-8 w-8 flex items-center justify-center">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium">
-                      {user.username.charAt(0).toUpperCase()}
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.username}</p>
-                      {user.is_admin && (
-                        <p className="text-xs leading-none text-muted-foreground">Administrator</p>
-                      )}
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {user.is_admin && (
-                    <Link href="/admin">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <span className="mr-2">👑</span>
-                        <span>Admin Portal</span>
-                      </DropdownMenuItem>
-                    </Link>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center space-x-2">
+                {user.is_admin && (
+                  <Link href="/admin">
+                    <Button variant="outline" size="sm" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      <span className="mr-1">👑</span>
+                      Admin
+                    </Button>
+                  </Link>
+                )}
+              </div>
             ) : (
               <Button 
                 variant="outline" 
@@ -227,6 +204,21 @@ const Navigation = () => {
           </Sheet>
         </div>
       </header>
+
+      {/* Logout button below header */}
+      {user && (
+        <div className="w-full flex justify-end py-2 px-8 border-b">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleLogout}
+            className="text-destructive border-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Button>
+        </div>
+      )}
 
       {/* Waitlist Dialog */}
       <WaitlistDialog 
