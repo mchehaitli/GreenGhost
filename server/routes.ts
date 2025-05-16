@@ -5,14 +5,22 @@ import { waitlist } from "../db/schema";
 import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
+import userRoutes from './routes/users';
 import emailService from './services/email';
+import { setupAuth } from './auth';
 
 export function registerRoutes(app: Express): Server {
+  // Set up authentication
+  setupAuth(app);
+  
   // Register waitlist routes
   app.use(waitlistRoutes);
 
   // Register email template routes
   app.use(emailTemplateRoutes);
+  
+  // Register user management routes
+  app.use('/api/users', userRoutes);
 
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
