@@ -407,7 +407,7 @@ export default function AdminPortal() {
       
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update password');
+        throw new Error(errorData.error || 'Failed to update password');
       }
       
       return res.json();
@@ -418,6 +418,9 @@ export default function AdminPortal() {
         description: "Password updated successfully",
       });
       passwordForm.reset();
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     },
     onError: (error: Error) => {
       toast({
