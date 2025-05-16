@@ -161,15 +161,6 @@ const Services = () => {
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
                 <Link href="/waitlist">Join Waitlist</Link>
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => setShowDemoDialog(true)} // Changed to demo dialog
-                className="group"
-              >
-                Schedule Demo
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
             </motion.div>
           </div>
 
