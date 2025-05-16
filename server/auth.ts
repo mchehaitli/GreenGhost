@@ -257,3 +257,15 @@ export function requireAuth(req: any, res: any, next: any) {
   }
   next();
 }
+
+export function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  
+  next();
+}

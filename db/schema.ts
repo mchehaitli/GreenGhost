@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  is_admin: boolean("is_admin").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -73,6 +74,13 @@ export const emailSegmentsRelations = relations(emailSegments, ({ one }) => ({
 export const insertUserSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  is_admin: z.boolean().default(false),
+});
+
+export const updateUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  is_admin: z.boolean().optional(),
 });
 
 export const insertWaitlistSchema = z.object({
