@@ -1897,11 +1897,11 @@ export default function AdminPortal() {
                         </TableHeader>
                         <TableBody>
                           {usersList.map((userItem) => (
-                            <TableRow key={user.id}>
-                              <TableCell>{user.id}</TableCell>
-                              <TableCell>{user.username}</TableCell>
+                            <TableRow key={userItem.id}>
+                              <TableCell>{userItem.id}</TableCell>
+                              <TableCell>{userItem.username}</TableCell>
                               <TableCell>
-                                {user.is_admin ? (
+                                {userItem.is_admin ? (
                                   <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                                     Admin
                                   </span>
@@ -1913,7 +1913,7 @@ export default function AdminPortal() {
                               </TableCell>
                               <TableCell>
                                 {format(
-                                  new Date(user.created_at),
+                                  new Date(userItem.created_at),
                                   "MMM d, yyyy"
                                 )}
                               </TableCell>
