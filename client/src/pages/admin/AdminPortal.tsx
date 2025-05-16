@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EmailBuilder } from "@/components/EmailBuilder";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
   Search,
   MapPin,
@@ -1878,7 +1879,7 @@ export default function AdminPortal() {
                     <div className="flex justify-center py-8">
                       <LoadingSpinner size="lg" />
                     </div>
-                  ) : users.length === 0 ? (
+                  ) : usersList.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No users found
                     </div>
@@ -1895,7 +1896,7 @@ export default function AdminPortal() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {users.map((user) => (
+                          {usersList.map((userItem) => (
                             <TableRow key={user.id}>
                               <TableCell>{user.id}</TableCell>
                               <TableCell>{user.username}</TableCell>
