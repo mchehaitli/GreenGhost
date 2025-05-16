@@ -231,7 +231,9 @@ export default function AdminPortal() {
   const { data: emailTemplates = [], isLoading: templatesLoading } = useQuery({
     queryKey: ['email-templates'],
     queryFn: async () => {
-      const res = await fetch('/api/email-templates');
+      const res = await fetch('/api/email-templates', {
+        credentials: 'include'  // Include credentials for authenticated requests
+      });
       if (!res.ok) throw new Error('Failed to fetch email templates');
       return res.json();
     },
