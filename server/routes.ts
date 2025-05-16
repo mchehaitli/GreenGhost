@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import emailService from './services/email';
+import { resetAdminPassword } from './auth';
 
 export function registerRoutes(app: Express): Server {
   // Register waitlist routes
@@ -76,6 +77,40 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error sending bulk emails:', error);
       res.status(500).json({ error: 'Failed to send emails' });
+    }
+  });
+
+  // Admin password reset endpoint (security note: in production, this should be better protected)
+  app.post('/api/admin/reset-password', async (req, res) => {
+    try {
+      const { newPassword, secretKey } = req.body;
+      
+      // Simple security check - require a secret key for this sensitive operation
+      // In production, this should use a more robust authentication method
+      const expectedSecretKey = process.env.ADMIN_RESET_KEY || 'greenghost-secure-reset-key';
+      
+      if (!secretKey || secretKey !== expectedSecretKey) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Invalid or missing secret key" 
+        });
+      }
+      
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 8 characters long"
+        });
+      }
+      
+      const result = await resetAdminPassword(newPassword);
+      res.json(result);
+    } catch (error) {
+      console.error('Error resetting admin password:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "An unexpected error occurred" 
+      });
     }
   });
 

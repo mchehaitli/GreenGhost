@@ -257,3 +257,30 @@ export function requireAuth(req: any, res: any, next: any) {
   }
   next();
 }
+
+export async function resetAdminPassword(newPassword: string) {
+  try {
+    // Find admin account (assuming admin is username = "admin")
+    const [adminUser] = await getUserByUsername("admin");
+    
+    if (!adminUser) {
+      throw new Error("Admin account not found");
+    }
+    
+    // Update password
+    const hashedPassword = await hashPassword(newPassword);
+    await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, adminUser.id));
+    
+    log('Admin password reset successfully');
+    return { success: true, message: "Admin password reset successfully" };
+  } catch (error) {
+    log('Failed to reset admin password:', error);
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : "Unknown error occurred" 
+    };
+  }
+}
