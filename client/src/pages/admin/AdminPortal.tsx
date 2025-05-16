@@ -1358,7 +1358,21 @@ export default function AdminPortal() {
                     <FormItem>
                       <FormLabel>New Password (optional)</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showUserPassword ? "text" : "password"} 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowUserPassword(!showUserPassword)}
+                          >
+                            {showUserPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormDescription>
                         Leave blank to keep current password
@@ -1453,7 +1467,21 @@ export default function AdminPortal() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type={showUserPassword ? "text" : "password"} 
+                          {...field} 
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowUserPassword(!showUserPassword)}
+                        >
+                          {showUserPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -98,6 +98,60 @@ router.patch("/me", requireAuth, async (req, res) => {
   }
 });
 
+// Change password
+router.patch("/password", requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_password, confirm_password } = req.body;
+    
+    if (!current_password || !new_password || !confirm_password) {
+      return res.status(400).json({ error: "All password fields are required" });
+    }
+    
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ error: "New passwords do not match" });
+    }
+    
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters long" });
+    }
+    
+    // Get current user
+    const [currentUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, req.user.id))
+      .limit(1);
+    
+    if (!currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Verify current password
+    const isPasswordValid = await comparePasswords(current_password, currentUser.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+    
+    // Update password
+    const hashedPassword = await hashPassword(new_password);
+    const [updatedUser] = await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, req.user.id))
+      .returning({
+        id: users.id,
+        username: users.username,
+        is_admin: users.is_admin,
+        created_at: users.created_at
+      });
+    
+    res.json({ message: "Password updated successfully", user: updatedUser });
+  } catch (error) {
+    log("Error updating password:", error);
+    res.status(500).json({ error: "Failed to update password" });
+  }
+});
+
 // Create a new user (admin only)
 router.post("/", requireAdmin, async (req, res) => {
   try {
