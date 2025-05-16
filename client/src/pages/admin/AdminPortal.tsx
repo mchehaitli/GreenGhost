@@ -28,6 +28,7 @@ import {
   ChevronUp,
   ChevronDown,
   Eye,
+  EyeOff,
   Pencil,
   BarChart,
   Mail,
@@ -83,6 +84,12 @@ export default function AdminPortal() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+  
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showUserPassword, setShowUserPassword] = useState(false);
   
   // User management state
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
@@ -973,7 +980,21 @@ export default function AdminPortal() {
                                 <FormItem>
                                   <FormLabel>Current Password</FormLabel>
                                   <FormControl>
-                                    <Input type="password" {...field} />
+                                    <div className="relative">
+                                      <Input 
+                                        type={showCurrentPassword ? "text" : "password"} 
+                                        {...field} 
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                      >
+                                        {showCurrentPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -986,7 +1007,21 @@ export default function AdminPortal() {
                                 <FormItem>
                                   <FormLabel>New Password</FormLabel>
                                   <FormControl>
-                                    <Input type="password" {...field} />
+                                    <div className="relative">
+                                      <Input 
+                                        type={showNewPassword ? "text" : "password"} 
+                                        {...field} 
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                      >
+                                        {showNewPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -999,7 +1034,21 @@ export default function AdminPortal() {
                                 <FormItem>
                                   <FormLabel>Confirm Password</FormLabel>
                                   <FormControl>
-                                    <Input type="password" {...field} />
+                                    <div className="relative">
+                                      <Input 
+                                        type={showConfirmPassword ? "text" : "password"} 
+                                        {...field} 
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                      >
+                                        {showConfirmPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
