@@ -148,7 +148,142 @@ export default function AdminPortal() {
   const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
   const [settingsSubTab, setSettingsSubTab] = useState("account");
   
+  // User management forms
+  const userEditForm = useForm<z.infer<typeof userEditSchema>>({
+    resolver: zodResolver(userEditSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      is_admin: false
+    }
+  });
+  
+  const createUserForm = useForm<z.infer<typeof createUserSchema>>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      is_admin: false
+    }
+  });
+  
+  // User management mutations
+  const { data: usersList = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['/api/users'],
+    enabled: settingsSubTab === "users"
+  });
+  
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to create user');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+      setNewUserDialogOpen(false);
+      createUserForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: z.infer<typeof userEditSchema> & { id: number }) => {
+      const { id, ...data } = userData;
+      // Don't send empty password
+      if (!data.password) {
+        delete data.password;
+      }
+      
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to update user');
+      }
+      
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+      setEditUserDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete user');
+      }
+      
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      setUserDeleteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Validation schemas for forms
+  const userEditSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().optional(),
+    is_admin: z.boolean().default(false)
+  });
+
+  const createUserSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    is_admin: z.boolean().default(false)
+  });
   const newUserSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters"),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -1938,7 +2073,7 @@ export default function AdminPortal() {
                                   className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                                   onClick={() => {
                                     setUserToDelete(userItem);
-                                    setDeleteUserDialogOpen(true);
+                                    setUserDeleteDialogOpen(true);
                                   }}
                                   disabled={userItem.id === user?.id} // Can't delete yourself
                                   title="Delete user"
@@ -2341,6 +2476,192 @@ export default function AdminPortal() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          {userToEdit && (
+            <Form {...userEditForm}>
+              <form onSubmit={userEditForm.handleSubmit(onSubmitUserEdit)} className="space-y-4">
+                <FormField
+                  control={userEditForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={userEditForm.control}
+                  name="is_admin"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Administrator</FormLabel>
+                        <FormDescription>
+                          Give this user admin privileges
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={userEditForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Leave blank to keep current password
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit" disabled={updateUserMutation.isPending}>
+                    {updateUserMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={userDeleteDialogOpen} onOpenChange={setUserDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user "{userToDelete?.username}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (userToDelete) {
+                  try {
+                    deleteUserMutation.mutate(userToDelete.id);
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: error instanceof Error ? error.message : "Failed to delete user",
+                      variant: "destructive"
+                    });
+                  }
+                }
+              }}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Create New User Dialog */}
+      <Dialog open={newUserDialogOpen} onOpenChange={setNewUserDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Add a new user account to the system.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...createUserForm}>
+            <form onSubmit={createUserForm.handleSubmit(onSubmitCreateUser)} className="space-y-4">
+              <FormField
+                control={createUserForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createUserForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createUserForm.control}
+                name="is_admin"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Administrator</FormLabel>
+                      <FormDescription>
+                        Grant admin privileges to this user
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={createUserMutation.isPending}>
+                  {createUserMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Create User
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
