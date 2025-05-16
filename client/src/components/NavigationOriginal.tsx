@@ -205,20 +205,7 @@ const Navigation = () => {
         </div>
       </header>
 
-      {/* Logout button below header */}
-      {user && (
-        <div className="w-full flex justify-end py-2 px-8 border-b">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleLogout}
-            className="text-destructive border-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Log out
-          </Button>
-        </div>
-      )}
+      {/* No logout button below header */}
 
       {/* Waitlist Dialog */}
       <WaitlistDialog 
