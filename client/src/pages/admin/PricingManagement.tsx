@@ -18,7 +18,7 @@ import { Pencil, Plus, CheckCircle, X, FileText, GripVertical, Trash2 } from "lu
 interface PricingPlan {
   id: number;
   name: string;
-  price: number;
+  price: number | string;
   description: string;
   billing_period: string;
   sort_order: number;
@@ -180,7 +180,7 @@ export default function PricingManagement() {
     setEditingPlan(plan);
     planForm.reset({
       name: plan.name,
-      price: plan.price,
+      price: typeof plan.price === 'string' ? parseFloat(plan.price) : plan.price,
       description: plan.description,
       billing_period: plan.billing_period,
       sort_order: plan.sort_order,
@@ -392,7 +392,13 @@ export default function PricingManagement() {
                     <FormItem>
                       <FormLabel>Price</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="149" />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          {...field} 
+                          placeholder="149.99" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
