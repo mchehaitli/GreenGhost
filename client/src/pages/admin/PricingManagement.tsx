@@ -77,7 +77,7 @@ export default function PricingManagement() {
   });
 
   const { data: content } = useQuery<PricingContent>({
-    queryKey: ["/api/pricing/content"],
+    queryKey: ["/api/admin/pricing/content"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
