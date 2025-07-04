@@ -206,6 +206,44 @@ export function registerPricingRoutes(app: Express) {
     }
   });
 
+  // Update all features for a plan
+  app.put("/api/admin/pricing/plans/:id/features", requireAuth, async (req, res) => {
+    try {
+      const planId = parseInt(req.params.id);
+      const { features } = req.body;
+      
+      // Delete existing features for this plan
+      await db.delete(planFeatures).where(eq(planFeatures.plan_id, planId));
+      
+      // Insert updated features
+      if (features && features.length > 0) {
+        const featuresToInsert = features.map((feature: any) => ({
+          plan_id: planId,
+          feature: feature.feature,
+          included: feature.included,
+          sort_order: feature.sort_order,
+        }));
+        
+        await db.insert(planFeatures).values(featuresToInsert);
+      }
+      
+      // Return updated plan with features
+      const updatedPlan = await db.query.plans.findFirst({
+        where: eq(plans.id, planId),
+        with: {
+          features: {
+            orderBy: [asc(planFeatures.sort_order)],
+          },
+        },
+      });
+      
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error("Error updating plan features:", error);
+      res.status(500).json({ error: "Failed to update plan features" });
+    }
+  });
+
   // Update pricing content
   app.post("/api/admin/pricing/content", requireAuth, async (req, res) => {
     try {

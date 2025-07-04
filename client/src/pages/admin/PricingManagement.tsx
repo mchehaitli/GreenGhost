@@ -13,7 +13,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getQueryFn } from "@/lib/queryClient";
-import { Pencil, Plus, CheckCircle, X, FileText } from "lucide-react";
+import { Pencil, Plus, CheckCircle, X, FileText, GripVertical, Trash2 } from "lucide-react";
 
 interface PricingPlan {
   id: number;
@@ -68,7 +68,9 @@ export default function PricingManagement() {
   // State management
   const [showPlanDialog, setShowPlanDialog] = useState(false);
   const [showContentDialog, setShowContentDialog] = useState(false);
+  const [showFeatureEditDialog, setShowFeatureEditDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [editingFeatures, setEditingFeatures] = useState<PlanFeature[]>([]);
 
   // Fetch plans and content
   const { data: plans = [], isLoading: plansLoading } = useQuery<PricingPlan[]>({
@@ -200,6 +202,82 @@ export default function PricingManagement() {
     }
   };
 
+  // Handle feature editing
+  const handleEditFeatures = (plan: PricingPlan) => {
+    setEditingPlan(plan);
+    setEditingFeatures([...plan.features].sort((a, b) => a.sort_order - b.sort_order));
+    setShowFeatureEditDialog(true);
+  };
+
+  // Update feature status
+  const updateFeatureStatus = (featureIndex: number, included: boolean) => {
+    const updatedFeatures = [...editingFeatures];
+    updatedFeatures[featureIndex].included = included;
+    setEditingFeatures(updatedFeatures);
+  };
+
+  // Move feature up/down
+  const moveFeature = (fromIndex: number, toIndex: number) => {
+    const updatedFeatures = [...editingFeatures];
+    const [movedFeature] = updatedFeatures.splice(fromIndex, 1);
+    updatedFeatures.splice(toIndex, 0, movedFeature);
+    
+    // Update sort orders
+    updatedFeatures.forEach((feature, index) => {
+      feature.sort_order = index;
+    });
+    
+    setEditingFeatures(updatedFeatures);
+  };
+
+  // Add new feature
+  const addNewFeature = () => {
+    const newFeature: PlanFeature = {
+      id: Date.now(), // Temporary ID for new features
+      feature: "",
+      included: true,
+      sort_order: editingFeatures.length,
+      plan_id: editingPlan?.id || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setEditingFeatures([...editingFeatures, newFeature]);
+  };
+
+  // Remove feature
+  const removeFeatureFromList = (featureIndex: number) => {
+    setEditingFeatures(editingFeatures.filter((_, index) => index !== featureIndex));
+  };
+
+  // Update feature text
+  const updateFeatureText = (featureIndex: number, text: string) => {
+    const updatedFeatures = [...editingFeatures];
+    updatedFeatures[featureIndex].feature = text;
+    setEditingFeatures(updatedFeatures);
+  };
+
+  // Save features mutation
+  const saveFeaturesMutation = useMutation({
+    mutationFn: async (features: PlanFeature[]) => {
+      if (!editingPlan) throw new Error("No plan selected");
+      
+      const response = await fetch(`/api/admin/pricing/plans/${editingPlan.id}/features`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features }),
+      });
+      if (!response.ok) throw new Error("Failed to save features");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pricing/plans"] });
+      setShowFeatureEditDialog(false);
+      setEditingFeatures([]);
+      setEditingPlan(null);
+      toast({ title: "Success", description: "Features updated successfully" });
+    },
+  });
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -240,7 +318,17 @@ export default function PricingManagement() {
                       <p className="text-2xl font-bold">${plan.price}/{plan.billing_period}</p>
                       <p className="text-muted-foreground mb-2">{plan.description}</p>
                       <div className="mt-3">
-                        <p className="text-sm font-medium mb-1">Features:</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium">Features:</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditFeatures(plan)}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit Features
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-2 gap-1 text-sm">
                           {plan.features.map((feature) => (
                             <div key={feature.id} className={`flex items-center gap-1 ${feature.included ? 'text-green-600' : 'text-red-500'}`}>
@@ -461,6 +549,102 @@ export default function PricingManagement() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feature Editing Dialog */}
+      <Dialog open={showFeatureEditDialog} onOpenChange={setShowFeatureEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Features for {editingPlan?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {editingFeatures.map((feature, index) => (
+              <div key={feature.id} className="flex items-center gap-2 p-2 border rounded">
+                <div className="cursor-move">
+                  <GripVertical className="w-4 h-4 text-gray-400" />
+                </div>
+                
+                <div className="flex-1">
+                  <Input
+                    value={feature.feature}
+                    onChange={(e) => updateFeatureText(index, e.target.value)}
+                    placeholder="Feature description"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={feature.included ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateFeatureStatus(index, !feature.included)}
+                  >
+                    {feature.included ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Included
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-3 h-3 mr-1" />
+                        Excluded
+                      </>
+                    )}
+                  </Button>
+                  
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => moveFeature(index, Math.max(0, index - 1))}
+                      disabled={index === 0}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => moveFeature(index, Math.min(editingFeatures.length - 1, index + 1))}
+                      disabled={index === editingFeatures.length - 1}
+                    >
+                      ↓
+                    </Button>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeFeatureFromList(index)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={addNewFeature}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Feature
+            </Button>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowFeatureEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => saveFeaturesMutation.mutate(editingFeatures)}
+                disabled={saveFeaturesMutation.isPending}
+              >
+                Save Features
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
