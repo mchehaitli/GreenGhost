@@ -50,7 +50,7 @@ const Footer = () => {
                   <SiX size={20} />
                 </a>
                 <a 
-                  href="https://www.facebook.com/greenghost.io" 
+                  href="https://www.facebook.com/greenghostio" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 
