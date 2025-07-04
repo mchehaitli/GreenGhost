@@ -5,6 +5,7 @@ import { CheckCircle2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { getQueryFn } from "@/lib/queryClient";
 
 interface PlanFeature {
   id: number;
@@ -36,10 +37,12 @@ interface PricingContent {
 const Pricing = () => {
   const { data: plans, isLoading: plansLoading } = useQuery<PricingPlan[]>({
     queryKey: ["/api/pricing/plans"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const { data: content, isLoading: contentLoading } = useQuery<PricingContent>({
     queryKey: ["/api/pricing/content"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   if (plansLoading || contentLoading) {
