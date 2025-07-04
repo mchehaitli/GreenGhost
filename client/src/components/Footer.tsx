@@ -1,7 +1,8 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import WaitlistDialog from "./WaitlistDialog";
-import { Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
+import { Instagram, Facebook, Linkedin } from "lucide-react";
+import { SiX } from "react-icons/si";
 
 const Footer = () => {
   const [showWaitlist, setShowWaitlist] = useState(false);
@@ -30,16 +31,40 @@ const Footer = () => {
 
               {/* Social Media Icons - Aligned with the G in GreenGhost */}
               <div className="flex space-x-5 mt-5 ml-1.5">
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Instagram">
+                <a 
+                  href="https://www.instagram.com/greenghosttech" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors duration-300" 
+                  aria-label="Follow us on Instagram"
+                >
                   <Instagram size={20} />
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Twitter">
-                  <Twitter size={20} />
+                <a 
+                  href="https://x.com/greenghosttech" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors duration-300" 
+                  aria-label="Follow us on X"
+                >
+                  <SiX size={20} />
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="Facebook">
+                <a 
+                  href="https://www.facebook.com/greenghosttech" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors duration-300" 
+                  aria-label="Follow us on Facebook"
+                >
                   <Facebook size={20} />
                 </a>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-300" aria-label="LinkedIn">
+                <a 
+                  href="https://www.linkedin.com/company/greenghosttech" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors duration-300" 
+                  aria-label="Connect with us on LinkedIn"
+                >
                   <Linkedin size={20} />
                 </a>
               </div>
