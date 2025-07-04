@@ -17,7 +17,7 @@ const Hero = () => {
             Ready for the Best Lawn on the Block?
           </p>
           <p className="mt-4 text-sm text-muted-foreground sm:text-base max-w-2xl mx-auto italic">
-            Starting Summer 2025: Testing our innovative systems in North Dallas, with planned expansion throughout Texas and beyond.
+            Starting Fall 2025: Testing our innovative systems in North Dallas, with planned expansion throughout Texas and beyond.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg" variant="outline" className="text-lg">

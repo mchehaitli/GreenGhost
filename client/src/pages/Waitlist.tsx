@@ -142,7 +142,6 @@ const Waitlist = () => {
   if (step === 'welcome') {
     return (
       <WelcomeAnimation 
-        email={pendingEmail}
         onComplete={() => {
           resetForms();
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -328,7 +327,7 @@ const Waitlist = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  Summer 2025 Launch
+                  Fall 2025 Launch
                 </CardTitle>
               </CardHeader>
               <CardContent>
