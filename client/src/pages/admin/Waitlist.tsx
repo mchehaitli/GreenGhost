@@ -10,7 +10,7 @@ import { Redirect } from "wouter";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
@@ -433,6 +433,9 @@ const EmailTemplateTab = () => {
             <DialogTitle>
               {selectedTemplate ? "Edit Template" : "Create Template"}
             </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate ? "Edit your email template configuration" : "Create a new custom email template"}
+            </DialogDescription>
           </DialogHeader>
           <Form {...templateForm}>
             <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4">
@@ -852,6 +855,9 @@ const WaitlistPage = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Waitlist Entry</DialogTitle>
+            <DialogDescription>
+              Update the customer's waitlist information
+            </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
             <form

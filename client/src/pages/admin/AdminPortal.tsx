@@ -32,7 +32,10 @@ import {
   Mail,
   CheckCircle,
   Users,
-  Plus
+  Plus,
+  DollarSign,
+  Pencil,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -578,6 +581,596 @@ function UserManagementPanel({ currentUser }: UserManagementPanelProps) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+// Pricing Management Component
+interface PricingPlan {
+  id: number;
+  name: string;
+  price: string;
+  description: string;
+  max_square_footage: number | null;
+  popular: boolean;
+  active: boolean;
+  display_order: number;
+  features: PlanFeature[];
+}
+
+interface PlanFeature {
+  id: number;
+  feature_text: string;
+  included: boolean;
+  display_order: number;
+}
+
+interface PricingContent {
+  page_title: string;
+  page_subtitle: string;
+}
+
+function PricingManagement() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // State for pricing plans and content
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [showDeletePlanDialog, setShowDeletePlanDialog] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<PricingPlan | null>(null);
+  const [showContentDialog, setShowContentDialog] = useState(false);
+
+  // Fetch pricing plans (admin route)
+  const { data: plans, isLoading: plansLoading } = useQuery<PricingPlan[]>({
+    queryKey: ["/api/admin/pricing/plans"],
+  });
+
+  // Fetch pricing content
+  const { data: content } = useQuery<PricingContent>({
+    queryKey: ["/api/pricing/content"],
+  });
+
+  // Plan form schema
+  const planFormSchema = z.object({
+    name: z.string().min(1, "Plan name is required"),
+    price: z.coerce.number().min(0, "Price must be positive"),
+    description: z.string().min(1, "Description is required"),
+    max_square_footage: z.coerce.number().min(0).optional(),
+    popular: z.boolean().default(false),
+    active: z.boolean().default(true),
+    display_order: z.coerce.number().default(0),
+    features: z.array(z.object({
+      feature_text: z.string().min(1, "Feature text is required"),
+      included: z.boolean().default(true),
+      display_order: z.coerce.number().default(0),
+    })).default([]),
+  });
+
+  type PlanFormData = z.infer<typeof planFormSchema>;
+
+  const planForm = useForm<PlanFormData>({
+    resolver: zodResolver(planFormSchema),
+    defaultValues: {
+      name: "",
+      price: 0,
+      description: "",
+      max_square_footage: undefined,
+      popular: false,
+      active: true,
+      display_order: 0,
+      features: [],
+    },
+  });
+
+  // Content form schema
+  const contentFormSchema = z.object({
+    page_title: z.string().min(1, "Page title is required"),
+    page_subtitle: z.string().min(1, "Page subtitle is required"),
+  });
+
+  type ContentFormData = z.infer<typeof contentFormSchema>;
+
+  const contentForm = useForm<ContentFormData>({
+    resolver: zodResolver(contentFormSchema),
+    defaultValues: {
+      page_title: content?.page_title || "Simple, Transparent Pricing",
+      page_subtitle: content?.page_subtitle || "Choose the perfect plan for your lawn. All plans include our innovative service approach and dedicated support team.",
+    },
+  });
+
+  // Update content form when data loads
+  useEffect(() => {
+    if (content) {
+      contentForm.reset({
+        page_title: content.page_title,
+        page_subtitle: content.page_subtitle,
+      });
+    }
+  }, [content, contentForm]);
+
+  // Plan mutations
+  const createPlanMutation = useMutation({
+    mutationFn: async (data: PlanFormData) => {
+      const response = await fetch("/api/admin/pricing/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create plan");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pricing/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pricing/plans"] });
+      setShowPlanDialog(false);
+      planForm.reset();
+      toast({ title: "Success", description: "Plan created successfully" });
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: async (data: PlanFormData) => {
+      const response = await fetch(`/api/admin/pricing/plans/${editingPlan?.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update plan");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pricing/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pricing/plans"] });
+      setShowPlanDialog(false);
+      setEditingPlan(null);
+      planForm.reset();
+      toast({ title: "Success", description: "Plan updated successfully" });
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (planId: number) => {
+      const response = await fetch(`/api/admin/pricing/plans/${planId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete plan");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pricing/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pricing/plans"] });
+      setShowDeletePlanDialog(false);
+      setPlanToDelete(null);
+      toast({ title: "Success", description: "Plan deleted successfully" });
+    },
+  });
+
+  const updateContentMutation = useMutation({
+    mutationFn: async (data: ContentFormData) => {
+      const response = await fetch("/api/admin/pricing/content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update content");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pricing/content"] });
+      setShowContentDialog(false);
+      toast({ title: "Success", description: "Page content updated successfully" });
+    },
+  });
+
+  // Feature management
+  const addFeature = () => {
+    const currentFeatures = planForm.getValues("features");
+    planForm.setValue("features", [
+      ...currentFeatures,
+      { feature_text: "", included: true, display_order: currentFeatures.length },
+    ]);
+  };
+
+  const removeFeature = (index: number) => {
+    const currentFeatures = planForm.getValues("features");
+    planForm.setValue("features", currentFeatures.filter((_, i) => i !== index));
+  };
+
+  // Handle plan edit
+  const handleEditPlan = (plan: PricingPlan) => {
+    setEditingPlan(plan);
+    planForm.reset({
+      name: plan.name,
+      price: parseFloat(plan.price),
+      description: plan.description,
+      max_square_footage: plan.max_square_footage || undefined,
+      popular: plan.popular,
+      active: plan.active,
+      display_order: plan.display_order,
+      features: plan.features.map(f => ({
+        feature_text: f.feature_text,
+        included: f.included,
+        display_order: f.display_order,
+      })),
+    });
+    setShowPlanDialog(true);
+  };
+
+  // Handle plan submission
+  const handlePlanSubmit = (data: PlanFormData) => {
+    if (editingPlan) {
+      updatePlanMutation.mutate(data);
+    } else {
+      createPlanMutation.mutate(data);
+    }
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Pricing Management</h2>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowContentDialog(true)} variant="outline">
+              <FileText className="w-4 h-4 mr-2" />
+              Edit Page Content
+            </Button>
+            <Button onClick={() => setShowPlanDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Plan
+            </Button>
+          </div>
+        </div>
+
+        {/* Plans List */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Pricing Plans</h3>
+          {plansLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <div className="grid gap-4">
+              {plans?.map((plan) => (
+                <Card key={plan.id} className={`p-4 ${plan.popular ? 'border-primary' : ''}`}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-lg font-semibold">{plan.name}</h4>
+                        {plan.popular && (
+                          <Badge variant="default">Popular</Badge>
+                        )}
+                        {!plan.active && (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                      </div>
+                      <p className="text-2xl font-bold">${plan.price}/month</p>
+                      <p className="text-muted-foreground mb-2">{plan.description}</p>
+                      {plan.max_square_footage && (
+                        <p className="text-sm text-muted-foreground">
+                          Max square footage: {plan.max_square_footage.toLocaleString()} sq ft
+                        </p>
+                      )}
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-1">Features:</p>
+                        <div className="grid grid-cols-2 gap-1 text-sm">
+                          {plan.features.map((feature) => (
+                            <div key={feature.id} className={`flex items-center gap-1 ${feature.included ? 'text-green-600' : 'text-red-500'}`}>
+                              {feature.included ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              {feature.feature_text}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditPlan(plan)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setPlanToDelete(plan);
+                          setShowDeletePlanDialog(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPlan ? "Edit Plan" : "Create New Plan"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingPlan ? "Update the pricing plan details" : "Create a new pricing plan with features"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...planForm}>
+            <form onSubmit={planForm.handleSubmit(handlePlanSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={planForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Essential Care" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={planForm.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price ($)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" placeholder="149.00" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={planForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Perfect for standard residential lawns..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={planForm.control}
+                  name="max_square_footage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Square Footage</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" placeholder="5000" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={planForm.control}
+                  name="display_order"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Order</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" placeholder="0" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-4">
+                  <FormField
+                    control={planForm.control}
+                    name="popular"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Popular Plan</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={planForm.control}
+                    name="active"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Active</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Features Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-lg font-medium">Features</Label>
+                  <Button type="button" onClick={addFeature} size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Feature
+                  </Button>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {planForm.watch("features").map((_, index) => (
+                    <div key={index} className="flex gap-2 items-end">
+                      <FormField
+                        control={planForm.control}
+                        name={`features.${index}.feature_text`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <Input {...field} placeholder="Feature description" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={planForm.control}
+                        name={`features.${index}.included`}
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <Label className="text-sm">Included</Label>
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPlanDialog(false);
+                    setEditingPlan(null);
+                    planForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
+                >
+                  {createPlanMutation.isPending || updatePlanMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  {editingPlan ? "Update Plan" : "Create Plan"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Plan Dialog */}
+      <AlertDialog open={showDeletePlanDialog} onOpenChange={setShowDeletePlanDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{planToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => planToDelete && deletePlanMutation.mutate(planToDelete.id)}
+              disabled={deletePlanMutation.isPending}
+            >
+              {deletePlanMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Content Dialog */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Page Content</DialogTitle>
+            <DialogDescription>
+              Update the pricing page header content
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...contentForm}>
+            <form onSubmit={contentForm.handleSubmit((data) => updateContentMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={contentForm.control}
+                name="page_title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Page Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Simple, Transparent Pricing" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={contentForm.control}
+                name="page_subtitle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Page Subtitle</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} placeholder="Choose the perfect plan for your lawn..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowContentDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateContentMutation.isPending}>
+                  {updateContentMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  Update Content
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 
@@ -1325,6 +1918,10 @@ export default function AdminPortal() {
           <TabsTrigger value="email-history">
             <Mail className="w-4 h-4 mr-2"/>
             Email History
+          </TabsTrigger>
+          <TabsTrigger value="pricing">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Pricing
           </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="w-4 h-4 mr-2" />
@@ -2159,6 +2756,10 @@ export default function AdminPortal() {
 
             </Tabs>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="pricing">
+          <PricingManagement />
         </TabsContent>
 
         <TabsContent value="settings">

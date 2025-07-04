@@ -1,0 +1,123 @@
+# GreenGhost Tech - Automated Lawn Care Platform
+
+## Overview
+
+GreenGhost Tech is a full-stack web application for an automated lawn care service company. The platform features a modern React frontend with TypeScript, a Node.js Express backend, and PostgreSQL database integration. The application includes user authentication, a waitlist system with email verification, admin management tools, and comprehensive service presentation.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite for fast development and optimized builds
+- **Styling**: Tailwind CSS with shadcn/ui component system
+- **State Management**: TanStack React Query for server state management
+- **Routing**: Wouter for lightweight client-side routing
+- **Animations**: Framer Motion for smooth UI transitions
+- **Form Handling**: React Hook Form with Zod validation
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Express sessions with Passport.js (Local Strategy)
+- **Email Service**: Nodemailer with Gmail integration
+- **Security**: CORS enabled, bcrypt for password hashing, session management
+
+### Database Schema
+- **Users**: Admin user management with role-based access
+- **Waitlist**: Email collection with verification system
+- **Verification Tokens**: Time-limited email verification codes
+- **Email Templates**: Customizable email template system
+- **Email Segments**: User segmentation for targeted campaigns
+
+## Key Components
+
+### Authentication System
+- Session-based authentication using Express sessions
+- Password hashing with scrypt algorithm
+- Protected routes with middleware authentication
+- Admin-only access controls for management features
+
+### Waitlist Management
+- Two-step email verification process (email → verification code → confirmation)
+- Automatic cleanup of expired verification tokens
+- Admin dashboard for managing waitlist entries
+- Analytics and reporting features
+
+### Email System
+- Template-based email system with HTML/text versions
+- Verification email with 90-second expiration
+- Welcome email upon successful verification
+- Bulk email capabilities for marketing campaigns
+- Template customization with visual editor
+
+### Service Presentation
+- Responsive landing page with hero section
+- Service catalog with detailed descriptions
+- Pricing calculator with customizable options
+- Quote request system
+- Blog functionality for content marketing
+
+## Data Flow
+
+1. **User Registration Flow**:
+   - User submits email and ZIP code
+   - System generates verification token
+   - Email sent with verification code
+   - User enters code to complete registration
+   - Welcome email sent upon successful verification
+
+2. **Authentication Flow**:
+   - Login form submission
+   - Credential validation against database
+   - Session creation and cookie management
+   - Protected route access control
+
+3. **Admin Management Flow**:
+   - Admin login through protected route
+   - Access to waitlist management dashboard
+   - Email template editing and customization
+   - Analytics and reporting tools
+
+## External Dependencies
+
+### Email Service
+- **Provider**: Gmail SMTP
+- **Configuration**: Environment variables for credentials
+- **Features**: HTML templates, verification codes, bulk sending
+
+### Database
+- **Provider**: Neon (PostgreSQL)
+- **ORM**: Drizzle with TypeScript support
+- **Migrations**: Automated schema management
+
+### Frontend Libraries
+- **UI Components**: Radix UI primitives with shadcn/ui
+- **Icons**: Lucide React icon library
+- **Charts**: Recharts for analytics visualization
+- **Utilities**: Class variance authority, clsx for styling
+
+## Deployment Strategy
+
+### Build Process
+- Frontend: Vite build with asset optimization
+- Backend: esbuild bundling for Node.js deployment
+- Database: Drizzle migrations for schema management
+
+### Environment Configuration
+- Production-ready with environment variable management
+- CORS configuration for cross-origin requests
+- Session security with proxy trust settings
+
+### Static Assets
+- Public directory for static files
+- Screenshot generation for documentation
+- Theme customization support
+
+## Changelog
+
+Changelog:
+- July 04, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.

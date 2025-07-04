@@ -3,62 +3,59 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-const plans = [
-  {
-    name: "Essential Care",
-    price: 149,
-    description: "Perfect for standard residential lawns up to 5,000 sq ft",
-    features: [
-      "Monthly lawn maintenance",
-      "Standard mowing and edging",
-      "Basic fertilization",
-      "Seasonal cleanup",
-      "Email support",
-    ],
-    nonFeatures: [
-      "Priority scheduling",
-      "Custom care plan",
-      "Advanced lawn treatments",
-    ],
-    popular: false,
-  },
-  {
-    name: "Premium Care",
-    price: 249,
-    description: "Ideal for larger properties up to 10,000 sq ft",
-    features: [
-      "Bi-weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Seasonal cleanup and preparation",
-      "Priority scheduling",
-      "Custom care plan",
-      "24/7 support",
-    ],
-    nonFeatures: [],
-    popular: true,
-  },
-  {
-    name: "Estate Care",
-    price: 399,
-    description: "Comprehensive care for luxury estates over 10,000 sq ft",
-    features: [
-      "Bi-weekly lawn maintenance",
-      "Premium mowing and edging",
-      "Advanced fertilization program",
-      "Full-service lawn treatments",
-      "Priority scheduling",
-      "Customized care plan",
-      "24/7 dedicated support",
-      "Landscape consultation",
-    ],
-    nonFeatures: [],
-    popular: false,
-  },
-];
+interface PlanFeature {
+  id: number;
+  feature: string;
+  included: boolean;
+  sort_order: number;
+  plan_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface PricingPlan {
+  id: number;
+  name: string;
+  price: string;
+  description: string;
+  billing_period: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  features: PlanFeature[];
+}
+
+interface PricingContent {
+  page_title: string;
+  page_subtitle: string;
+}
 
 const Pricing = () => {
+  const { data: plans, isLoading: plansLoading } = useQuery<PricingPlan[]>({
+    queryKey: ["/api/pricing/plans"],
+  });
+
+  const { data: content, isLoading: contentLoading } = useQuery<PricingContent>({
+    queryKey: ["/api/pricing/content"],
+  });
+
+  if (plansLoading || contentLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const includedFeatures = (features: PlanFeature[]) => 
+    features.filter(f => f.included).sort((a, b) => a.sort_order - b.sort_order);
+  
+  const excludedFeatures = (features: PlanFeature[]) => 
+    features.filter(f => !f.included).sort((a, b) => a.sort_order - b.sort_order);
+
   return (
     <div className="min-h-screen bg-background">
       <section className="py-20">
@@ -70,7 +67,7 @@ const Pricing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              Simple, Transparent Pricing
+              {content?.page_title || "Simple, Transparent Pricing"}
             </motion.h1>
             <motion.p
               className="text-xl text-muted-foreground"
@@ -78,21 +75,20 @@ const Pricing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Choose the perfect plan for your lawn. All plans include our innovative service approach
-              and dedicated support team.
+              {content?.page_subtitle || "Choose the perfect plan for your lawn. All plans include our innovative service approach and dedicated support team."}
             </motion.p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {plans.map((plan, index) => (
+            {plans?.map((plan: PricingPlan, index: number) => (
               <motion.div
-                key={plan.name}
+                key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Card className={`relative h-full flex flex-col ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
-                  {plan.popular && (
+                <Card className={`relative h-full flex flex-col ${index === 1 ? 'border-primary shadow-lg' : ''}`}>
+                  {index === 1 && (
                     <div className="absolute -top-4 left-0 right-0 flex justify-center">
                       <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
                         Most Popular
@@ -111,23 +107,23 @@ const Pricing = () => {
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col">
                     <ul className="space-y-3 mb-8 flex-1">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
+                      {includedFeatures(plan.features).map((feature: PlanFeature) => (
+                        <li key={feature.id} className="flex items-start gap-2">
                           <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
+                          <span>{feature.feature}</span>
                         </li>
                       ))}
-                      {plan.nonFeatures.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-muted-foreground">
+                      {excludedFeatures(plan.features).map((feature: PlanFeature) => (
+                        <li key={feature.id} className="flex items-start gap-2 text-muted-foreground">
                           <X className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
+                          <span>{feature.feature}</span>
                         </li>
                       ))}
                     </ul>
                     <Button
                       asChild
                       className="w-full mt-auto"
-                      variant={plan.popular ? "default" : "outline"}
+                      variant={index === 1 ? "default" : "outline"}
                     >
                       <Link href="/waitlist">
                         Join Waitlist

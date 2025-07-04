@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "./ui/form";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -144,6 +144,9 @@ const WaitlistDialog = ({ open, onOpenChange, isDemo = false }: WaitlistDialogPr
       <Dialog open={open} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Schedule a Demo</DialogTitle>
+          <DialogDescription>
+            Demo scheduling is coming soon. Join our waitlist to be notified when it becomes available.
+          </DialogDescription>
           <div className="space-y-4">
             <div className="flex items-center justify-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -207,6 +210,12 @@ const WaitlistDialog = ({ open, onOpenChange, isDemo = false }: WaitlistDialogPr
         <DialogTitle>
           {step === 'initial' ? "Join Our Waitlist" : "Enter Verification Code"}
         </DialogTitle>
+        <DialogDescription>
+          {step === 'initial' 
+            ? "Get early access to our innovative lawn care services. We'll notify you when we launch in your area."
+            : "Please enter the verification code sent to your email address."
+          }
+        </DialogDescription>
 
         {step === 'initial' ? (
           <Form {...initialForm}>

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import waitlistRoutes from './routes/waitlist';
 import emailTemplateRoutes from './routes/email-templates';
 import userRoutes from './routes/users';
+import { registerPricingRoutes } from './routes/pricing';
 import emailService from './services/email';
 import { resetAdminPassword } from './auth';
 
@@ -18,6 +19,9 @@ export function registerRoutes(app: Express): Server {
   
   // Register user management routes
   app.use(userRoutes);
+  
+  // Register pricing routes
+  registerPricingRoutes(app);
 
   // Add email preview routes
   app.post('/api/email/preview/:type', async (req, res) => {
