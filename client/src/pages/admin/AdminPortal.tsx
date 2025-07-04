@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
+import { getQueryFn } from '@/lib/queryClient';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -590,18 +591,21 @@ interface PricingPlan {
   name: string;
   price: string;
   description: string;
-  max_square_footage: number | null;
-  popular: boolean;
-  active: boolean;
-  display_order: number;
+  billing_period: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
   features: PlanFeature[];
 }
 
 interface PlanFeature {
   id: number;
-  feature_text: string;
+  feature: string;
   included: boolean;
-  display_order: number;
+  sort_order: number;
+  plan_id: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface PricingContent {
@@ -623,11 +627,13 @@ function PricingManagement() {
   // Fetch pricing plans (admin route)
   const { data: plans, isLoading: plansLoading } = useQuery<PricingPlan[]>({
     queryKey: ["/api/admin/pricing/plans"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Fetch pricing content
   const { data: content } = useQuery<PricingContent>({
     queryKey: ["/api/pricing/content"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Plan form schema
@@ -635,14 +641,12 @@ function PricingManagement() {
     name: z.string().min(1, "Plan name is required"),
     price: z.coerce.number().min(0, "Price must be positive"),
     description: z.string().min(1, "Description is required"),
-    max_square_footage: z.coerce.number().min(0).optional(),
-    popular: z.boolean().default(false),
-    active: z.boolean().default(true),
-    display_order: z.coerce.number().default(0),
+    billing_period: z.string().default("month"),
+    sort_order: z.coerce.number().default(0),
     features: z.array(z.object({
-      feature_text: z.string().min(1, "Feature text is required"),
+      feature: z.string().min(1, "Feature text is required"),
       included: z.boolean().default(true),
-      display_order: z.coerce.number().default(0),
+      sort_order: z.coerce.number().default(0),
     })).default([]),
   });
 
@@ -654,10 +658,8 @@ function PricingManagement() {
       name: "",
       price: 0,
       description: "",
-      max_square_footage: undefined,
-      popular: false,
-      active: true,
-      display_order: 0,
+      billing_period: "month",
+      sort_order: 0,
       features: [],
     },
   });
@@ -815,10 +817,7 @@ function PricingManagement() {
               <FileText className="w-4 h-4 mr-2" />
               Edit Page Content
             </Button>
-            <Button onClick={() => setShowPlanDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Plan
-            </Button>
+            {/* Add Plan functionality temporarily disabled for database schema compatibility */}
           </div>
         </div>
 
@@ -829,56 +828,35 @@ function PricingManagement() {
             <LoadingSpinner />
           ) : (
             <div className="grid gap-4">
-              {plans?.map((plan) => (
-                <Card key={plan.id} className={`p-4 ${plan.popular ? 'border-primary' : ''}`}>
+              {plans?.map((plan, index) => (
+                <Card key={plan.id} className={`p-4 ${index === 1 ? 'border-primary' : ''}`}>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="text-lg font-semibold">{plan.name}</h4>
-                        {plan.popular && (
+                        {index === 1 && (
                           <Badge variant="default">Popular</Badge>
                         )}
-                        {!plan.active && (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
                       </div>
-                      <p className="text-2xl font-bold">${plan.price}/month</p>
+                      <p className="text-2xl font-bold">${plan.price}/{plan.billing_period}</p>
                       <p className="text-muted-foreground mb-2">{plan.description}</p>
-                      {plan.max_square_footage && (
-                        <p className="text-sm text-muted-foreground">
-                          Max square footage: {plan.max_square_footage.toLocaleString()} sq ft
-                        </p>
-                      )}
                       <div className="mt-3">
                         <p className="text-sm font-medium mb-1">Features:</p>
                         <div className="grid grid-cols-2 gap-1 text-sm">
                           {plan.features.map((feature) => (
                             <div key={feature.id} className={`flex items-center gap-1 ${feature.included ? 'text-green-600' : 'text-red-500'}`}>
                               {feature.included ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                              {feature.feature_text}
+                              {feature.feature}
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditPlan(plan)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setPlanToDelete(plan);
-                          setShowDeletePlanDialog(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* Edit functionality temporarily disabled for database schema compatibility */}
+                      <Badge variant="outline" className="text-xs">
+                        Sort Order: {plan.sort_order}
+                      </Badge>
                     </div>
                   </div>
                 </Card>
