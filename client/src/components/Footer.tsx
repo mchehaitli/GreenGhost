@@ -41,7 +41,7 @@ const Footer = () => {
                   <Instagram size={20} />
                 </a>
                 <a 
-                  href="https://x.com/greenghost.io" 
+                  href="https://x.com/greenghost_io" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 
@@ -50,7 +50,7 @@ const Footer = () => {
                   <SiX size={20} />
                 </a>
                 <a 
-                  href="https://www.facebook.com/greenghost_io" 
+                  href="https://www.facebook.com/greenghost.io" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 
