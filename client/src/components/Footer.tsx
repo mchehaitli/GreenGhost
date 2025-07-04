@@ -32,7 +32,7 @@ const Footer = () => {
               {/* Social Media Icons - Aligned with the G in GreenGhost */}
               <div className="flex space-x-5 mt-5 ml-1.5">
                 <a 
-                  href="https://www.instagram.com/greenghosttech" 
+                  href="https://www.instagram.com/greenghost.io" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 
@@ -41,7 +41,7 @@ const Footer = () => {
                   <Instagram size={20} />
                 </a>
                 <a 
-                  href="https://x.com/greenghosttech" 
+                  href="https://x.com/greenghost.io" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 
@@ -50,7 +50,7 @@ const Footer = () => {
                   <SiX size={20} />
                 </a>
                 <a 
-                  href="https://www.facebook.com/greenghosttech" 
+                  href="https://www.facebook.com/greenghost_io" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors duration-300" 

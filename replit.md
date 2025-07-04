@@ -115,8 +115,11 @@ GreenGhost Tech is a full-stack web application for an automated lawn care servi
 
 ## Changelog
 
-Changelog:
-- July 04, 2025. Initial setup
+Recent Changes:
+- July 04, 2025: Enhanced pricing management with decimal support and comprehensive feature editing
+- July 04, 2025: Updated footer social media links with correct greenghost.io URLs
+- July 04, 2025: Replaced Twitter icon with X logo using react-icons
+- July 04, 2025: Initial setup
 
 ## User Preferences
 
