@@ -561,35 +561,8 @@ export default function PricingManagement() {
           
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {editingFeatures.map((feature, index) => (
-              <div 
-                key={feature.id} 
-                className="flex items-center gap-2 p-2 border rounded bg-white hover:bg-gray-50"
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", index.toString());
-                  e.currentTarget.classList.add("opacity-50");
-                }}
-                onDragEnd={(e) => {
-                  e.currentTarget.classList.remove("opacity-50");
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.add("border-blue-300", "bg-blue-50");
-                }}
-                onDragLeave={(e) => {
-                  e.currentTarget.classList.remove("border-blue-300", "bg-blue-50");
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove("border-blue-300", "bg-blue-50");
-                  const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
-                  const toIndex = index;
-                  if (fromIndex !== toIndex) {
-                    moveFeature(fromIndex, toIndex);
-                  }
-                }}
-              >
-                <div className="cursor-move" title="Drag to reorder">
+              <div key={feature.id} className="flex items-center gap-2 p-2 border rounded">
+                <div className="cursor-move">
                   <GripVertical className="w-4 h-4 text-gray-400" />
                 </div>
                 
@@ -606,7 +579,6 @@ export default function PricingManagement() {
                     variant={feature.included ? "default" : "outline"}
                     size="sm"
                     onClick={() => updateFeatureStatus(index, !feature.included)}
-                    title={feature.included ? "Click to exclude" : "Click to include"}
                   >
                     {feature.included ? (
                       <>
@@ -627,7 +599,6 @@ export default function PricingManagement() {
                       size="sm"
                       onClick={() => moveFeature(index, Math.max(0, index - 1))}
                       disabled={index === 0}
-                      title="Move up"
                     >
                       ↑
                     </Button>
@@ -636,7 +607,6 @@ export default function PricingManagement() {
                       size="sm"
                       onClick={() => moveFeature(index, Math.min(editingFeatures.length - 1, index + 1))}
                       disabled={index === editingFeatures.length - 1}
-                      title="Move down"
                     >
                       ↓
                     </Button>
@@ -646,7 +616,6 @@ export default function PricingManagement() {
                     variant="outline"
                     size="sm"
                     onClick={() => removeFeatureFromList(index)}
-                    title="Remove feature"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
