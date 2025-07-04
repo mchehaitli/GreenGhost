@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import WaitlistDialog from "./WaitlistDialog";
-import { Instagram, Facebook, Linkedin } from "lucide-react";
+import { Instagram, Facebook } from "lucide-react";
 import { SiX } from "react-icons/si";
 
 const Footer = () => {
@@ -57,15 +57,6 @@ const Footer = () => {
                   aria-label="Follow us on Facebook"
                 >
                   <Facebook size={20} />
-                </a>
-                <a 
-                  href="https://www.linkedin.com/company/greenghosttech" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors duration-300" 
-                  aria-label="Connect with us on LinkedIn"
-                >
-                  <Linkedin size={20} />
                 </a>
               </div>
             </div>
