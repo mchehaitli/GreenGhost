@@ -102,9 +102,12 @@ export function registerPricingRoutes(app: Express) {
   app.put("/api/admin/pricing/plans/:id", requireAuth, async (req, res) => {
     try {
       const planId = parseInt(req.params.id);
+      const { features, ...planData } = req.body;
+      
+      // Update plan
       const [plan] = await db
         .update(plans)
-        .set(req.body)
+        .set(planData)
         .where(eq(plans.id, planId))
         .returning();
       
@@ -112,7 +115,35 @@ export function registerPricingRoutes(app: Express) {
         return res.status(404).json({ error: "Plan not found" });
       }
       
-      res.json(plan);
+      // Update features if provided
+      if (features && Array.isArray(features)) {
+        // Delete existing features
+        await db.delete(planFeatures).where(eq(planFeatures.plan_id, planId));
+        
+        // Insert new features
+        if (features.length > 0) {
+          await db.insert(planFeatures).values(
+            features.map((feature: any) => ({
+              plan_id: planId,
+              feature: feature.feature,
+              included: feature.included,
+              sort_order: feature.sort_order || 0,
+            }))
+          );
+        }
+      }
+      
+      // Return updated plan with features
+      const updatedPlan = await db.query.plans.findFirst({
+        where: eq(plans.id, planId),
+        with: {
+          features: {
+            orderBy: [asc(planFeatures.sort_order)],
+          },
+        },
+      });
+      
+      res.json(updatedPlan);
     } catch (error) {
       console.error("Error updating pricing plan:", error);
       res.status(500).json({ error: "Failed to update pricing plan" });
