@@ -1,0 +1,87 @@
+2025-07-05T08:22:42.990697837Z ==> Cloning from https://github.com/mchehaitli/GreenGhost
+2025-07-05T08:22:43.809802697Z ==> Checking out commit ada91dee59223ebd637e8d8037c4bc3b6901d283 in branch main
+2025-07-05T08:22:46.024121034Z ==> Requesting Node.js version 18
+2025-07-05T08:22:46.267279981Z ==> Using Node.js version 18.20.8 via environment variable NODE_VERSION
+2025-07-05T08:22:46.292223978Z ==> Node.js version 18.20.8 has reached end-of-life.
+2025-07-05T08:22:46.292239478Z ==> Upgrade to a maintained version to receive important security updates.
+2025-07-05T08:22:46.292252618Z ==> Information on maintained Node.js versions: https://nodejs.org/en/about/previous-releases
+2025-07-05T08:22:46.29233388Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2025-07-05T08:22:47.931307027Z ==> Using Bun version 1.1.0 (default)
+2025-07-05T08:22:47.931324957Z ==> Docs on specifying a Bun version: https://render.com/docs/bun-version
+2025-07-05T08:22:48.013251353Z ==> Running build command 'npm ci && npm run build'...
+2025-07-05T08:23:08.234162364Z 
+2025-07-05T08:23:08.234186645Z added 990 packages, and audited 991 packages in 20s
+2025-07-05T08:23:08.234233356Z 
+2025-07-05T08:23:08.234248556Z 85 packages are looking for funding
+2025-07-05T08:23:08.234266817Z   run `npm fund` for details
+2025-07-05T08:23:08.27185058Z 
+2025-07-05T08:23:08.271865161Z 12 vulnerabilities (1 low, 8 moderate, 3 high)
+2025-07-05T08:23:08.271869731Z 
+2025-07-05T08:23:08.271874201Z To address issues that do not require attention, run:
+2025-07-05T08:23:08.271877671Z   npm audit fix
+2025-07-05T08:23:08.271880921Z 
+2025-07-05T08:23:08.271885071Z To address all issues possible (including breaking changes), run:
+2025-07-05T08:23:08.271888971Z   npm audit fix --force
+2025-07-05T08:23:08.271892141Z 
+2025-07-05T08:23:08.271895421Z Some issues need review, and may require choosing
+2025-07-05T08:23:08.271898802Z a different dependency.
+2025-07-05T08:23:08.271902082Z 
+2025-07-05T08:23:08.271906042Z Run `npm audit` for details.
+2025-07-05T08:23:08.447743836Z 
+2025-07-05T08:23:08.447765086Z > rest-express@1.0.0 build
+2025-07-05T08:23:08.447769546Z > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+2025-07-05T08:23:08.447773986Z 
+2025-07-05T08:23:08.784196066Z vite v5.4.10 building for production...
+2025-07-05T08:23:08.838290208Z transforming...
+2025-07-05T08:23:09.111331197Z Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+2025-07-05T08:23:09.111359038Z   npx update-browserslist-db@latest
+2025-07-05T08:23:09.111364408Z   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+2025-07-05T08:23:17.069679702Z ✓ 3754 modules transformed.
+2025-07-05T08:23:17.702207593Z rendering chunks...
+2025-07-05T08:23:17.719728224Z computing gzip size...
+2025-07-05T08:23:17.751320377Z ../dist/public/index.html                     1.65 kB │ gzip:   0.66 kB
+2025-07-05T08:23:17.751336997Z ../dist/public/assets/index-D6EltNx4.css    104.00 kB │ gzip:  15.71 kB
+2025-07-05T08:23:17.751382689Z ../dist/public/assets/index-B1h55nHB.js   1,167.91 kB │ gzip: 338.33 kB
+2025-07-05T08:23:17.75144526Z 
+2025-07-05T08:23:17.75145368Z (!) Some chunks are larger than 500 kB after minification. Consider:
+2025-07-05T08:23:17.75145887Z - Using dynamic import() to code-split the application
+2025-07-05T08:23:17.751464171Z - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+2025-07-05T08:23:17.751467821Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2025-07-05T08:23:17.751707036Z ✓ built in 8.95s
+2025-07-05T08:23:17.856395187Z 
+2025-07-05T08:23:17.856419228Z   dist/index.js  58.3kb
+2025-07-05T08:23:17.856422758Z 
+2025-07-05T08:23:17.856425938Z ⚡ Done in 5ms
+2025-07-05T08:23:19.160669111Z ==> Uploading build...
+2025-07-05T08:23:33.044651933Z ==> Uploaded in 9.4s. Compression took 4.4s
+2025-07-05T08:23:33.58434228Z ==> Build successful 🎉
+2025-07-05T08:23:36.433994877Z ==> Deploying...
+2025-07-05T08:24:05.87669152Z ==> Running 'npm start'
+2025-07-05T08:24:07.068888533Z 
+2025-07-05T08:24:07.068912315Z > rest-express@1.0.0 start
+2025-07-05T08:24:07.068917215Z > NODE_ENV=production node dist/index.js
+2025-07-05T08:24:07.068919675Z 
+2025-07-05T08:24:13.480261157Z 8:24:13 AM [express] Creating Express application...
+2025-07-05T08:24:13.566491499Z 8:24:13 AM [express] Trust proxy setting enabled
+2025-07-05T08:24:13.567127696Z 8:24:13 AM [express] Configuring CORS...
+2025-07-05T08:24:13.567496197Z 8:24:13 AM [express] CORS configured with credentials support
+2025-07-05T08:24:13.568326835Z 8:24:13 AM [express] Setting up authentication...
+2025-07-05T08:24:13.569129821Z 8:24:13 AM [[object Object]] Session configuration:
+2025-07-05T08:24:13.569882434Z 8:24:13 AM [express] Authentication setup complete
+2025-07-05T08:24:13.570123218Z 8:24:13 AM [express] Registering routes...
+2025-07-05T08:24:13.571456345Z 8:24:13 AM [express] Routes registered successfully
+2025-07-05T08:24:13.571731741Z 8:24:13 AM [express] Setting up static file serving...
+2025-07-05T08:24:13.574440946Z 8:24:13 AM [express] Server running on http://0.0.0.0:5000
+2025-07-05T08:24:13.574579805Z 8:24:13 AM [express] Environment: production
+2025-07-05T08:24:13.574718473Z 8:24:13 AM [express] Server bound to address: 0.0.0.0
+2025-07-05T08:24:13.574888032Z 8:24:13 AM [express] CORS: enabled with credentials
+2025-07-05T08:24:13.57520142Z 8:24:13 AM [express] Trust proxy: enabled
+2025-07-05T08:24:14.335396365Z 8:24:14 AM [express] HEAD / 200 in 7ms
+2025-07-05T08:24:40.516193428Z ==> Continuing to scan for open port 10000 (from PORT environment variable)...
+2025-07-05T08:25:41.817517753Z ==> Continuing to scan for open port 10000 (from PORT environment variable)...
+2025-07-05T08:26:42.727669958Z ==> Continuing to scan for open port 10000 (from PORT environment variable)...
+2025-07-05T08:27:43.57904355Z ==> Continuing to scan for open port 10000 (from PORT environment variable)...
+2025-07-05T08:28:44.234751664Z ==> Continuing to scan for open port 10000 (from PORT environment variable)...
+2025-07-05T08:29:19.781067144Z ==> Port scan timeout reached, failed to detect open port 10000 from PORT environment variable. Bind your service to port 10000 or update the PORT environment variable to the correct port.
+2025-07-05T08:38:37.224354777Z ==> Timed out: Port scan timeout reached, failed to detect open port 10000 from PORT environment variable. Bind your service to port 10000 or update the PORT environment variable to the correct port.
+2025-07-05T08:38:37.240064825Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

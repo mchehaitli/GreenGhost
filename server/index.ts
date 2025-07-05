@@ -70,8 +70,8 @@ async function startServer() {
         log('Vite development server setup complete');
       }
 
-      // ALWAYS serve on port 5000 as required by the workflow
-      const port = 5000;
+      // Use environment PORT or default to 5000 for development
+      const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
       const host = '0.0.0.0';
 
       server.listen(port, host, () => {
