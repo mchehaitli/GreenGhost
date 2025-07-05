@@ -1,0 +1,63 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failure is caused by a dependency resolution issue where the versions of `date-fns` required by different packages conflict with each other.
+
+**Solution:**
+1. Verify that the conflicting versions of `date-fns` (`^4.1.0` and `^2.28.0 || ^3.0.0`) are both needed in the project and ensure they are correctly specified in the `package.json` file.
+2. Try fixing the dependency conflict by running the build command with the `--force` flag or `--legacy-peer-deps` flag. You can add these flags to the build command in the Netlify configuration.
+3. If step 2 doesn't resolve the issue, consider updating the packages causing the conflict to versions that are compatible with each other.
+4. If necessary, you can add `date-fns` as an external package in the Vite configuration if it's not already included. However, ensure that the package is in the `package.json` file or was committed to the repository before making this change.
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 2: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 3: Fetching cached dependencies
+Line 4: Failed to fetch cache, continuing with build
+Line 5: Starting to prepare the repo for build
+Line 6: No cached dependencies found. Cloning fresh repo
+Line 7: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 8: Preparing Git Reference refs/heads/main
+Line 9: Custom publish path detected. Proceeding with the specified path: 'client/dist'
+Line 10: Custom build command detected. Proceeding with the specified command: 'npm install && npm run build:frontend'
+Line 11: Starting to install dependencies
+Line 12: Using PHP version
+Line 13: Downloading and installing node v18.20.8...
+Line 14: Downloading https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-x64.tar.xz...
+Line 17: Now using node v18.20.8 (npm v10.8.2)
+Line 18: Enabling Node.js Corepack
+Line 19: Started restoring cached build plugins
+Line 20: Finished restoring cached build plugins
+Line 21: Started restoring cached corepack dependencies
+Line 22: Finished restoring cached corepack dependencies
+Line 23: No npm workspaces detected
+Line 24: Started restoring cached node modules
+Line 25: Finished restoring cached node modules
+Line 26: Installing npm packages using npm version 10.8.2
+Line 27: Failed during stage 'Install dependencies': dependency_installation script returned non-zero exit code: 1
+Line 28: npm error code ERESOLVE
+Line 29: npm error ERESOLVE unable to resolve dependency tree
+Line 30: npm error
+Line 31: npm error While resolving: greenghosttech-frontend@1.0.0
+Line 32: npm error Found: date-fns@4.1.0
+Line 33: npm error node_modules/date-fns
+Line 34: npm error   date-fns@"^4.1.0" from the root project
+Line 35: npm error
+Line 36: npm error Could not resolve dependency:
+Line 37: npm error peer date-fns@"^2.28.0 || ^3.0.0" from react-day-picker@8.10.1
+Line 38: npm error node_modules/react-day-picker
+Line 39: npm error   react-day-picker@"^8.10.1" from the root project
+Line 40: npm error
+Line 41: npm error Fix the upstream dependency conflict, or retry
+Line 42: npm error this command with --force or --legacy-peer-deps
+Line 43: npm error to accept an incorrect (and potentially broken) dependency resolution.
+Line 44: npm error
+Line 45: npm error
+Line 46: npm error For a full report see:
+Line 47: npm error /opt/buildhome/.npm/_logs/2025-07-05T09_16_28_964Z-eresolve-report.txt
+Line 48: npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2025-07-05T09_16_28_964Z-debug-0.log
+Line 49: Error during npm install
+Line 50: Failing build: Failed to install dependencies
+Line 51: Finished processing build request in 9.187s
