@@ -1,0 +1,67 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failure is due to the command `vite build` not being found, leading to an exit code of 127.
+
+**Solution:**
+1. Verify that Vite is listed as a dependency in the `package.json` file or committed to the repository.
+2. If Vite is a dependency, ensure it is included in the `dependencies` or `devDependencies` of the `package.json`.
+3. If Vite is not part of the project dependencies, add it by running `npm install vite --save-dev` to install Vite as a dev dependency.
+4. After adding Vite to the project dependencies, retry the build to see if the issue is resolved.
+
+The relevant error logs are:
+
+Line 0: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 1: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 2: Fetching cached dependencies
+Line 3: Failed to fetch cache, continuing with build
+Line 4: Starting to prepare the repo for build
+Line 5: No cached dependencies found. Cloning fresh repo
+Line 6: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 7: Preparing Git Reference refs/heads/main
+Line 8: Custom publish path detected. Proceeding with the specified path: 'client/dist/public'
+Line 9: Starting to install dependencies
+Line 10: Using PHP version
+Line 11: Downloading and installing node v18.20.8...
+Line 12: Downloading https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-x64.tar.xz...
+Line 13: Computing checksum with sha256sum
+Line 45:   production
+Line 46: [96m[1m​[22m[39m
+Line 47: [96m[1mbuild.command from netlify.toml                               [22m[39m
+Line 48: [96m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 49: ​
+Line 50: [36m$ npm run build[39m
+Line 51: > rest-express@1.0.0 build
+Line 52: > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+Line 53: sh: 1: vite: not found
+Line 54: [91m[1m​[22m[39m
+Line 55: [91m[1m"build.command" failed                                        [22m[39m
+Line 56: [91m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 57: ​
+Line 58:   [31m[1mError message[22m[39m
+Line 59:   Command failed with exit code 127: npm run build
+Line 60: ​
+Line 61:   [31m[1mError location[22m[39m
+Line 62:   In build.command from netlify.toml:
+Line 63:   npm run build
+Line 64: ​
+Line 65:   [31m[1mResolved config[22m[39m
+Line 66:   build:
+Line 67:     base: /opt/build/repo/client
+Line 68:     command: npm run build
+Line 69:     commandOrigin: config
+Line 70:     environment:
+Line 71:       - VITE_API_URL
+Line 72:       - NODE_VERSION
+Line 73:     publish: /opt/build/repo/client/dist/public
+Line 74:     publishOrigin: config
+Line 75:   headers:
+Line 76:     - for: /*
+      values:
+        Referrer-Policy: strict-origin-when-cross-origin
+        X-Content-Type-Options: nosniff
+   
+Line 77: Build failed due to a user error: Build script returned non-zero exit code: 2
+Line 78: Failing build: Failed to build site
+Line 79: Finished processing build request in 9.554s
+Line 80: Failed during stage 'building site': Build script returned non-zero exit code: 2
