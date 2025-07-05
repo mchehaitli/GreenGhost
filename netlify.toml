@@ -3,8 +3,7 @@
   command = "npm install --legacy-peer-deps && npm run build:frontend"
   publish = "dist"
 
-[build.environment]
-  NODE_VERSION = "18"
+
 
 [[redirects]]
   from = "/api/*"
