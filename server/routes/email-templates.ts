@@ -186,18 +186,15 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
 router.get('/api/email-history', requireAuth, async (_req, res) => {
   try {
     const history = await db.query.emailSegments.findMany({
-      orderBy: (emailSegments, { desc }) => [desc(emailSegments.created_at)],
-      with: {
-        template: true
-      }
+      orderBy: (emailSegments, { desc }) => [desc(emailSegments.sent_at)],
     });
 
     const formattedHistory = history.map(entry => ({
       id: entry.id,
-      template_name: entry.template?.name || 'Unknown Template',
-      sent_at: entry.created_at,
+      template_name: 'Email Campaign',
+      sent_at: entry.sent_at,
       total_recipients: entry.total_recipients,
-      status: entry.status || 'completed',
+      status: 'completed',
     }));
 
     return res.json(formattedHistory);
