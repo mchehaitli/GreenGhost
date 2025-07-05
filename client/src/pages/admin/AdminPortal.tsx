@@ -644,7 +644,7 @@ export default function AdminPortal() {
   });
 
   const { data: waitlistEntries, isLoading: waitlistLoading } = useQuery<WaitlistEntry[]>({
-    queryKey: ["/api/admin/waitlist"],
+    queryKey: ["/api/waitlist"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
