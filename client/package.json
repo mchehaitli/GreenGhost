@@ -60,6 +60,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@replit/vite-plugin-shadcn-theme-json": "^0.0.4",
     "@tailwindcss/typography": "^0.5.16",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",

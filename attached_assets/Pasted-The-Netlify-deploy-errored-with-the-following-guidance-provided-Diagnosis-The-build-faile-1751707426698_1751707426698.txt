@@ -1,0 +1,40 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failed during the 'building site' stage with a non-zero exit code.
+
+**Solution:**
+1. Check the build script to identify the cause of the non-zero exit code. It seems there might be an issue with the build script related to the Vite framework.
+2. Ensure that all the necessary build dependencies are correctly set up and configured.
+3. Verify if the Vite framework is properly installed and configured in the project.
+
+Since there are no explicit errors related to Node.js version mismatches in the logs provided, if you encounter such issues, make sure to refer to the documentation for [changing Node versions](https://docs.netlify.com/configure-builds/manage-dependencies/#node-js-and-javascript).
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 2: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 3: Fetching cached dependencies
+Line 4: Failed to fetch cache, continuing with build
+Line 5: Starting to prepare the repo for build
+Line 6: No cached dependencies found. Cloning fresh repo
+Line 7: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 8: Preparing Git Reference refs/heads/main
+Line 9: Custom publish path detected. Proceeding with the specified path: 'client/dist'
+Line 10: Custom build command detected. Proceeding with the specified command: 'npm install --legacy-peer-deps && npm run build:frontend'
+Line 11: Starting to install dependencies
+Line 12: Using PHP version
+Line 13: v22.17.0 is already installed.
+Line 14: Now using node v22.17.0 (npm v10.9.2)
+Line 21: Started restoring cached node modules
+Line 22: Finished restoring cached node modules
+Line 23: Installing npm packages using npm version 10.9.2
+Line 24: added 313 packages in 13s
+Line 25: npm packages installed
+Line 26: Successfully installed dependencies
+Line 27: Starting build script
+Line 28: Detected 1 framework(s)
+Line 29: "vite" at version "5.4.19"
+Line 30: Section completed: initializing
+Line 31: Failed during stage 'building site': Build script returned non-zero exit code: 2
