@@ -1,0 +1,84 @@
+The Netlify deploy errored, with the following guidance provided:
+
+### Diagnosis
+The build failure is due to an error in the build process. Specifically, the error is related to resolving the import "canvas-confetti" in the file "WelcomeAnimation.tsx".
+
+### Solution
+To resolve this issue:
+1. Verify that the package "canvas-confetti" is included in the `package.json` file or has been committed to the repository.
+2. If the package is part of the project but needs to be externalized, add it to the `build.rollupOptions.external` configuration. This will prevent Rollup from trying to bundle it and avoid runtime issues.
+
+After verifying the presence of "canvas-confetti" in your project or repository, add it to the `build.rollupOptions.external` configuration to ensure a successful build.
+
+For more details on managing dependencies in Rollup and Vite, you can refer to the [Rollup documentation](https://rollupjs.org/guide/en/#big-list-of-options) and the [Vite documentation](https://vitejs.dev/config/).
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 2: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 3: Fetching cached dependencies
+Line 4: Failed to fetch cache, continuing with build
+Line 5: Starting to prepare the repo for build
+Line 6: No cached dependencies found. Cloning fresh repo
+Line 7: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 8: Preparing Git Reference refs/heads/main
+Line 9: Custom publish path detected. Proceeding with the specified path: 'client/dist'
+Line 10: Custom build command detected. Proceeding with the specified command: 'npm install --legacy-peer-deps && npm run build:frontend'
+Line 11: Starting to install dependencies
+Line 12: Using PHP version
+Line 13: v22.17.0 is already installed.
+Line 14: Now using node v22.17.0 (npm v10.9.2)
+Line 59:   run `npm fund` for details
+Line 60: 2 moderate severity vulnerabilities
+Line 61: To address all issues (including breaking changes), run:
+Line 62:   npm audit fix --force
+Line 63: Run `npm audit` for details.
+Line 64: > greenghosttech-frontend@1.0.0 build:frontend
+Line 65: > vite build
+Line 66: [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+Line 67: transforming...
+Line 68: [32m✓[39m 112 modules transformed.
+Line 69: [31mx[39m Build failed in 1.51s
+Line 70: [31merror during build:
+Line 71: [31m[vite]: Rollup failed to resolve import "canvas-confetti" from "/opt/build/repo/client/src/components/WelcomeAnimation.tsx"
+Line 72: This is most likely unintended because it can break your application at runtime.
+Line 73: If you do want to externalize this module explicitly add it to
+Line 74: `build.rollupOptions.external`[31m
+Line 75:     at viteWarn (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65839:17)
+Line 76:     at onwarn (file:///opt/build/repo/client/node_modules/@vitejs/plugin-react/dist/index.mjs:104:9)
+Line 77:     at onRollupWarning (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65869:5)
+Line 78:     at onwarn (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65534:7)
+Line 79:     at file:///opt/build/repo/client/node_modules/rollup/dist/es/shared/node-entry.js:20805:13
+Line 80:     at Object.logger [as onLog] (file:///opt/build/repo/client/node_modules/rollup/dist/es/shared/node-entry.js:22671:9)
+Line 81:     at ModuleLoader.handleInvalidResolvedId (file:///opt/build/repo/client/node_modules/rollup/dist/es/shared/node-entry.js:2141
+Line 82:     at file:///opt/build/repo/client/node_modules/rollup/dist/es/shared/node-entry.js:21375:26[39m
+Line 83: [91m[1m​[22m[39m
+Line 84: [91m[1m"build.command" failed                                        [22m[39m
+Line 85: [91m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 86: ​
+Line 87:   [31m[1mError message[22m[39m
+Line 88:   Command failed with exit code 1: npm install --legacy-peer-deps && npm run build:frontend
+Line 89: ​
+Line 90:   [31m[1mError location[22m[39m
+Line 91:   In build.command from netlify.toml:
+Line 92:   npm install --legacy-peer-deps && npm run build:frontend
+Line 93: ​
+Line 94:   [31m[1mResolved config[22m[39m
+Line 95:   build:
+Line 96:     base: /opt/build/repo/client
+Line 97:     command: npm install --legacy-peer-deps && npm run build:frontend
+Line 98:     commandOrigin: config
+Line 99:     environment:
+Line 100:       - VITE_API_URL
+Line 101:     publish: /opt/build/repo/client/dist
+Line 102:     publishOrigin: config
+Line 103:   headers:
+Line 104:     - for: /*
+      values:
+        Referrer-Policy: strict-origin-when-cross-origin
+        X-Content-Type-Options: nosniff
+   
+Line 105: Build failed due to a user error: Build script returned non-zero exit code: 2
+Line 106: Failing build: Failed to build site
+Line 107: Finished processing build request in 24.95s
