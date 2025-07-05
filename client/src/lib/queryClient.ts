@@ -1,10 +1,14 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryFunction } from "@tanstack/react-query";
+
+// Get API base URL from environment or default to current origin for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function apiRequest(
   method: string,
-  url: string,
+  endpoint: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const url = `${API_BASE_URL}${endpoint}`;
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -25,8 +29,10 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-    async ({ queryKey }) => {
-      const res = await fetch(queryKey[0] as string, {
+    async ({ queryKey }: { queryKey: readonly unknown[] }) => {
+      const endpoint = queryKey[0] as string;
+      const url = `${API_BASE_URL}${endpoint}`;
+      const res = await fetch(url, {
         credentials: "include",
       });
 
