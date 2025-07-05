@@ -1,0 +1,48 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failure is caused by a non-zero exit code during the build script execution.
+
+**Solution:**
+1. Update the browserslist data by running the command suggested in the error message:
+   ```
+   npx update-browserslist-db@latest
+   ```
+2. Rerun the build to see if the issue is resolved.
+
+If the issue persists, it might be related to a specific dependency. In that case:
+1. Run `npm audit` to check for any vulnerabilities in the dependencies.
+2. Review the dependencies and make necessary updates or changes based on the audit results.
+
+Ensure that the browserslist data is updated regularly to prevent future issues.
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 2: Custom publish path detected. Proceeding with the specified path: 'client/dist'
+Line 3: Custom build command detected. Proceeding with the specified command: 'npm install && npm run build'
+Line 4: Starting to install dependencies
+Line 5: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 6: Failed to fetch cache, continuing with build
+Line 7: No cached dependencies found. Cloning fresh repo
+Line 8: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 9: Preparing Git Reference refs/heads/main
+Line 10: Fetching cached dependencies
+Line 11: Starting to prepare the repo for build
+Line 12: Using PHP version
+Line 13: Downloading and installing node v20.19.3...
+Line 14: Downloading https://nodejs.org/dist/v20.19.3/node-v20.19.3-linux-x64.tar.xz...
+Line 15: Computing checksum with sha256sum
+Line 16: Checksums matched!
+Line 69: Some issues need review, and may require choosing
+Line 70: a different dependency.
+Line 71: Run `npm audit` for details.
+Line 72: > rest-express@1.0.0 build
+Line 73: > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+Line 74: [36mvite v5.4.10 [32mbuilding for production...[36m[39m
+Line 75: transforming...
+Line 76: Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+Line 77:   npx update-browserslist-db@latest
+Line 78:   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Line 79: Failed during stage 'building site': Build script returned non-zero exit code: 2
