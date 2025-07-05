@@ -39,34 +39,36 @@ Your frontend needs to work without the backend for static hosting. We'll config
 ### 2.2 Update API Endpoints
 You'll need to update the API base URL to point to your deployed backend service.
 
-## Step 3: Deploy Backend to Railway (Recommended Free Option)
+## Step 3: Deploy Backend to Render (Recommended Free Option)
 
-### 3.1 Setup Railway Account
-1. Go to [Railway](https://railway.app)
+### 3.1 Setup Render Account
+1. Go to [Render](https://render.com)
 2. Sign up with GitHub
 3. Connect your repository
 
 ### 3.2 Configure Backend Deployment
-1. Click "New Project" → "Deploy from GitHub repo"
+1. Click "New +" → "Web Service"
 2. Select your `greenghosttech-website` repository
-3. Railway will auto-detect it's a Node.js project
+3. Configure these settings:
+   - **Name**: `greenghosttech-backend`
+   - **Environment**: `Node`
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+   - **Plan**: `Free`
 
-### 3.3 Set Environment Variables in Railway
-Add these environment variables in Railway dashboard:
+### 3.3 Set Environment Variables in Render
+In the Environment section, add these variables:
 ```
 NODE_ENV=production
 DATABASE_URL=your_neon_database_url
 SESSION_SECRET=your_session_secret
 GMAIL_USER=your_gmail_address
 GMAIL_APP_PASSWORD=your_gmail_app_password
-PORT=5000
+PORT=10000
 ```
 
-### 3.4 Configure Build Settings
-In Railway, set these build configurations:
-- **Build Command**: `npm run build`
-- **Start Command**: `npm start`
-- **Root Directory**: `/` (root of your repo)
+### 3.4 Deploy
+Click "Create Web Service" - Render will build and deploy automatically.
 
 ## Step 4: Deploy Frontend to Netlify
 
@@ -82,7 +84,7 @@ In Railway, set these build configurations:
 ### 4.2 Set Environment Variables in Netlify
 In Netlify dashboard, go to Site settings → Environment variables:
 ```
-VITE_API_URL=https://your-railway-app.up.railway.app
+VITE_API_URL=https://your-render-app.onrender.com
 ```
 
 ### 4.3 Configure Redirects for SPA
