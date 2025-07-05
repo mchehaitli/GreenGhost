@@ -1,0 +1,36 @@
+The Netlify deploy errored, with the following guidance provided:
+
+**Diagnosis:**
+The build failure is due to a non-zero exit code returned during the 'building site' stage of the build process.
+
+**Solution:**
+1. **Node Version Mismatch:**
+   - The logs show that Node version 20.19.3 is being downloaded and installed. This version of Node does not exist, indicating an incorrect version specified in the build configuration.
+   - Update the Node.js version to a valid version. Ensure that the version specified is compatible with the project requirements.
+   - Link to the documentation for [changing Node versions](https://docs.netlify.com/configure-builds/manage-dependencies/#node-js-and-javascript) for guidance on managing Node.js versions in the build process. 
+
+2. **Verify Package and Commit Files:**
+   - Before changing the Node.js version, verify that the required Node.js version is correctly specified in the project configuration files. 
+   - Ensure that the necessary Node.js version is added to `package.json` or wherever the Node.js version is configured.
+   - Confirm that any files related to the Node.js version configuration are committed to the repository to reflect the correct setup in the build process.
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 2: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 3: Fetching cached dependencies
+Line 4: Failed to fetch cache, continuing with build
+Line 5: Starting to prepare the repo for build
+Line 6: No cached dependencies found. Cloning fresh repo
+Line 7: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 8: Preparing Git Reference refs/heads/main
+Line 9: Custom publish path detected. Proceeding with the specified path: 'client/client/dist'
+Line 10: Custom build command detected. Proceeding with the specified command: 'cd client && npm install && npx vite build'
+Line 11: Starting to install dependencies
+Line 12: Using PHP version
+Line 13: Downloading and installing node v20.19.3...
+Line 14: Downloading https://nodejs.org/dist/v20.19.3/node-v20.19.3-linux-x64.tar.xz...
+Line 15: Computing checksum with sha256sum
+Line 16: Checksums matched!
+Line 17: Failed during stage 'building site': Build script returned non-zero exit code: 2

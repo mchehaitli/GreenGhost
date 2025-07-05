@@ -1,0 +1,12 @@
+{
+  "name": "greenghosttech-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build:frontend": "vite build",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

@@ -1,9 +1,10 @@
 [build]
-  command = "cd client && npm install && npx vite build"
-  publish = "client/dist"
+  base = "client"
+  command = "npm install && npm run build:frontend"
+  publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "18.18.0"
 
 [[redirects]]
   from = "/api/*"
