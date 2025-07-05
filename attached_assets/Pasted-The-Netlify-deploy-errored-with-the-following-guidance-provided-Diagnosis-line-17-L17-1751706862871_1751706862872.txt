@@ -1,0 +1,110 @@
+The Netlify deploy errored, with the following guidance provided:
+
+### Diagnosis
+
+[line 17](#L17): The build failed with a non-zero exit code 2 during the 'building site' stage.
+
+[line 75](#L75) to [line 89](#L89): The specific error is related to loading the PostCSS config and encountering a "Cannot find module 'tailwindcss'" error.
+
+### Solution
+
+The error occurs because the build is unable to find the 'tailwindcss' module as part of PostCSS config.
+
+1. Verify that 'tailwindcss' is listed as a dependency in the `package.json` file or was committed to the repository.
+2. If 'tailwindcss' is in the `package.json` file, ensure it is installed before running the build commands.
+
+If 'tailwindcss' is a development dependency, it should be listed under `devDependencies` in the `package.json` file. You can install missing dependencies by running:
+
+```bash
+npm install tailwindcss
+```
+
+After verifying and ensuring the presence of 'tailwindcss', you can retry the build to resolve this issue.
+
+The relevant error logs are:
+
+Line 0: Waiting for other deploys from your team to complete. Check the queue: https://app.netlify.com/teams/mchehaitli-bgy1thi/builds
+Line 1: build-image version: d8f371d8c5aeb7c6c730da471200d93918c3981b (noble)
+Line 2: buildbot version: d8f371d8c5aeb7c6c730da471200d93918c3981b
+Line 3: Fetching cached dependencies
+Line 4: Failed to fetch cache, continuing with build
+Line 5: Starting to prepare the repo for build
+Line 6: No cached dependencies found. Cloning fresh repo
+Line 7: git clone --filter=blob:none https://github.com/mchehaitli/GreenGhost
+Line 8: Preparing Git Reference refs/heads/main
+Line 9: Custom publish path detected. Proceeding with the specified path: 'client/dist'
+Line 10: Custom build command detected. Proceeding with the specified command: 'npm install && npm run build:frontend'
+Line 11: Starting to install dependencies
+Line 12: Using PHP version
+Line 13: Downloading and installing node v18.20.8...
+Line 14: Downloading https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-x64.tar.xz...
+Line 15: Computing checksum with sha256sum
+Line 16: Checksums matched!
+Line 17: Failed during stage 'building site': Build script returned non-zero exit code: 2
+Line 18: Now using node v18.20.8 (npm v10.8.2)
+Line 19: Enabling Node.js Corepack
+Line 20: Started restoring cached build plugins
+Line 21: Finished restoring cached build plugins
+Line 22: Started restoring cached corepack dependencies
+Line 23: Finished restoring cached corepack dependencies
+Line 24: No npm workspaces detected
+Line 25: Started restoring cached node modules
+Line 26: Finished restoring cached node modules
+Line 27: Installing npm packages using npm version 10.8.2
+Line 63:   run `npm fund` for details
+Line 64: 2 moderate severity vulnerabilities
+Line 65: To address all issues (including breaking changes), run:
+Line 66:   npm audit fix --force
+Line 67: Run `npm audit` for details.
+Line 68: > greenghosttech-frontend@1.0.0 build:frontend
+Line 69: > vite build
+Line 70: [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+Line 71: transforming...
+Line 72: node:internal/process/promises:288
+Line 73:             triggerUncaughtException(err, true /* fromPromise */);
+Line 74:             ^
+Line 75: [Failed to load PostCSS config: Failed to load PostCSS config (searchPath: /opt/build/repo/client): [Error] Loading PostCSS Plug
+Line 76: Require stack:
+Line 77: - /opt/build/repo/postcss.config.js
+Line 78: (@/opt/build/repo/postcss.config.js)
+Line 79: Error: Loading PostCSS Plugin failed: Cannot find module 'tailwindcss'
+Line 80: Require stack:
+Line 81: - /opt/build/repo/postcss.config.js
+Line 82: (@/opt/build/repo/postcss.config.js)
+Line 83:     at load (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:33632:11)
+Line 84:     at file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:33657:16
+Line 85:     at Array.map (<anonymous>)
+Line 86:     at plugins (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:33656:8)
+Line 87:     at processResult (file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:33726:14)
+Line 88:     at file:///opt/build/repo/client/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:33856:14]
+Line 89: Node.js v18.20.8
+Line 90: [91m[1m​[22m[39m
+Line 91: [91m[1m"build.command" failed                                        [22m[39m
+Line 92: [91m[1m────────────────────────────────────────────────────────────────[22m[39m
+Line 93: ​
+Line 94:   [31m[1mError message[22m[39m
+Line 95:   Command failed with exit code 1: npm install && npm run build:frontend
+Line 96: ​
+Line 97:   [31m[1mError location[22m[39m
+Line 98:   In build.command from netlify.toml:
+Line 99:   npm install && npm run build:frontend
+Line 100: ​
+Line 101:   [31m[1mResolved config[22m[39m
+Line 102:   build:
+Line 103:     base: /opt/build/repo/client
+Line 104:     command: npm install && npm run build:frontend
+Line 105:     commandOrigin: config
+Line 106:     environment:
+Line 107:       - VITE_API_URL
+Line 108:       - NODE_VERSION
+Line 109:     publish: /opt/build/repo/client/dist
+Line 110:     publishOrigin: config
+Line 111:   headers:
+Line 112:     - for: /*
+      values:
+        Referrer-Policy: strict-origin-when-cross-origin
+        X-Content-Type-Options: nosniff
+   
+Line 113: Build failed due to a user error: Build script returned non-zero exit code: 2
+Line 114: Failing build: Failed to build site
+Line 115: Finished processing build request in 15.577s
