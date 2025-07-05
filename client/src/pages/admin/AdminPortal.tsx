@@ -649,12 +649,12 @@ export default function AdminPortal() {
   });
 
   const { data: emailTemplates, isLoading: templatesLoading } = useQuery<EmailTemplate[]>({
-    queryKey: ["/api/admin/email-templates"],
+    queryKey: ["/api/email-templates"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const { data: emailHistory, isLoading: emailHistoryLoading } = useQuery<EmailHistoryEntry[]>({
-    queryKey: ["/api/admin/email-history"],
+    queryKey: ["/api/email-history"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
