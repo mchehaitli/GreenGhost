@@ -914,7 +914,7 @@ export default function AdminPortal() {
             Welcome back, {user.username}
           </p>
         </div>
-        <Button variant="outline" onClick={() => logout.mutate()}>
+        <Button variant="outline" onClick={() => logout()}>
           <User className="w-4 h-4 mr-2" />
           Logout
         </Button>
