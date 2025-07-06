@@ -10,21 +10,9 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  // Add admin token for production cross-origin requests
-  const headers: Record<string, string> = {};
-  if (data) {
-    headers["Content-Type"] = "application/json";
-  }
-  
-  // Add admin token for production greenghost.io domain
-  if (window.location.hostname === 'greenghost.io') {
-    headers["X-Admin-Token"] = "greenghost-admin-2025";
-  }
-  
   const res = await fetch(url, {
     method,
-    headers,
+    headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -45,15 +33,7 @@ export const getQueryFn: <T>(options: {
     async ({ queryKey }: { queryKey: readonly unknown[] }) => {
       const endpoint = queryKey[0] as string;
       const url = `${API_BASE_URL}${endpoint}`;
-      
-      // Add admin token for production greenghost.io domain
-      const headers: Record<string, string> = {};
-      if (window.location.hostname === 'greenghost.io') {
-        headers["X-Admin-Token"] = "greenghost-admin-2025";
-      }
-      
       const res = await fetch(url, {
-        headers,
         credentials: "include",
       });
 
