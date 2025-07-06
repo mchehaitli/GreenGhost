@@ -116,11 +116,12 @@ GreenGhost Tech is a full-stack web application for an automated lawn care servi
 ## Changelog
 
 Recent Changes:
+- July 05, 2025: Connected custom domain greenghost.io to Netlify with SSL certificate
+- July 05, 2025: Fixed authentication issues between Netlify frontend and Render backend
+- July 05, 2025: Updated admin portal queries to handle cross-origin authentication properly
+- July 05, 2025: Added production backend URL fallback for live site (greenghost.io)
 - July 05, 2025: Successfully deployed complete application - Backend live on Render, Frontend deployed on Netlify
 - July 05, 2025: Fixed Netlify build issues by adding missing dependencies (canvas-confetti, xlsx)
-- July 05, 2025: Fixed admin portal data loading issues - corrected API endpoints for waitlist, email templates, and email history
-- July 05, 2025: Reset admin authentication and fixed logout function error
-- July 05, 2025: Created complete client directory build configuration for Netlify deployment
 - July 04, 2025: Enhanced pricing management with decimal support and comprehensive feature editing
 - July 04, 2025: Updated footer social media links with correct greenghost.io URLs
 - July 04, 2025: Replaced Twitter icon with X logo using react-icons
