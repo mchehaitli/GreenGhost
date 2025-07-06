@@ -20,16 +20,37 @@ async function startServer() {
 
     // Configure CORS before other middleware
     log('Configuring CORS...');
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://greenghost.io',
+      'https://www.greenghost.io',
+      'https://greenghost.netlify.app'
+    ];
+
     const corsOptions = {
-      origin: true, // Reflects the request origin
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        log(`CORS request from origin: ${origin}`);
+        
+        if (allowedOrigins.includes(origin)) {
+          log(`Origin ${origin} allowed`);
+          return callback(null, true);
+        }
+        
+        log(`Origin ${origin} rejected`);
+        return callback(new Error(`Not allowed by CORS policy: ${origin}`), false);
+      },
       credentials: true, // Important for cookies
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
       exposedHeaders: ['Set-Cookie', 'X-Auth-Success'],
       maxAge: 86400 // Cache preflight requests for 24 hours
     };
     app.use(cors(corsOptions));
-    log('CORS configured with credentials support');
+    log('CORS configured with specific origins and credentials support');
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
