@@ -1,8 +1,8 @@
-# Green Ghost - Automated Lawn Care Platform
+# GreenGhost - Automated Lawn Care Platform
 
 ## Overview
 
-Green Ghost is a full-stack web application for an automated lawn care service company. The platform features a modern React frontend with TypeScript, a Node.js Express backend, and PostgreSQL database integration. The application includes user authentication, a waitlist system with email verification, admin management tools, and comprehensive service presentation.
+GreenGhost is a full-stack web application for an automated lawn care service company. The platform features a modern React frontend with TypeScript, a Node.js Express backend, and PostgreSQL database integration. The application includes user authentication, a waitlist system with email verification, admin management tools, and comprehensive service presentation.
 
 ## System Architecture
 
@@ -116,7 +116,7 @@ Green Ghost is a full-stack web application for an automated lawn care service c
 ## Changelog
 
 Recent Changes:
-- July 06, 2025: Rebranded company from "GreenGhost Tech" to "Green Ghost" across all pages, emails, and documentation
+- July 06, 2025: Rebranded company from "GreenGhost Tech" to "GreenGhost" (removed space) across all pages, emails, and documentation
 - July 06, 2025: Fixed authentication persistence and waitlist data loading - Reduced session duration, enhanced logout, and corrected admin portal queries
 - July 06, 2025: Fixed login redirect timing issue - Updated authentication flow to properly wait for auth state before redirecting
 - July 06, 2025: Fixed critical production authentication issue - Updated login/logout functions to use correct backend URL for greenghost.io

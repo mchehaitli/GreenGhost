@@ -37,13 +37,13 @@ export default function AIReview() {
             <Card>
               <CardHeader>
                 <CardTitle>Platform Overview</CardTitle>
-                <CardDescription>General information about the Green Ghost platform</CardDescription>
+                <CardDescription>General information about the GreenGhost platform</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <section>
-                  <h3 className="text-lg font-medium">About Green Ghost</h3>
+                  <h3 className="text-lg font-medium">About GreenGhost</h3>
                   <p>
-                    Green Ghost is a cutting-edge landscaping technology platform serving Texas, transforming lawn care management through innovative digital solutions and user-centric design. The platform combines modern technology with traditional landscaping expertise to provide seamless, efficient, and environmentally-conscious services to homeowners and businesses.
+                    GreenGhost is a cutting-edge landscaping technology platform serving Texas, transforming lawn care management through innovative digital solutions and user-centric design. The platform combines modern technology with traditional landscaping expertise to provide seamless, efficient, and environmentally-conscious services to homeowners and businesses.
                   </p>
                 </section>
                 
@@ -268,7 +268,7 @@ export default function AIReview() {
                   <div className="space-y-2">
                     <h4 className="font-medium">Home Page</h4>
                     <p className="text-sm text-muted-foreground">
-                      The landing page features a hero section with animated elements showcasing the Green Ghost mascot and primary service offerings. It includes a brief platform introduction, featured services, customer testimonials, and a call-to-action for joining the waitlist or requesting a quote.
+                      The landing page features a hero section with animated elements showcasing the GreenGhost mascot and primary service offerings. It includes a brief platform introduction, featured services, customer testimonials, and a call-to-action for joining the waitlist or requesting a quote.
                     </p>
                   </div>
                   

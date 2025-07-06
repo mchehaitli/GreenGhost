@@ -102,7 +102,7 @@ export const Home = () => {
       <section className="py-20 bg-background/50 border-t border-border/40">
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Why Choose Green Ghost?
+            Why Choose GreenGhost?
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <motion.div

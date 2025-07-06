@@ -1,4 +1,4 @@
-# Green Ghost Admin Portal Guide
+# GreenGhost Admin Portal Guide
 
 ## Admin Access
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Green Ghost - Deploy Authentication & Data Loading Fixes
+# GreenGhost - Deploy Authentication & Data Loading Fixes
 echo "🚀 Deploying authentication and waitlist data fixes to greenghost.io..."
 
 # Check git status

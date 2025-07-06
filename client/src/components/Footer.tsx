@@ -24,12 +24,11 @@ const Footer = () => {
             <div className="col-span-2 md:col-span-1">
               <Link href="/">
                 <div className="flex items-center space-x-2 group cursor-pointer" onClick={scrollToTop}>
-                  <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">Green</span>
-                  <span className="text-xl font-bold text-foreground transition-transform duration-300 group-hover:scale-105">Ghost</span>
+                  <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
                 </div>
               </Link>
 
-              {/* Social Media Icons - Aligned with the G in Green Ghost */}
+              {/* Social Media Icons - Aligned with the G in GreenGhost */}
               <div className="flex space-x-5 mt-5 ml-1.5">
                 <a 
                   href="https://www.instagram.com/greenghost.io" 
