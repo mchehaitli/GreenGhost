@@ -2,6 +2,10 @@ import { ReactNode, createContext, useContext, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+// Get API base URL from environment or detect production environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'greenghost.io' ? 'https://greenghosttech-backend.onrender.com' : '');
+
 interface SelectUser {
   id: number;
   username: string;
@@ -80,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await fetch("/api/login", {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         credentials: 'include', // Important: Include credentials
         headers: {
@@ -118,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting logout mutation...');
-      const response = await fetch("/api/logout", {
+      const response = await fetch(`${API_BASE_URL}/api/logout`, {
         method: "POST",
         credentials: 'include' // Important: Include credentials
       });
