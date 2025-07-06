@@ -27,7 +27,8 @@ async function startServer() {
       'http://127.0.0.1:5000',
       'https://greenghost.io',
       'https://www.greenghost.io',
-      'https://greenghost.netlify.app'
+      'https://greenghost.netlify.app',
+      'https://c891fb7f-7d80-4d21-877a-a109234f95d5-00-jinyeu1j5nsm.janeway.replit.dev'
     ];
 
     const corsOptions = {
