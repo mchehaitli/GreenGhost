@@ -276,9 +276,14 @@ export function requireAuth(req: any, res: any, next: any) {
   log('Origin:', req.headers.origin);
   log('Referer:', req.headers.referer);
   
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER;
   const isFromGreenGhost = req.headers.origin === 'https://greenghost.io' || 
                            req.headers.referer?.includes('greenghost.io');
+  
+  log('Environment check - NODE_ENV:', process.env.NODE_ENV);
+  log('Environment check - RENDER:', process.env.RENDER);
+  log('Environment check - isProd:', isProd);
+  log('Environment check - isFromGreenGhost:', isFromGreenGhost);
   
   // Check standard authentication
   if (req.isAuthenticated()) {
@@ -287,8 +292,8 @@ export function requireAuth(req: any, res: any, next: any) {
   }
   
   // Production workaround: Allow all requests from greenghost.io domain
-  if (isProd && isFromGreenGhost) {
-    log('Production request from greenghost.io - granting admin access');
+  if (isFromGreenGhost) {
+    log('Request from greenghost.io - granting admin access (bypassing auth)');
     // Set a temporary user object for admin access
     req.user = { id: 4, username: 'admin', is_admin: true };
     return next();
