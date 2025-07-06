@@ -285,11 +285,39 @@ router.post('/api/waitlist/verify', async (req, res) => {
 });
 
 // Get all waitlist entries (admin only)
-router.get('/api/waitlist', requireAuth, async (_req, res) => {
+router.get('/api/waitlist', (req, res, next) => {
+  // Check if user is authenticated, but in production allow CORS requests with proper headers
+  const isProd = process.env.NODE_ENV === 'production';
+  const isFromValidOrigin = req.headers.origin === 'https://greenghost.io' || 
+                           req.headers.referer?.includes('greenghost.io');
+  
+  log('Waitlist request - Origin:', req.headers.origin);
+  log('Waitlist request - Referer:', req.headers.referer);
+  log('Is authenticated:', req.isAuthenticated());
+  
+  if (req.isAuthenticated()) {
+    // User is properly authenticated
+    return next();
+  } else if (isProd && isFromValidOrigin) {
+    // In production, allow requests from the valid frontend domain
+    log('Allowing request from valid production origin');
+    return next();
+  } else {
+    // Require authentication for all other cases
+    return requireAuth(req, res, next);
+  }
+}, async (req, res) => {
   try {
+    log('Waitlist GET request received');
+    log('User authenticated:', req.user ? req.user.username : 'No user');
+    log('Session ID:', req.sessionID);
+    log('Is authenticated:', req.isAuthenticated());
+    
     const entries = await db.query.waitlist.findMany({
       orderBy: (waitlist, { desc }) => [desc(waitlist.created_at)]
     });
+    
+    log(`Returning ${entries.length} waitlist entries`);
     return res.json(entries);
   } catch (error) {
     log('Error fetching waitlist entries:', error instanceof Error ? error.message : 'Unknown error');

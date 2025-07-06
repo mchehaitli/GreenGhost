@@ -269,9 +269,19 @@ export function setupAuth(app: Express) {
 }
 
 export function requireAuth(req: any, res: any, next: any) {
+  log('requireAuth middleware called');
+  log('Session ID:', req.sessionID);
+  log('User object:', req.user ? `User: ${req.user.username}` : 'No user');
+  log('Is authenticated:', req.isAuthenticated());
+  log('Session:', req.session);
+  log('Headers:', JSON.stringify(req.headers, null, 2));
+  
   if (!req.isAuthenticated()) {
+    log('Authentication failed - user not authenticated');
     return res.status(401).json({ error: "Authentication required" });
   }
+  
+  log('Authentication successful - proceeding');
   next();
 }
 
