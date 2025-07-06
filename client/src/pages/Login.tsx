@@ -53,7 +53,7 @@ export default function Login() {
       // Give a bit more time for the auth state to fully update
       setTimeout(() => {
         console.log('Performing redirect after auth state update');
-        setLocation(decodeURIComponent(redirectTo));
+        window.location.href = decodeURIComponent(redirectTo);
       }, 300);
     } catch (error) {
       console.error('Login form error:', error);
