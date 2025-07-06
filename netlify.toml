@@ -1,8 +1,10 @@
 [build]
   base = "client"
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "VITE_API_URL=https://greenghosttech-backend.onrender.com npm install --legacy-peer-deps && npm run build"
   publish = "dist"
-  environment = { VITE_API_URL = "https://greenghosttech-backend.onrender.com" }
+
+[build.environment]
+  VITE_API_URL = "https://greenghosttech-backend.onrender.com"
 
 
 
