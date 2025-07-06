@@ -49,8 +49,8 @@ const Navigation = () => {
             <Link href="/">
               <div className="flex items-center space-x-2 group">
                 <GhostMascot size="sm" animated={false} />
-                <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">GreenGhost</span>
-                <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Tech</span>
+                <span className="text-xl font-bold text-primary transition-colors duration-300 group-hover:opacity-90">Green</span>
+                <span className="text-xl font-bold text-foreground transition-colors duration-300 group-hover:opacity-90">Ghost</span>
               </div>
             </Link>
           </div>
