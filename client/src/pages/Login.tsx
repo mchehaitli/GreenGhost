@@ -110,6 +110,16 @@ export default function Login() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
+              
+              {/* Backup redirect button - shown after successful login */}
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full mt-2" 
+                onClick={() => window.location.href = '/admin'}
+              >
+                Go to Admin Portal
+              </Button>
             </form>
           </Form>
         </CardContent>
