@@ -645,24 +645,8 @@ export default function AdminPortal() {
 
   const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
-    queryFn: async () => {
-      console.log('Fetching waitlist entries...');
-      const response = await fetch("/api/waitlist", {
-        credentials: 'include'
-      });
-      console.log('Waitlist response status:', response.status);
-      if (!response.ok) {
-        if (response.status === 401) {
-          console.log('Unauthorized access to waitlist data');
-          return [];
-        }
-        throw new Error("Failed to fetch waitlist");
-      }
-      const data = await response.json();
-      console.log('Waitlist data received:', data);
-      return data;
-    },
-    enabled: !!user,
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user && user.is_admin,
   });
 
   const { data: emailTemplates, isLoading: templatesLoading } = useQuery<EmailTemplate[]>({
@@ -1099,7 +1083,7 @@ export default function AdminPortal() {
                 <div className="mt-4 text-sm text-muted-foreground">
                   Debug: waitlistEntries={waitlistEntries ? waitlistEntries.length : 'null'}, 
                   loading={waitlistLoading ? 'true' : 'false'}, 
-                  error={waitlistError ? 'present' : 'none'}
+                  error={waitlistError ? String(waitlistError) : 'none'}
                 </div>
               </div>
             )}

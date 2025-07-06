@@ -79,7 +79,7 @@ export function setupAuth(app: Express) {
     cookie: {
       secure: isProd, // Use secure cookies in production
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      maxAge: 1000 * 60 * 60 * 2, // 2 hours in development
       sameSite: 'lax', // Use 'lax' which works better across browsers while still providing some CSRF protection
       path: '/'
       // Removed domain setting to allow the cookie to work on any domain
@@ -233,8 +233,25 @@ export function setupAuth(app: Express) {
         log('Logout error:', err);
         return res.status(500).json({ error: "Logout failed" });
       }
-      log('Logout successful for user:', username);
-      res.sendStatus(200);
+      
+      // Destroy the session completely
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          log('Session destruction error:', destroyErr);
+          return res.status(500).json({ error: 'Failed to clear session' });
+        }
+        
+        // Clear the cookie
+        res.clearCookie('sid', {
+          path: '/',
+          secure: isProd,
+          httpOnly: true,
+          sameSite: 'lax'
+        });
+        
+        log('Logout and session destruction successful for user:', username);
+        res.sendStatus(200);
+      });
     });
   });
 
