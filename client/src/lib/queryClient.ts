@@ -1,7 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Get API base URL from environment or default to current origin for development
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Get API base URL from environment or detect production environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'greenghost.io' ? 'https://greenghosttech-backend.onrender.com' : '');
 
 export async function apiRequest(
   method: string,
