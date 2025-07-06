@@ -101,7 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const userData = await response.json();
       
-      // Force a refetch of the user data after successful login
+      // Force invalidate and refetch the user data after successful login
+      await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       await refetch();
 
       return userData;

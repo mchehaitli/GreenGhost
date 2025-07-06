@@ -50,10 +50,10 @@ export default function Login() {
       await login(data);
       console.log('Login successful, redirecting to:', redirectTo);
       
-      // Give a bit more time for the auth state to fully update
+      // Use proper SPA navigation instead of window.location.href
       setTimeout(() => {
         console.log('Performing redirect after auth state update');
-        window.location.href = decodeURIComponent(redirectTo);
+        setLocation(decodeURIComponent(redirectTo));
       }, 300);
     } catch (error) {
       console.error('Login form error:', error);
