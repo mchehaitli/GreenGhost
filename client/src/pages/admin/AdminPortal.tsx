@@ -941,13 +941,17 @@ export default function AdminPortal() {
           </p>
         </div>
         <Button variant="outline" onClick={async () => {
+          console.log('Logout button clicked');
           try {
+            console.log('Calling logout function...');
             await logout();
+            console.log('Logout successful, redirecting...');
             setLocation('/login');
           } catch (error) {
+            console.error('Logout error:', error);
             toast({
               title: "Logout Failed",
-              description: "Could not log out. Please try again.",
+              description: error instanceof Error ? error.message : "Could not log out. Please try again.",
               variant: "destructive"
             });
           }

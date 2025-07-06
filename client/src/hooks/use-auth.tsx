@@ -14,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: Error | null;
   login: (credentials: { username: string; password: string }) => Promise<void>;
-  logout: () => Promise<Response>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -117,25 +117,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      console.log('Starting logout mutation...');
       const response = await fetch("/api/logout", {
         method: "POST",
         credentials: 'include' // Important: Include credentials
       });
 
+      console.log('Logout response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Logout failed');
+        const errorText = await response.text();
+        console.error('Logout failed:', errorText);
+        throw new Error(`Logout failed: ${errorText}`);
       }
 
       // Clear all query cache to ensure clean logout
+      console.log('Clearing query cache...');
       queryClient.clear();
       // Specifically clear user data
       queryClient.setQueryData(["/api/user"], null);
       
+      console.log('Logout mutation completed successfully');
       return response;
     },
     onSuccess: () => {
+      console.log('Logout onSuccess called');
       // Force a refetch after clearing cache to ensure we get null/unauthenticated state
       setTimeout(() => {
+        console.log('Refetching user data...');
         refetch();
       }, 100);
       
@@ -144,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error('Logout onError called:', error);
       toast({
         title: "Logout failed",
         description: error.message,
