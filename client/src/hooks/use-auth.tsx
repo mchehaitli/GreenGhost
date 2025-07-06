@@ -14,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: Error | null;
   login: (credentials: { username: string; password: string }) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -126,11 +126,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Logout failed');
       }
 
-      // Clear the user data from the cache after logout
+      // Clear all query cache to ensure clean logout
+      queryClient.clear();
+      // Specifically clear user data
       queryClient.setQueryData(["/api/user"], null);
+      
+      return response;
     },
     onSuccess: () => {
-      refetch();
+      // Force a refetch after clearing cache to ensure we get null/unauthenticated state
+      setTimeout(() => {
+        refetch();
+      }, 100);
+      
       toast({
         title: "Logged out successfully",
       });
@@ -151,7 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         error: error instanceof Error ? error : null,
         login: loginMutation.mutateAsync,
-        logout: logoutMutation.mutateAsync,
+        logout: async () => {
+          await logoutMutation.mutateAsync();
+        },
       }}
     >
       {children}

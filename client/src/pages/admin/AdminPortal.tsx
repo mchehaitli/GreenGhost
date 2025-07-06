@@ -940,7 +940,18 @@ export default function AdminPortal() {
             Welcome back, {user.username}
           </p>
         </div>
-        <Button variant="outline" onClick={() => logout()}>
+        <Button variant="outline" onClick={async () => {
+          try {
+            await logout();
+            setLocation('/login');
+          } catch (error) {
+            toast({
+              title: "Logout Failed",
+              description: "Could not log out. Please try again.",
+              variant: "destructive"
+            });
+          }
+        }}>
           <User className="w-4 h-4 mr-2" />
           Logout
         </Button>
