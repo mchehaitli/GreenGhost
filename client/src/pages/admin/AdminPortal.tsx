@@ -643,12 +643,14 @@ export default function AdminPortal() {
     zipCodes: []
   });
 
-  const { data: waitlistEntries, isLoading: waitlistLoading } = useQuery<WaitlistEntry[]>({
+  const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
     queryFn: async () => {
+      console.log('Fetching waitlist entries...');
       const response = await fetch("/api/waitlist", {
         credentials: 'include'
       });
+      console.log('Waitlist response status:', response.status);
       if (!response.ok) {
         if (response.status === 401) {
           console.log('Unauthorized access to waitlist data');
@@ -656,7 +658,9 @@ export default function AdminPortal() {
         }
         throw new Error("Failed to fetch waitlist");
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Waitlist data received:', data);
+      return data;
     },
     enabled: !!user,
   });
@@ -1092,6 +1096,11 @@ export default function AdminPortal() {
                 <p className="text-muted-foreground">
                   {searchTerm ? 'Try adjusting your search terms.' : 'No waitlist entries yet.'}
                 </p>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Debug: waitlistEntries={waitlistEntries ? waitlistEntries.length : 'null'}, 
+                  loading={waitlistLoading ? 'true' : 'false'}, 
+                  error={waitlistError ? 'present' : 'none'}
+                </div>
               </div>
             )}
           </Card>
