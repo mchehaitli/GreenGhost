@@ -79,10 +79,10 @@ export function setupAuth(app: Express) {
     cookie: {
       secure: isProd, // Use secure cookies in production
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 2, // 2 hours in development
-      sameSite: 'lax', // Use 'lax' which works better across browsers while still providing some CSRF protection
+      maxAge: 1000 * 60 * 60 * 2, // 2 hours
+      sameSite: isProd ? 'none' : 'lax', // Use 'none' for cross-origin in production, 'lax' for development
       path: '/'
-      // Removed domain setting to allow the cookie to work on any domain
+      // Note: domain is intentionally not set to allow cross-origin cookie sharing
     },
     name: 'sid'
   };
