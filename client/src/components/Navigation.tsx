@@ -107,7 +107,7 @@ const Navigation = () => {
                 <Button 
                   variant="outline" 
                   onClick={handleWaitlistClick}
-                  className="bg-black text-white border-white hover:bg-gray-800 hover:text-white"
+                  className="bg-primary/10 text-primary hover:bg-primary/20"
                 >
                   Join Waitlist
                 </Button>

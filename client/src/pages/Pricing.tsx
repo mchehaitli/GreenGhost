@@ -125,8 +125,8 @@ const Pricing = () => {
                     </ul>
                     <Button
                       asChild
-                      className="w-full mt-auto"
-                      variant={index === 1 ? "default" : "outline"}
+                      className={`w-full mt-auto ${index === 1 ? "bg-black text-white border-white hover:bg-gray-800 hover:text-white" : ""}`}
+                      variant={index === 1 ? "outline" : "outline"}
                     >
                       <Link href="/waitlist">
                         Join Waitlist
