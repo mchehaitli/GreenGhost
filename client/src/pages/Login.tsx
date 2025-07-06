@@ -49,10 +49,12 @@ export default function Login() {
       console.log('Submitting login form...');
       await login(data);
       console.log('Login successful, redirecting to:', redirectTo);
-      // Add a small delay to ensure auth state is updated
+      
+      // Give a bit more time for the auth state to fully update
       setTimeout(() => {
+        console.log('Performing redirect after auth state update');
         setLocation(decodeURIComponent(redirectTo));
-      }, 100);
+      }, 300);
     } catch (error) {
       console.error('Login form error:', error);
       toast({
@@ -107,19 +109,6 @@ export default function Login() {
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
-              </Button>
-              
-              {/* Temporary manual redirect button for debugging */}
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full" 
-                onClick={() => {
-                  console.log('Manual redirect to admin');
-                  setLocation('/admin');
-                }}
-              >
-                Go to Admin (Manual)
               </Button>
             </form>
           </Form>

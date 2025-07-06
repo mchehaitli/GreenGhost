@@ -99,10 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(errorData.error || 'Login failed');
       }
 
+      const userData = await response.json();
+      
       // Force a refetch of the user data after successful login
       await refetch();
 
-      return response.json();
+      return userData;
     },
     onSuccess: () => {
       toast({
