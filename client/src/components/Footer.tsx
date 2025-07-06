@@ -24,7 +24,10 @@ const Footer = () => {
             <div className="col-span-2 md:col-span-1">
               <Link href="/">
                 <div className="flex items-center space-x-2 group cursor-pointer" onClick={scrollToTop}>
-                  <span className="text-xl font-bold text-primary transition-transform duration-300 group-hover:scale-105">GreenGhost</span>
+                  <span className="text-xl font-bold transition-transform duration-300 group-hover:scale-105">
+                    <span className="text-primary">Green</span>
+                    <span className="text-white">Ghost</span>
+                  </span>
                 </div>
               </Link>
 
