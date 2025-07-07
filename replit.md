@@ -116,6 +116,7 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 ## Changelog
 
 Recent Changes:
+- July 07, 2025: Refined logo spacing - Added subtle spacing between "Green" and "Ghost" words in header and footer for better visual balance
 - July 06, 2025: Rebranded company from "GreenGhost Tech" to "GreenGhost" (removed space) across all pages, emails, and documentation
 - July 06, 2025: Fixed authentication persistence and waitlist data loading - Reduced session duration, enhanced logout, and corrected admin portal queries
 - July 06, 2025: Fixed login redirect timing issue - Updated authentication flow to properly wait for auth state before redirecting
