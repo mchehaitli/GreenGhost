@@ -37,8 +37,15 @@ async function startServer() {
         
         log(`CORS request from origin: ${origin}`);
         
+        // Check against allowed origins list
         if (allowedOrigins.includes(origin)) {
           log(`Origin ${origin} allowed`);
+          return callback(null, true);
+        }
+        
+        // Allow all Replit development domains
+        if (origin.includes('.replit.dev') || origin.includes('.janeway.replit.dev')) {
+          log(`Replit development origin ${origin} allowed`);
           return callback(null, true);
         }
         

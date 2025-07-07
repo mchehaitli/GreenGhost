@@ -3,8 +3,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 // Get API base URL from environment or detect production environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'greenghost.io' ? 'https://greenghosttech-backend.onrender.com' : '');
+const getApiBaseUrl = () => {
+  // If explicitly set in environment, use that
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // For production (greenghost.io), use the backend URL
+  if (window.location.hostname === 'greenghost.io') {
+    return 'https://greenghosttech-backend.onrender.com';
+  }
+  
+  // For development (Replit, localhost), use relative URLs (empty string)
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface SelectUser {
   id: number;
@@ -40,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       console.log("Fetching user auth data...");
       try {
-        const response = await fetch("/api/user", {
+        const response = await fetch(`${API_BASE_URL}/api/user`, {
           credentials: 'include',  // Important: Include credentials in all requests
           headers: {
             'Accept': 'application/json',
@@ -78,7 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status, 
       isLoading, 
       isError, 
-      user: user ? `User ${user.username}` : 'No user'
+      user: user ? `User ${user.username}` : 'No user',
+      apiBaseUrl: API_BASE_URL,
+      hostname: window.location.hostname
     });
   }, [status, isLoading, isError, user]);
 
