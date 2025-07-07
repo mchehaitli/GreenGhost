@@ -41,10 +41,10 @@ const Navigation = () => {
             <Link href="/">
               <div className="flex items-center space-x-2 group">
                 <GhostMascot size="sm" animated={false} />
-                <div className="flex flex-col leading-tight transition-colors duration-300 group-hover:opacity-90">
-                  <span className="text-xl font-bold text-primary">Green</span>
-                  <span className="text-xl font-bold text-white">Ghost</span>
-                </div>
+                <span className="text-xl font-bold transition-colors duration-300 group-hover:opacity-90">
+                  <span className="text-primary">Green</span>
+                  <span className="text-white ml-1">Ghost</span>
+                </span>
               </div>
             </Link>
           </div>
