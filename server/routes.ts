@@ -45,6 +45,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Add test email route
+  app.post('/api/email/test/:type', async (req, res) => {
+    try {
+      const { type } = req.params;
+      const { email } = req.body;
+
+      if (!email || !['verification', 'welcome'].includes(type)) {
+        return res.status(400).json({ error: 'Invalid request parameters' });
+      }
+
+      // Send test email
+      let success = false;
+      if (type === 'verification') {
+        success = await emailService.sendVerificationEmail(email, '12345');
+      } else if (type === 'welcome') {
+        success = await emailService.sendWelcomeEmail(email, '12345');
+      }
+
+      if (success) {
+        res.json({ message: `Test ${type} email sent successfully to ${email}` });
+      } else {
+        res.status(500).json({ error: 'Failed to send test email' });
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ error: 'Failed to send test email' });
+    }
+  });
+
   // Add bulk email sending route
   app.post('/api/email/send-bulk', async (req, res) => {
     try {
