@@ -324,6 +324,34 @@ export function EmailTemplateTab() {
     },
   });
 
+  // Separate mutation for system template test emails
+  const sendSystemTestEmail = useMutation({
+    mutationFn: async ({ templateName, testEmail }: { templateName: string; testEmail: string }) => {
+      const templateType = templateName === 'Welcome Email' ? 'welcome' : 'verification';
+      const response = await fetch(`/api/email/test/${templateType}`, {
+        method: "POST",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail }),
+      });
+      if (!response.ok) throw new Error("Failed to send test email");
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Test Email Sent",
+        description: `Test ${variables.templateName.toLowerCase()} sent to ${variables.testEmail}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send test email",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteHistoryEntry = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/email-history/${id}`, {
@@ -980,16 +1008,17 @@ export function EmailTemplateTab() {
                               size="sm"
                               onClick={() => {
                                 const testEmail = prompt("Enter test email address:");
-                                if (testEmail) {
-                                  sendEmailsMutation.mutate({
-                                    templateId: template.id,
+                                if (testEmail && testEmail.includes('@')) {
+                                  sendSystemTestEmail.mutate({
+                                    templateName: template.name,
                                     testEmail: testEmail
                                   });
                                 }
                               }}
+                              disabled={sendSystemTestEmail.isPending}
                             >
                               <Send className="h-4 w-4 mr-2" />
-                              Test
+                              {sendSystemTestEmail.isPending ? 'Sending...' : 'Test'}
                             </Button>
                           </div>
                         </div>
