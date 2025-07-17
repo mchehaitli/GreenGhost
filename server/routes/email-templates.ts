@@ -48,6 +48,8 @@ async function loadSystemTemplate(templateName: string) {
       name: templateName,
       subject,
       html_content,
+      from_email: templateName === 'Welcome Email' ? 'welcome@greenghost.io' : 'verify@greenghost.io',
+      recipient_type: 'waitlist',
       created_at: new Date('2025-01-01'), // Fixed date for system templates
       updated_at: new Date('2025-01-01'),
       is_system: true
@@ -113,11 +115,15 @@ async function updateSystemTemplate(templateName: string, subject: string, html_
     const filePath = path.join(__dirname, '../templates', fileName);
     await fs.writeFile(filePath, html_content, 'utf-8');
     
+    // Set correct email aliases for system templates
+    const from_email = templateName === 'Welcome Email' ? 'welcome@greenghost.io' : 'verify@greenghost.io';
+    
     return {
       id: templateName === 'Welcome Email' ? -1 : -2,
       name: templateName,
       subject,
       html_content,
+      from_email,
       created_at: new Date('2025-01-01'),
       updated_at: new Date(),
       is_system: true

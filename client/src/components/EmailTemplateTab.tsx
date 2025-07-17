@@ -1599,85 +1599,118 @@ export function EmailTemplateTab() {
             <TabsContent value="html" className="space-y-4 max-h-[70vh] overflow-y-auto">
               <Form {...templateForm}>
                 <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={templateForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Template Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={templateForm.control}
-                      name="subject"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Subject</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  {/* Show simplified form for system templates */}
+                  {selectedTemplate && selectedTemplate.id < 0 ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-800">
+                          <Badge variant="secondary">System Template</Badge>
+                          <span className="font-medium">{selectedTemplate.name}</span>
+                        </div>
+                        <p className="text-sm text-blue-600 mt-1">
+                          This is an automated email template. Only the HTML content can be edited. 
+                          Recipients and sender settings are managed automatically by the system.
+                        </p>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={templateForm.control}
-                      name="from_email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>From Email</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormField
+                        control={templateForm.control}
+                        name="subject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Subject</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select sender email" />
-                              </SelectTrigger>
+                              <Input {...field} />
                             </FormControl>
-                            <SelectContent>
-                              {Object.entries(EMAIL_ALIASES).map(([email, alias]) => (
-                                <SelectItem key={email} value={email}>
-                                  {alias} ({email})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={templateForm.control}
-                      name="recipient_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Recipients</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select recipient type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(RECIPIENT_TYPES).map(([type, label]) => (
-                                <SelectItem key={type} value={type}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    /* Regular template form */
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={templateForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Template Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={templateForm.control}
+                          name="subject"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Subject</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={templateForm.control}
+                          name="from_email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>From Email</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select sender email" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {Object.entries(EMAIL_ALIASES).map(([email, alias]) => (
+                                    <SelectItem key={email} value={email}>
+                                      {alias} ({email})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={templateForm.control}
+                          name="recipient_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Recipients</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select recipient type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {Object.entries(RECIPIENT_TYPES).map(([type, label]) => (
+                                    <SelectItem key={type} value={type}>
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4 h-80">
                     <div className="space-y-2">
