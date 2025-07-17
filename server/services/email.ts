@@ -25,13 +25,22 @@ const transporter = nodemailer.createTransport({
 
 // Email addresses for different purposes
 // Note: Gmail SMTP requires using the authenticated account as sender,
-// but we can set the display name to show the intended service
+// but we can set the display name and reply-to to show the intended service
 const EMAIL_ADDRESSES = {
-  verification: `GreenGhost Verify <${process.env.GMAIL_USER}>`,
-  welcome: `GreenGhost Welcome <${process.env.GMAIL_USER}>`,
-  marketing: `GreenGhost <${process.env.GMAIL_USER}>`,
-  contact: `GreenGhost Contact <${process.env.GMAIL_USER}>`,
-  admin: `GreenGhost Support <${process.env.GMAIL_USER}>`
+  verification: `verify@greenghost.io`,
+  welcome: `welcome@greenghost.io`, 
+  marketing: `noreply@greenghost.io`,
+  contact: `contact@greenghost.io`,
+  admin: `support@greenghost.io`
+};
+
+// Gmail configuration with proper From field handling
+const getEmailConfig = (serviceType: 'verification' | 'welcome' | 'marketing' | 'contact' | 'admin') => {
+  const gmailUser = process.env.GMAIL_USER;
+  return {
+    from: `${EMAIL_ADDRESSES[serviceType]} <${gmailUser}>`,
+    replyTo: EMAIL_ADDRESSES[serviceType]
+  };
 };
 
 // Test the email connection
@@ -142,8 +151,10 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
 
     const emailHtml = await renderEmailTemplate(content, 'Verify Your Email');
 
+    const emailConfig = getEmailConfig('verification');
     await transporter.sendMail({
-      from: EMAIL_ADDRESSES.verification,
+      from: emailConfig.from,
+      replyTo: emailConfig.replyTo,
       to: email,
       subject: "Your GreenGhost Verification Code",
       html: emailHtml,
@@ -168,8 +179,10 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost');
 
+    const emailConfig = getEmailConfig('welcome');
     await transporter.sendMail({
-      from: EMAIL_ADDRESSES.welcome,
+      from: emailConfig.from,
+      replyTo: emailConfig.replyTo,
       to: email,
       subject: "Welcome to GreenGhost's Waitlist!",
       html: emailHtml,
@@ -189,8 +202,10 @@ export async function sendMarketingEmail(
   htmlContent: string
 ): Promise<boolean> {
   try {
+    const emailConfig = getEmailConfig('marketing');
     await transporter.sendMail({
-      from: EMAIL_ADDRESSES.marketing,
+      from: emailConfig.from,
+      replyTo: emailConfig.replyTo,
       to,
       subject,
       html: htmlContent,
