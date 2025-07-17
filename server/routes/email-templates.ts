@@ -63,7 +63,9 @@ async function loadSystemTemplate(templateName: string) {
 // Get all email templates including system templates
 router.get('/api/email-templates', requireAuth, async (_req, res) => {
   try {
+    // Get database templates but exclude any that have system template names to avoid duplicates
     const dbTemplates = await db.query.emailTemplates.findMany({
+      where: not(inArray(emailTemplates.name, SYSTEM_TEMPLATE_NAMES)),
       orderBy: (emailTemplates, { desc }) => [desc(emailTemplates.created_at)]
     });
     
@@ -73,7 +75,7 @@ router.get('/api/email-templates', requireAuth, async (_req, res) => {
     
     const systemTemplates = [welcomeTemplate, verificationTemplate].filter(Boolean);
     
-    // Combine system templates with database templates
+    // Combine system templates with database templates (system templates first)
     const allTemplates = [...systemTemplates, ...dbTemplates];
     
     return res.json(allTemplates);
