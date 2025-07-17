@@ -432,11 +432,12 @@ export function EmailTemplateTab() {
 
               <div className="space-y-4">
                 <h4 className="font-medium">Email Preview</h4>
-                <div className="border rounded-lg h-96 overflow-auto bg-white">
+                <div className="relative border rounded-lg h-96 overflow-hidden bg-white shadow-sm">
                   <iframe 
                     srcDoc={selectedCampaignTemplate.html_content}
-                    className="w-full h-full"
+                    className="absolute inset-0 border-0 w-full h-full"
                     title="Email Preview"
+                    scrolling="auto"
                   />
                 </div>
               </div>
@@ -596,11 +597,18 @@ export function EmailTemplateTab() {
                               <span className="text-sm font-medium text-muted-foreground">Recipients: </span>
                               <span className="text-sm">{RECIPIENT_TYPES[template.recipient_type] || template.recipient_type}</span>
                             </div>
-                            <div className="border rounded-lg h-40 overflow-hidden bg-gray-50">
+                            <div className="relative border rounded-lg h-56 overflow-hidden bg-white shadow-sm">
                               <iframe 
                                 srcDoc={template.html_content}
-                                className="w-full h-full scale-75 origin-top-left"
+                                className="absolute inset-0 border-0 w-full h-full"
+                                style={{ 
+                                  transform: 'scale(0.75)', 
+                                  transformOrigin: 'top left',
+                                  width: '133.33%',
+                                  height: '133.33%'
+                                }}
                                 title={`Preview of ${template.name}`}
+                                scrolling="no"
                               />
                             </div>
                           </div>
@@ -687,11 +695,18 @@ export function EmailTemplateTab() {
                               <span className="text-sm font-medium text-muted-foreground">Subject: </span>
                               <span className="text-sm">{template.subject}</span>
                             </div>
-                            <div className="border rounded-lg h-40 overflow-hidden bg-gray-50">
+                            <div className="relative border rounded-lg h-56 overflow-hidden bg-white shadow-sm">
                               <iframe 
                                 srcDoc={template.html_content}
-                                className="w-full h-full scale-75 origin-top-left"
+                                className="absolute inset-0 border-0 w-full h-full"
+                                style={{ 
+                                  transform: 'scale(0.75)', 
+                                  transformOrigin: 'top left',
+                                  width: '133.33%',
+                                  height: '133.33%'
+                                }}
                                 title={`Preview of ${template.name}`}
+                                scrolling="no"
                               />
                             </div>
                           </div>
@@ -1094,11 +1109,12 @@ export function EmailTemplateTab() {
 
                     <div className="space-y-4">
                       <h4 className="font-semibold">Live Preview</h4>
-                      <div className="border rounded-lg h-64 overflow-auto bg-gray-50">
+                      <div className="relative border rounded-lg h-64 overflow-hidden bg-white shadow-sm">
                         <iframe 
                           srcDoc={generateHtmlFromVisual(visualForm.watch())}
-                          className="w-full h-full"
+                          className="absolute inset-0 border-0 w-full h-full"
                           title="Email Preview"
+                          scrolling="auto"
                         />
                       </div>
                     </div>
@@ -1221,11 +1237,12 @@ export function EmailTemplateTab() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Live Preview</label>
-                      <div className="border rounded-lg h-72 overflow-auto bg-gray-50">
+                      <div className="relative border rounded-lg h-72 overflow-hidden bg-white shadow-sm">
                         <iframe 
-                          srcDoc={templateForm.watch('html_content') || '<p>Start typing HTML to see preview...</p>'}
-                          className="w-full h-full"
+                          srcDoc={templateForm.watch('html_content') || '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: Arial, sans-serif;">Start typing HTML to see preview...</div>'}
+                          className="absolute inset-0 border-0 w-full h-full"
                           title="HTML Preview"
+                          scrolling="auto"
                         />
                       </div>
                     </div>
