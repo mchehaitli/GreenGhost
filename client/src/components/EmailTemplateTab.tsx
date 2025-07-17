@@ -1282,7 +1282,7 @@ export function EmailTemplateTab() {
       </Tabs>
 
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-7xl h-[95vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-7xl min-h-[95vh] h-[95vh] max-h-[95vh] overflow-hidden flex flex-col" style={{ height: '95vh' }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedTemplate ? "Edit Template" : "Create Template"}
@@ -1762,7 +1762,10 @@ export function EmailTemplateTab() {
                       <Button type="button" variant="outline" onClick={() => setShowTemplateDialog(false)}>
                         Cancel
                       </Button>
-                      <Button type="submit">
+                      <Button 
+                        type="submit"
+                        onClick={() => console.log('HTML Editor Submit button clicked, selectedTemplate:', selectedTemplate)}
+                      >
                         {selectedTemplate ? "Update Template" : "Create Template"}
                       </Button>
                     </DialogFooter>
