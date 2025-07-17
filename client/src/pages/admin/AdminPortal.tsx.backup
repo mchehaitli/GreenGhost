@@ -1200,6 +1200,50 @@ export default function AdminPortal() {
             />
           </Card>
         </TabsContent>
+                {emailHistoryLoading ? (
+                  <LoadingSpinner />
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Template Name</TableHead>
+                          <TableHead>Sent At</TableHead>
+                          <TableHead>Recipients</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Array.isArray(emailHistory) ? emailHistory.map((history: EmailHistoryEntry) => (
+                          <TableRow key={history.id}>
+                            <TableCell className="font-medium">{history.template_name}</TableCell>
+                            <TableCell>{new Date(history.sent_at).toLocaleDateString()}</TableCell>
+                            <TableCell>{history.total_recipients}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  history.status === 'completed' ? 'default' : 
+                                  history.status === 'failed' ? 'destructive' : 
+                                  'secondary'
+                                }
+                              >
+                                {history.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        )) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">No email history found</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="pricing">
           <PricingManagement />

@@ -5,6 +5,13 @@ import { eq, inArray, not, or } from 'drizzle-orm';
 import { requireAuth } from '../auth';
 import { fromZodError } from 'zod-validation-error';
 import { log } from '../vite';
+import { sendMarketingEmail } from '../services/email';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = Router();
 
@@ -72,6 +79,7 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
     }
 
     const validatedData = insertEmailTemplateSchema.parse(req.body);
+    validatedData.updated_at = new Date();
 
     // Check if template exists
     const existingTemplate = await db.query.emailTemplates.findFirst({
@@ -134,6 +142,202 @@ router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error deleting template:', error);
     return res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
+// Send test email
+router.post('/api/email-templates/test', requireAuth, async (req, res) => {
+  try {
+    const { templateId, testEmail } = req.body;
+    
+    if (!templateId || !testEmail) {
+      return res.status(400).json({ error: 'Template ID and test email are required' });
+    }
+
+    // Get the template
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, templateId)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Send test email
+    const result = await sendMarketingEmail(
+      testEmail,
+      template.subject,
+      template.html_content,
+      template.from_email,
+      'Test User'
+    );
+
+    if (result.success) {
+      return res.json({ message: 'Test email sent successfully' });
+    } else {
+      return res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return res.status(500).json({ error: 'Failed to send test email' });
+  }
+});
+
+// Get recipients for a template
+router.get('/api/email-templates/:id/recipients', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    let recipients: { email: string; name?: string }[] = [];
+
+    switch (template.recipient_type) {
+      case 'all':
+        // Get all waitlist members
+        const allMembers = await db.query.waitlist.findMany({
+          where: eq(waitlist.verified, true)
+        });
+        recipients = allMembers.map(member => ({
+          email: member.email,
+          name: member.first_name && member.last_name ? 
+            `${member.first_name} ${member.last_name}` : undefined
+        }));
+        break;
+        
+      case 'waitlist':
+        // Get only waitlist members
+        const waitlistMembers = await db.query.waitlist.findMany({
+          where: eq(waitlist.verified, true)
+        });
+        recipients = waitlistMembers.map(member => ({
+          email: member.email,
+          name: member.first_name && member.last_name ? 
+            `${member.first_name} ${member.last_name}` : undefined
+        }));
+        break;
+        
+      case 'custom':
+        // Parse custom filter
+        if (template.recipient_filter) {
+          try {
+            const filter = JSON.parse(template.recipient_filter);
+            recipients = filter.emails || [];
+          } catch (error) {
+            console.error('Error parsing recipient filter:', error);
+            recipients = [];
+          }
+        }
+        break;
+    }
+
+    return res.json({ recipients, count: recipients.length });
+  } catch (error) {
+    console.error('Error fetching recipients:', error);
+    return res.status(500).json({ error: 'Failed to fetch recipients' });
+  }
+});
+
+// Send email campaign
+router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Get recipients
+    const recipientsResponse = await fetch(`${req.protocol}://${req.get('host')}/api/email-templates/${id}/recipients`);
+    const { recipients } = await recipientsResponse.json();
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    // Send emails to all recipients
+    for (const recipient of recipients) {
+      try {
+        const result = await sendMarketingEmail(
+          recipient.email,
+          template.subject,
+          template.html_content,
+          template.from_email,
+          recipient.name
+        );
+
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+          errors.push(`${recipient.email}: ${result.error}`);
+        }
+      } catch (error) {
+        errorCount++;
+        errors.push(`${recipient.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return res.json({
+      message: 'Email campaign completed',
+      successCount,
+      errorCount,
+      totalRecipients: recipients.length,
+      errors: errors.slice(0, 10) // Return first 10 errors
+    });
+  } catch (error) {
+    console.error('Error sending email campaign:', error);
+    return res.status(500).json({ error: 'Failed to send email campaign' });
+  }
+});
+
+// Duplicate template
+router.post('/api/email-templates/:id/duplicate', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    // Create duplicate with modified name
+    const duplicateData = {
+      ...template,
+      name: `${template.name} (Copy)`,
+      id: undefined,
+      created_at: undefined,
+      updated_at: undefined
+    };
+
+    const [duplicatedTemplate] = await db.insert(emailTemplates).values(duplicateData).returning();
+    
+    return res.status(201).json(duplicatedTemplate);
+  } catch (error) {
+    console.error('Error duplicating template:', error);
+    return res.status(500).json({ error: 'Failed to duplicate template' });
   }
 });
 

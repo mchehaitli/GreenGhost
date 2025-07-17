@@ -43,6 +43,11 @@ export const emailTemplates = pgTable("email_templates", {
   name: text("name").notNull(),
   subject: text("subject").notNull(),
   html_content: text("html_content").notNull(),
+  from_email: text("from_email").default('noreply@greenghost.io'),
+  recipient_type: text("recipient_type").default('custom'), // 'all', 'waitlist', 'custom'
+  recipient_filter: text("recipient_filter"), // JSON string for custom filters
+  template_type: text("template_type").default('custom'), // 'system', 'custom', 'campaign'
+  is_active: boolean("is_active").default(true).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -146,6 +151,12 @@ export const insertEmailTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
   subject: z.string().min(1, "Email subject is required"),
   html_content: z.string().min(1, "Email content is required"),
+  from_email: z.string().email("Valid email required").optional(),
+  recipient_type: z.enum(['all', 'waitlist', 'custom']).optional(),
+  recipient_filter: z.string().optional(),
+  template_type: z.enum(['system', 'custom', 'campaign']).optional(),
+  is_active: z.boolean().optional(),
+  updated_at: z.date().optional(),
 });
 
 export const insertPricingPlanSchema = z.object({
