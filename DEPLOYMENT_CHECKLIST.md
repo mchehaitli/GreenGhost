@@ -1,9 +1,9 @@
-# GreenGhost Tech Deployment Checklist
+# GreenGhost Deployment Checklist
 
 ## Pre-Deployment Setup
 
 ### ✅ Repository Setup
-- [ ] Create GitHub repository `greenghosttech-website`
+- [ ] Create GitHub repository `greenghost-website`
 - [ ] Push code to GitHub
 - [ ] Verify all files are committed
 

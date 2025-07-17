@@ -11,20 +11,34 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
-// Email addresses for different purposes
+// Email addresses for different purposes - use Gmail account for from field
+const getFromAddress = (alias: string) => {
+  const gmailUser = process.env.GMAIL_USER;
+  if (!gmailUser) return alias;
+  
+  // Use Gmail account with alias name for better deliverability
+  const [username] = gmailUser.split('@');
+  return `GreenGhost ${alias.split('@')[0]} <${gmailUser}>`;
+};
+
 const EMAIL_ADDRESSES = {
-  verification: 'verify@greenghost.io',
-  welcome: 'welcome@greenghost.io',
-  marketing: 'noreply@greenghost.io',
-  contact: 'contact@greenghost.io',
-  admin: 'support@greenghost.io'
+  verification: getFromAddress('verify@greenghost.io'),
+  welcome: getFromAddress('welcome@greenghost.io'),
+  marketing: getFromAddress('noreply@greenghost.io'),
+  contact: getFromAddress('contact@greenghost.io'),
+  admin: getFromAddress('support@greenghost.io')
 };
 
 // Test the email connection
