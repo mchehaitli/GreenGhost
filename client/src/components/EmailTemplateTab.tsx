@@ -394,9 +394,14 @@ export function EmailTemplateTab() {
   };
 
   const handleSubmit = async (data: EmailTemplateFormData) => {
+    console.log('handleSubmit called with data:', data);
+    console.log('selectedTemplate:', selectedTemplate);
+    
     if (selectedTemplate) {
+      console.log('Updating template with ID:', selectedTemplate.id);
       await updateTemplateMutation.mutateAsync({ ...data, id: selectedTemplate.id });
     } else {
+      console.log('Creating new template');
       await createTemplateMutation.mutateAsync(data);
     }
   };
@@ -1718,7 +1723,7 @@ export function EmailTemplateTab() {
                     </>
                   )}
 
-                  <div className="flex-1 grid grid-cols-2 gap-4 min-h-0" style={{ height: 'calc(100vh - 280px)' }}>
+                  <div className="flex-1 grid grid-cols-2 gap-4 min-h-0" style={{ height: '60vh' }}>
                     <div className="space-y-2 flex flex-col">
                       <FormField
                         control={templateForm.control}
@@ -1730,7 +1735,7 @@ export function EmailTemplateTab() {
                               <Textarea
                                 {...field}
                                 className="font-mono flex-1 resize-none min-h-0"
-                                style={{ height: 'calc(100vh - 340px)' }}
+                                style={{ height: '55vh' }}
                                 placeholder="Enter your HTML email content here..."
                               />
                             </FormControl>
@@ -1741,7 +1746,7 @@ export function EmailTemplateTab() {
                     </div>
                     <div className="space-y-2 flex flex-col">
                       <label className="text-sm font-medium">Live Preview</label>
-                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm flex-1" style={{ height: 'calc(100vh - 340px)' }}>
+                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm flex-1" style={{ height: '55vh' }}>
                         <iframe 
                           srcDoc={templateForm.watch('html_content') || '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: Arial, sans-serif;">Start typing HTML to see preview...</div>'}
                           className="w-full h-full border-0"
