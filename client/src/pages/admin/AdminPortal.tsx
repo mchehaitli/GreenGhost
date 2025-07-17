@@ -840,7 +840,7 @@ export default function AdminPortal() {
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [selectedEntries, setSelectedEntries] = useState<number[]>([]);
+
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [segmentationCriteria, setSegmentationCriteria] = useState<SegmentationCriteria>({
     dateRange: null,
@@ -855,6 +855,8 @@ export default function AdminPortal() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<Set<number>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -1067,6 +1069,62 @@ export default function AdminPortal() {
     setEditingEntry(entry);
     setShowEditDialog(true);
   };
+
+  // Handle selecting/deselecting entries
+  const handleSelectEntry = (entryId: number, selected: boolean) => {
+    setSelectedEntries(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(entryId);
+      } else {
+        newSet.delete(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle select all/none
+  const handleSelectAll = (selected: boolean) => {
+    if (selected && waitlistEntries) {
+      setSelectedEntries(new Set(waitlistEntries.map(entry => entry.id)));
+    } else {
+      setSelectedEntries(new Set());
+    }
+  };
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (entryIds: number[]) => {
+      const deletePromises = entryIds.map(id => 
+        fetch(`/api/waitlist/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        })
+      );
+      const responses = await Promise.all(deletePromises);
+      const failedDeletes = responses.filter(r => !r.ok);
+      if (failedDeletes.length > 0) {
+        throw new Error(`Failed to delete ${failedDeletes.length} entries`);
+      }
+      return responses;
+    },
+    onSuccess: (_, entryIds) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+      setSelectedEntries(new Set());
+      setShowBulkDeleteDialog(false);
+      toast({
+        title: "Success",
+        description: `Deleted ${entryIds.length} entries successfully`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete some entries. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (authLoading) {
     return (
@@ -1369,6 +1427,34 @@ export default function AdminPortal() {
               </div>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedEntries.size > 0 && (
+              <div className="bg-muted/50 border rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {selectedEntries.size} entries selected
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedEntries(new Set())}
+                    >
+                      Clear Selection
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowBulkDeleteDialog(true)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {waitlistLoading ? (
               <LoadingSpinner />
             ) : (
@@ -1376,6 +1462,12 @@ export default function AdminPortal() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={waitlistEntries ? selectedEntries.size === waitlistEntries.length && waitlistEntries.length > 0 : false}
+                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                        />
+                      </TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Location</TableHead>
@@ -1411,6 +1503,12 @@ export default function AdminPortal() {
                   <TableBody>
                     {filteredEntries.map((entry) => (
                       <TableRow key={entry.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedEntries.has(entry.id)}
+                            onCheckedChange={(checked) => handleSelectEntry(entry.id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{entry.email}</TableCell>
                         <TableCell>
                           {entry.first_name || entry.last_name ? 
@@ -1994,6 +2092,50 @@ export default function AdminPortal() {
               isLoading={editEntryMutation.isPending}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Multiple Entries</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedEntries.size} selected entries? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              The following entries will be permanently deleted:
+            </p>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {waitlistEntries && Array.from(selectedEntries).map(entryId => {
+                const entry = waitlistEntries.find(e => e.id === entryId);
+                return entry ? (
+                  <div key={entryId} className="text-sm bg-muted/50 p-2 rounded">
+                    {entry.email} - {entry.zip_code}
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => bulkDeleteMutation.mutate(Array.from(selectedEntries))}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Delete {selectedEntries.size} Entries
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
