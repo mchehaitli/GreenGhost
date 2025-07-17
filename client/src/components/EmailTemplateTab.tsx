@@ -116,7 +116,7 @@ const RECIPIENT_TYPES = {
 export function EmailTemplateTab() {
   const [selectedTemplate, setSelectedTemplate] = useState<SelectEmailTemplate | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('templates');
+  const [activeTab, setActiveTab] = useState('system');
   const [editingMode, setEditingMode] = useState<'visual' | 'html'>('visual');
   const [showCampaignManager, setShowCampaignManager] = useState(false);
   const [selectedCampaignTemplate, setSelectedCampaignTemplate] = useState<SelectEmailTemplate | null>(null);
@@ -912,11 +912,15 @@ export function EmailTemplateTab() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="system">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="system" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            System Templates
+          </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
-            Templates
+            Campaign Templates
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="w-4 h-4" />
@@ -928,30 +932,145 @@ export function EmailTemplateTab() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="templates" className="space-y-4">
-          {/* Search and Filter Bar */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input 
-                placeholder="Search templates..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <TabsContent value="system" className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">System Templates</h2>
+                <p className="text-muted-foreground">
+                  Manage automated email templates for user verification and welcome messages
+                </p>
+              </div>
             </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter templates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Templates</SelectItem>
-                <SelectItem value="system">System Templates</SelectItem>
-                <SelectItem value="custom">Custom Templates</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="inactive">Inactive Only</SelectItem>
-              </SelectContent>
-            </Select>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-lg font-semibold">Protected System Templates</h3>
+                  <Badge variant="secondary">Auto-managed</Badge>
+                </div>
+                <div className="grid gap-4">
+                  {systemTemplates.map((template) => (
+                    <Card key={template.id} className="border-blue-200">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-2">
+                            <CardTitle className="flex items-center gap-2">
+                              {template.name === 'Verification Email' && <CheckCircle className="w-5 h-5 text-green-500" />}
+                              {template.name === 'Welcome Email' && <Mail className="w-5 h-5 text-blue-500" />}
+                              {template.name}
+                              <Badge variant="secondary">System</Badge>
+                            </CardTitle>
+                            <CardDescription>
+                              From: {EMAIL_ALIASES[template.from_email] || template.from_email}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(template)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit HTML
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const testEmail = prompt("Enter test email address:");
+                                if (testEmail) {
+                                  sendEmailsMutation.mutate({
+                                    templateId: template.id,
+                                    testEmail: testEmail
+                                  });
+                                }
+                              }}
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              Test
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Subject: </span>
+                            <span className="text-sm">{template.subject}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">Purpose: </span>
+                            <span className="text-sm">
+                              {template.name === 'Welcome Email' ? 'Sent to new users after email verification' : 'Contains verification code for email confirmation'}
+                            </span>
+                          </div>
+                          <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '200px', maxHeight: '400px' }}>
+                            <iframe 
+                              srcDoc={template.html_content}
+                              className="w-full border-0"
+                              style={{ 
+                                height: '300px',
+                                minHeight: '200px'
+                              }}
+                              title={`Preview of ${template.name}`}
+                              scrolling="auto"
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Campaign Templates</h2>
+                <p className="text-muted-foreground">
+                  Create and manage custom email templates for marketing campaigns and newsletters
+                </p>
+              </div>
+              <Button onClick={() => {
+                setSelectedTemplate(null);
+                templateForm.reset();
+                visualForm.reset();
+                setEditingMode('visual');
+                setShowTemplateDialog(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Campaign Template
+              </Button>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className="flex gap-4 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input 
+                  placeholder="Search campaign templates..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter templates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Templates</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {isLoading ? (
@@ -959,107 +1078,14 @@ export function EmailTemplateTab() {
               <LoadingSpinner size="lg" />
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* System Templates Section */}
-              {systemTemplates.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-blue-500" />
-                    <h3 className="text-lg font-semibold">System Templates</h3>
-                    <Badge variant="secondary">Protected</Badge>
-                  </div>
-                  <div className="grid gap-4">
-                    {systemTemplates.map((template) => (
-                      <Card key={template.id} className="border-blue-200">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-2">
-                              <CardTitle className="flex items-center gap-2">
-                                {template.name === 'Verification Email' && <CheckCircle className="w-5 h-5 text-green-500" />}
-                                {template.name === 'Welcome Email' && <Mail className="w-5 h-5 text-blue-500" />}
-                                {template.name}
-                                <Badge variant="secondary">System</Badge>
-                              </CardTitle>
-                              <CardDescription>
-                                From: {EMAIL_ALIASES[template.from_email] || template.from_email}
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleEdit(template)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  const testEmail = prompt("Enter test email address:");
-                                  if (testEmail) {
-                                    sendEmailsMutation.mutate({
-                                      templateId: template.id,
-                                      testEmail: testEmail
-                                    });
-                                  }
-                                }}
-                              >
-                                <Send className="h-4 w-4 mr-2" />
-                                Test
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">Subject: </span>
-                              <span className="text-sm">{template.subject}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">Recipients: </span>
-                              <span className="text-sm">{RECIPIENT_TYPES[template.recipient_type] || template.recipient_type}</span>
-                            </div>
-                            <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '600px' }}>
-                              <iframe 
-                                srcDoc={template.html_content}
-                                className="w-full border-0"
-                                style={{ 
-                                  height: '400px',
-                                  minHeight: '300px'
-                                }}
-                                title={`Preview of ${template.name}`}
-                                scrolling="auto"
-                                onLoad={(e) => {
-                                  const iframe = e.target as HTMLIFrameElement;
-                                  try {
-                                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                                    if (iframeDoc) {
-                                      const bodyHeight = iframeDoc.body?.scrollHeight || 400;
-                                      const adjustedHeight = Math.min(Math.max(bodyHeight + 20, 300), 600);
-                                      iframe.style.height = `${adjustedHeight}px`;
-                                    }
-                                  } catch (error) {
-                                    // Cross-origin restrictions, keep default height
-                                  }
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Custom Templates Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-green-500" />
-                  <h3 className="text-lg font-semibold">Custom Templates</h3>
-                  <Badge variant="outline">{customTemplates.length} templates</Badge>
-                </div>
-                
-                {customTemplates.length === 0 ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-green-500" />
+                <h3 className="text-lg font-semibold">Campaign Templates</h3>
+                <Badge variant="outline">{customTemplates.length} templates</Badge>
+              </div>
+              
+              {customTemplates.length === 0 ? (
                   <Card>
                     <CardContent className="pt-6">
                       <div className="text-center py-8">
@@ -1171,7 +1197,6 @@ export function EmailTemplateTab() {
                     ))}
                   </div>
                 )}
-              </div>
             </div>
           )}
         </TabsContent>

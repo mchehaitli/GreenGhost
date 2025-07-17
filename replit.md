@@ -122,6 +122,7 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 ## Changelog
 
 Recent Changes:
+- July 17, 2025: Added tab separation for system vs campaign templates - Created dedicated "System Templates" and "Campaign Templates" tabs for better organization, system templates (Welcome/Verification) now shown separately from user-created campaign templates, improved navigation and template management workflow
 - July 17, 2025: Fixed system template update functionality and eliminated duplicates - Resolved form validation blocking system template updates by creating bypass logic for required fields, removed duplicate database entries for Welcome and Verification emails to prevent showing multiple copies, system templates now update successfully via HTML editor interface  
 - July 17, 2025: Enhanced campaign manager with persistent settings and from email selection - Added automatic saving/restoring of campaign settings when switching between templates, implemented from email selector in campaign manager, fixed email sending authentication issues for prospect emails, ensured all prospect email lists and recipient selections persist across template switches
 - July 17, 2025: Restored original email template management system from 2+ months ago - Replaced broken AdvancedEmailEditor with clean HTML textarea implementation, restored simple and reliable email template editing with preview functionality, fixed text visibility issues in visual editor
