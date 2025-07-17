@@ -118,7 +118,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
-      subject: "Your GreenGhost Tech Verification Code",
+      subject: "Your GreenGhost Verification Code",
       html: emailHtml,
     });
 
@@ -136,14 +136,14 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const welcomeTemplate = await readTemplate('welcome-email.html');
     const content = welcomeTemplate
-      .replace('{{dashboardUrl}}', 'https://app.greenghosttech.com/dashboard');
+      .replace('{{dashboardUrl}}', 'https://app.greenghost.io/dashboard');
 
-    const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost Tech');
+    const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost');
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
-      subject: "Welcome to GreenGhost Tech's Waitlist!",
+      subject: "Welcome to GreenGhost's Waitlist!",
       html: emailHtml,
     });
 

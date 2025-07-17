@@ -86,7 +86,7 @@ const Footer = () => {
               <h3 className="font-semibold mb-4">Contact</h3>
               <ul className="space-y-2">
                 <li className="text-sm text-muted-foreground">
-                  contact@greenghosttech.com
+                  contact@greenghost.io
                 </li>
                 <li className="text-sm text-muted-foreground">
                   Beta Launch: Fall 2025
