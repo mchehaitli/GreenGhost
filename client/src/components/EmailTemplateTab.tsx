@@ -95,11 +95,12 @@ const EMAIL_ALIASES = {
 };
 
 const RECIPIENT_TYPES = {
-  'all': 'All Users',
-  'verified': 'Verified Users Only',
-  'unverified': 'Unverified Users Only',
-  'waitlist': 'Waitlist Members',
-  'custom': 'Custom Filter'
+  'waitlist': 'All Waitlist Members',
+  'verified': 'Verified Email Addresses',
+  'unverified': 'Unverified Email Addresses',
+  'recent': 'Recently Joined (Last 30 Days)',
+  'prospects': 'Potential Customers',
+  'custom': 'Custom Selection'
 };
 
 export function EmailTemplateTab() {
@@ -461,10 +462,43 @@ export function EmailTemplateTab() {
 
               <Separator />
 
+              <div className="space-y-4">
+                <h4 className="font-medium">Campaign Recipients</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-2">Target Audience</label>
+                    <Select defaultValue="waitlist">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select target audience" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(RECIPIENT_TYPES).map(([type, label]) => (
+                          <SelectItem key={type} value={type}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-2">Service Areas (Optional)</label>
+                    <Input 
+                      placeholder="Enter ZIP codes (e.g., 78701, 78704) or leave blank for all areas"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Leave empty to send to all areas, or specify ZIP codes to target specific service regions
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
-                    const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all):");
+                    const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all service areas):");
                     if (zipCodes !== null) {
                       const zipCodeArray = zipCodes.split(",")
                         .map(zip => zip.trim())
@@ -478,11 +512,11 @@ export function EmailTemplateTab() {
                   className="flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  Send Campaign
+                  Send to Audience
                 </Button>
                 <Button variant="outline">
                   <Eye className="w-4 h-4 mr-2" />
-                  Test Email
+                  Send Test Email
                 </Button>
               </div>
             </div>
