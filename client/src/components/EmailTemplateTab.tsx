@@ -431,13 +431,30 @@ export function EmailTemplateTab() {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium">Email Preview</h4>
-                <div className="relative border rounded-lg h-96 overflow-hidden bg-white shadow-sm">
+                <h4 className="font-medium">Email Preview (Actual Size)</h4>
+                <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '400px', maxHeight: '800px' }}>
                   <iframe 
                     srcDoc={selectedCampaignTemplate.html_content}
-                    className="absolute inset-0 border-0 w-full h-full"
+                    className="w-full border-0"
+                    style={{ 
+                      height: '600px',
+                      minHeight: '400px'
+                    }}
                     title="Email Preview"
                     scrolling="auto"
+                    onLoad={(e) => {
+                      const iframe = e.target as HTMLIFrameElement;
+                      try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                        if (iframeDoc) {
+                          const bodyHeight = iframeDoc.body?.scrollHeight || 600;
+                          const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 400), 800);
+                          iframe.style.height = `${adjustedHeight}px`;
+                        }
+                      } catch (error) {
+                        // Cross-origin restrictions, keep default height
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -597,18 +614,29 @@ export function EmailTemplateTab() {
                               <span className="text-sm font-medium text-muted-foreground">Recipients: </span>
                               <span className="text-sm">{RECIPIENT_TYPES[template.recipient_type] || template.recipient_type}</span>
                             </div>
-                            <div className="relative border rounded-lg h-56 overflow-hidden bg-white shadow-sm">
+                            <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '600px' }}>
                               <iframe 
                                 srcDoc={template.html_content}
-                                className="absolute inset-0 border-0 w-full h-full"
+                                className="w-full border-0"
                                 style={{ 
-                                  transform: 'scale(0.75)', 
-                                  transformOrigin: 'top left',
-                                  width: '133.33%',
-                                  height: '133.33%'
+                                  height: '400px',
+                                  minHeight: '300px'
                                 }}
                                 title={`Preview of ${template.name}`}
-                                scrolling="no"
+                                scrolling="auto"
+                                onLoad={(e) => {
+                                  const iframe = e.target as HTMLIFrameElement;
+                                  try {
+                                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                                    if (iframeDoc) {
+                                      const bodyHeight = iframeDoc.body?.scrollHeight || 400;
+                                      const adjustedHeight = Math.min(Math.max(bodyHeight + 20, 300), 600);
+                                      iframe.style.height = `${adjustedHeight}px`;
+                                    }
+                                  } catch (error) {
+                                    // Cross-origin restrictions, keep default height
+                                  }
+                                }}
                               />
                             </div>
                           </div>
@@ -695,18 +723,29 @@ export function EmailTemplateTab() {
                               <span className="text-sm font-medium text-muted-foreground">Subject: </span>
                               <span className="text-sm">{template.subject}</span>
                             </div>
-                            <div className="relative border rounded-lg h-56 overflow-hidden bg-white shadow-sm">
+                            <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '600px' }}>
                               <iframe 
                                 srcDoc={template.html_content}
-                                className="absolute inset-0 border-0 w-full h-full"
+                                className="w-full border-0"
                                 style={{ 
-                                  transform: 'scale(0.75)', 
-                                  transformOrigin: 'top left',
-                                  width: '133.33%',
-                                  height: '133.33%'
+                                  height: '400px',
+                                  minHeight: '300px'
                                 }}
                                 title={`Preview of ${template.name}`}
-                                scrolling="no"
+                                scrolling="auto"
+                                onLoad={(e) => {
+                                  const iframe = e.target as HTMLIFrameElement;
+                                  try {
+                                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                                    if (iframeDoc) {
+                                      const bodyHeight = iframeDoc.body?.scrollHeight || 400;
+                                      const adjustedHeight = Math.min(Math.max(bodyHeight + 20, 300), 600);
+                                      iframe.style.height = `${adjustedHeight}px`;
+                                    }
+                                  } catch (error) {
+                                    // Cross-origin restrictions, keep default height
+                                  }
+                                }}
                               />
                             </div>
                           </div>
@@ -1108,13 +1147,30 @@ export function EmailTemplateTab() {
                     <Separator />
 
                     <div className="space-y-4">
-                      <h4 className="font-semibold">Live Preview</h4>
-                      <div className="relative border rounded-lg h-64 overflow-hidden bg-white shadow-sm">
+                      <h4 className="font-semibold">Live Preview (Actual Size)</h4>
+                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '700px' }}>
                         <iframe 
                           srcDoc={generateHtmlFromVisual(visualForm.watch())}
-                          className="absolute inset-0 border-0 w-full h-full"
+                          className="w-full border-0"
+                          style={{ 
+                            height: '500px',
+                            minHeight: '300px'
+                          }}
                           title="Email Preview"
                           scrolling="auto"
+                          onLoad={(e) => {
+                            const iframe = e.target as HTMLIFrameElement;
+                            try {
+                              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                              if (iframeDoc) {
+                                const bodyHeight = iframeDoc.body?.scrollHeight || 500;
+                                const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 300), 700);
+                                iframe.style.height = `${adjustedHeight}px`;
+                              }
+                            } catch (error) {
+                              // Cross-origin restrictions, keep default height
+                            }
+                          }}
                         />
                       </div>
                     </div>
@@ -1236,13 +1292,30 @@ export function EmailTemplateTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Live Preview</label>
-                      <div className="relative border rounded-lg h-72 overflow-hidden bg-white shadow-sm">
+                      <label className="text-sm font-medium">Live Preview (Actual Size)</label>
+                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '700px' }}>
                         <iframe 
                           srcDoc={templateForm.watch('html_content') || '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: Arial, sans-serif;">Start typing HTML to see preview...</div>'}
-                          className="absolute inset-0 border-0 w-full h-full"
+                          className="w-full border-0"
+                          style={{ 
+                            height: '500px',
+                            minHeight: '300px'
+                          }}
                           title="HTML Preview"
                           scrolling="auto"
+                          onLoad={(e) => {
+                            const iframe = e.target as HTMLIFrameElement;
+                            try {
+                              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                              if (iframeDoc) {
+                                const bodyHeight = iframeDoc.body?.scrollHeight || 500;
+                                const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 300), 700);
+                                iframe.style.height = `${adjustedHeight}px`;
+                              }
+                            } catch (error) {
+                              // Cross-origin restrictions, keep default height
+                            }
+                          }}
                         />
                       </div>
                     </div>
