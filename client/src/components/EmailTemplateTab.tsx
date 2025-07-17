@@ -355,6 +355,8 @@ export function EmailTemplateTab() {
           subject: fullTemplate.subject,
           html_content: fullTemplate.html_content,
         });
+        // Force HTML editor for system templates
+        setEditingMode('html');
       } else {
         // Regular templates can be used directly
         setSelectedTemplate(template);
@@ -363,6 +365,7 @@ export function EmailTemplateTab() {
           subject: template.subject,
           html_content: template.html_content,
         });
+        setEditingMode('visual');
       }
       setShowTemplateDialog(true);
     } catch (error) {
@@ -946,7 +949,7 @@ export function EmailTemplateTab() {
                                 {template.name === 'Verification Email' && <CheckCircle className="w-5 h-5 text-green-500" />}
                                 {template.name === 'Welcome Email' && <Mail className="w-5 h-5 text-blue-500" />}
                                 {template.name}
-                                {!template.is_active && <Badge variant="destructive">Inactive</Badge>}
+                                <Badge variant="secondary">System</Badge>
                               </CardTitle>
                               <CardDescription>
                                 From: {EMAIL_ALIASES[template.from_email] || template.from_email}
@@ -1274,7 +1277,7 @@ export function EmailTemplateTab() {
       </Tabs>
 
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedTemplate ? "Edit Template" : "Create Template"}
@@ -1285,9 +1288,12 @@ export function EmailTemplateTab() {
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={editingMode} onValueChange={(value) => setEditingMode(value as 'visual' | 'html')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+          <Tabs value={editingMode} onValueChange={(value) => setEditingMode(value as 'visual' | 'html')} className="flex-1 flex flex-col min-h-0">
+            <TabsList className={`grid w-full ${selectedTemplate && selectedTemplate.id < 0 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {/* Only show Visual Editor for non-system templates */}
+              {(!selectedTemplate || selectedTemplate.id >= 0) && (
+                <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+              )}
               <TabsTrigger value="html">HTML Editor</TabsTrigger>
             </TabsList>
 
@@ -1596,9 +1602,9 @@ export function EmailTemplateTab() {
                 </Form>
             </TabsContent>
 
-            <TabsContent value="html" className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <TabsContent value="html" className="space-y-4 flex-1 flex flex-col min-h-0">
               <Form {...templateForm}>
-                <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4">
+                <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4 flex-1 flex flex-col">
                   {/* Show simplified form for system templates */}
                   {selectedTemplate && selectedTemplate.id < 0 ? (
                     <div className="space-y-4">
@@ -1712,18 +1718,18 @@ export function EmailTemplateTab() {
                     </>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4 h-80">
-                    <div className="space-y-2">
+                  <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
+                    <div className="space-y-2 flex flex-col">
                       <FormField
                         control={templateForm.control}
                         name="html_content"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="flex-1 flex flex-col">
                             <FormLabel>HTML Content</FormLabel>
                             <FormControl>
                               <Textarea
                                 {...field}
-                                className="font-mono h-72 resize-none"
+                                className="font-mono flex-1 resize-none min-h-0"
                                 placeholder="Enter your HTML email content here..."
                               />
                             </FormControl>
@@ -1732,44 +1738,29 @@ export function EmailTemplateTab() {
                         )}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Live Preview (Actual Size)</label>
-                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm" style={{ height: 'auto', minHeight: '300px', maxHeight: '700px' }}>
+                    <div className="space-y-2 flex flex-col">
+                      <label className="text-sm font-medium">Live Preview</label>
+                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm flex-1">
                         <iframe 
                           srcDoc={templateForm.watch('html_content') || '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: Arial, sans-serif;">Start typing HTML to see preview...</div>'}
-                          className="w-full border-0"
-                          style={{ 
-                            height: '500px',
-                            minHeight: '300px'
-                          }}
+                          className="w-full h-full border-0"
                           title="HTML Preview"
                           scrolling="auto"
-                          onLoad={(e) => {
-                            const iframe = e.target as HTMLIFrameElement;
-                            try {
-                              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                              if (iframeDoc) {
-                                const bodyHeight = iframeDoc.body?.scrollHeight || 500;
-                                const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 300), 700);
-                                iframe.style.height = `${adjustedHeight}px`;
-                              }
-                            } catch (error) {
-                              // Cross-origin restrictions, keep default height
-                            }
-                          }}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setShowTemplateDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">
-                      {selectedTemplate ? "Update Template" : "Create Template"}
-                    </Button>
-                  </DialogFooter>
+                  <div className="flex-shrink-0 pt-4 border-t">
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setShowTemplateDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        {selectedTemplate ? "Update Template" : "Create Template"}
+                      </Button>
+                    </DialogFooter>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
