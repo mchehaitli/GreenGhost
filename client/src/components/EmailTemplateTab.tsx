@@ -116,6 +116,13 @@ export function EmailTemplateTab() {
   const [showCustomRecipients, setShowCustomRecipients] = useState(false);
   const [prospectEmails, setProspectEmails] = useState<string[]>([]);
   const [newProspectEmail, setNewProspectEmail] = useState('');
+  const [campaignFromEmail, setCampaignFromEmail] = useState('');
+  const [campaignSettings, setCampaignSettings] = useState<{[key: string]: {
+    fromEmail: string;
+    prospectEmails: string[];
+    selectedRecipientType: string;
+    selectedCustomRecipients: string[];
+  }}>({});
   const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
@@ -386,9 +393,45 @@ export function EmailTemplateTab() {
     handleSubmit(templateData);
   };
 
+  const saveCampaignSettings = (templateId: string) => {
+    setCampaignSettings(prev => ({
+      ...prev,
+      [templateId]: {
+        fromEmail: campaignFromEmail,
+        prospectEmails,
+        selectedRecipientType,
+        selectedCustomRecipients
+      }
+    }));
+  };
+
+  const loadCampaignSettings = (templateId: string) => {
+    const settings = campaignSettings[templateId];
+    if (settings) {
+      setCampaignFromEmail(settings.fromEmail);
+      setProspectEmails(settings.prospectEmails);
+      setSelectedRecipientType(settings.selectedRecipientType);
+      setSelectedCustomRecipients(settings.selectedCustomRecipients);
+    } else {
+      // Reset to defaults for new template
+      setCampaignFromEmail('');
+      setProspectEmails([]);
+      setSelectedRecipientType('waitlist');
+      setSelectedCustomRecipients([]);
+    }
+  };
+
   const handleStartCampaign = (template: SelectEmailTemplate) => {
+    // Save current settings if there's a selected template
+    if (selectedCampaignTemplate) {
+      saveCampaignSettings(selectedCampaignTemplate.id.toString());
+    }
+    
     setSelectedCampaignTemplate(template);
     setShowCampaignManager(true);
+    
+    // Load settings for the new template
+    loadCampaignSettings(template.id.toString());
   };
 
   const filteredTemplates = templates.filter(template => {
@@ -414,7 +457,13 @@ export function EmailTemplateTab() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <Button variant="outline" onClick={() => setShowCampaignManager(false)}>
+            <Button variant="outline" onClick={() => {
+              // Save current campaign settings before going back
+              if (selectedCampaignTemplate) {
+                saveCampaignSettings(selectedCampaignTemplate.id.toString());
+              }
+              setShowCampaignManager(false);
+            }}>
               ← Back to Templates
             </Button>
           </div>
@@ -439,8 +488,22 @@ export function EmailTemplateTab() {
                   <p className="text-sm text-muted-foreground">{selectedCampaignTemplate.subject}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">From Email</Label>
-                  <p className="text-sm text-muted-foreground">{selectedCampaignTemplate.from_email}</p>
+                  <Label className="text-sm font-medium">Send From Email</Label>
+                  <Select 
+                    value={campaignFromEmail || selectedCampaignTemplate.from_email}
+                    onValueChange={setCampaignFromEmail}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(EMAIL_ALIASES).map(([email, alias]) => (
+                        <SelectItem key={email} value={email}>
+                          {alias} ({email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -666,6 +729,7 @@ export function EmailTemplateTab() {
                       sendEmailsMutation.mutate({
                         templateId: selectedCampaignTemplate.id,
                         customRecipients: prospectEmails,
+                        fromEmail: campaignFromEmail || selectedCampaignTemplate.from_email,
                       });
                     } else if (selectedRecipientType === 'custom') {
                       if (selectedCustomRecipients.length === 0) {
@@ -680,6 +744,7 @@ export function EmailTemplateTab() {
                       sendEmailsMutation.mutate({
                         templateId: selectedCampaignTemplate.id,
                         customRecipients: selectedCustomRecipients,
+                        fromEmail: campaignFromEmail || selectedCampaignTemplate.from_email,
                       });
                     } else {
                       // Original ZIP code logic for other recipient types

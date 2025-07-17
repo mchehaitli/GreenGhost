@@ -263,7 +263,7 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    const { customRecipients, zipCodes, recipientType } = req.body;
+    const { customRecipients, zipCodes, recipientType, fromEmail } = req.body;
     let recipients: Array<{email: string, name?: string}> = [];
 
     // Handle different recipient types
@@ -308,7 +308,7 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
           recipient.email,
           template.subject,
           template.html_content,
-          template.from_email,
+          fromEmail || template.from_email,
           recipient.name
         );
 
