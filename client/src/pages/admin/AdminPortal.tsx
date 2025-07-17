@@ -622,6 +622,211 @@ function AccountSettingsPanel({ currentUser }: AccountSettingsPanelProps) {
   );
 }
 
+// Edit Entry Form Component
+type EditEntryFormProps = {
+  entry: WaitlistEntry;
+  onSave: (data: Partial<WaitlistEntry>) => void;
+  onCancel: () => void;
+  isLoading: boolean;
+};
+
+const editEntrySchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  phone_number: z.string().optional(),
+  street_address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().min(5, "ZIP code must be at least 5 characters"),
+  notes: z.string().optional(),
+});
+
+function EditEntryForm({ entry, onSave, onCancel, isLoading }: EditEntryFormProps) {
+  const form = useForm<z.infer<typeof editEntrySchema>>({
+    resolver: zodResolver(editEntrySchema),
+    defaultValues: {
+      email: entry.email,
+      first_name: entry.first_name || "",
+      last_name: entry.last_name || "",
+      phone_number: entry.phone_number || "",
+      street_address: entry.street_address || "",
+      city: entry.city || "",
+      state: entry.state || "",
+      zip_code: entry.zip_code,
+      notes: entry.notes || "",
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof editEntrySchema>) => {
+    onSave(data);
+  };
+
+  const handleZipChange = async (zip: string) => {
+    if (zip.length === 5) {
+      try {
+        const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+        if (response.ok) {
+          const data = await response.json();
+          const place = data.places[0];
+          form.setValue('city', place['place name']);
+          form.setValue('state', place['state abbreviation']);
+        }
+      } catch (error) {
+        // Silently fail
+      }
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Email address" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="zip_code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ZIP Code</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    placeholder="ZIP code"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleZipChange(e.target.value);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="first_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="First name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="last_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Last name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone_number"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Phone number" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="street_address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Street Address</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Street address" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="City" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="State" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea {...field} placeholder="Additional notes" rows={3} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+}
+
 export default function AdminPortal() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
@@ -645,11 +850,11 @@ export default function AdminPortal() {
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<WaitlistEntry | null>(null);
-  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
-  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
   const [isAutoPopulating, setIsAutoPopulating] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -827,37 +1032,41 @@ export default function AdminPortal() {
     setIsAutoPopulating(false);
   };
 
-  // Save changes mutation
-  const saveChangesMutation = useMutation({
-    mutationFn: async (changes: Record<number, Partial<WaitlistEntry>>) => {
-      const updates = Object.entries(changes).map(async ([id, updateData]) => {
-        const response = await fetch(`/api/waitlist/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updateData),
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error(`Failed to update entry ${id}`);
-        return response.json();
+  // Edit entry mutation
+  const editEntryMutation = useMutation({
+    mutationFn: async (data: { id: number; updates: Partial<WaitlistEntry> }) => {
+      const response = await fetch(`/api/waitlist/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.updates),
+        credentials: 'include',
       });
-      return Promise.all(updates);
+      if (!response.ok) throw new Error('Failed to update entry');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
-      setUnsavedChanges({});
+      setShowEditDialog(false);
+      setEditingEntry(null);
       toast({
         title: "Success",
-        description: "All changes saved successfully",
+        description: "Entry updated successfully",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to save changes. Please try again.",
+        description: "Failed to update entry. Please try again.",
         variant: "destructive",
       });
     },
   });
+
+  // Handle edit entry
+  const handleEditEntry = (entry: WaitlistEntry) => {
+    setEditingEntry(entry);
+    setShowEditDialog(true);
+  };
 
   if (authLoading) {
     return (
@@ -1156,25 +1365,7 @@ export default function AdminPortal() {
                     </>
                   )}
                 </Button>
-                {Object.keys(unsavedChanges).length > 0 && (
-                  <Button
-                    onClick={() => saveChangesMutation.mutate(unsavedChanges)}
-                    disabled={saveChangesMutation.isPending}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {saveChangesMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes ({Object.keys(unsavedChanges).length})
-                      </>
-                    )}
-                  </Button>
-                )}
+
               </div>
             </div>
 
@@ -1186,12 +1377,8 @@ export default function AdminPortal() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email</TableHead>
-                      <TableHead>First Name</TableHead>
-                      <TableHead>Last Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>State</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Location</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleSort('zip_code')}
@@ -1218,109 +1405,36 @@ export default function AdminPortal() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead>Notes</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredEntries.map((entry) => (
-                      <TableRow key={entry.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          <Input
-                            value={unsavedChanges[entry.id]?.email ?? entry.email}
-                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                          />
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-medium">{entry.email}</TableCell>
+                        <TableCell>
+                          {entry.first_name || entry.last_name ? 
+                            `${entry.first_name || ''} ${entry.last_name || ''}`.trim() : 
+                            '-'
+                          }
                         </TableCell>
                         <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.first_name ?? entry.first_name ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'first_name', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="First name"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.last_name ?? entry.last_name ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'last_name', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="Last name"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.phone_number ?? entry.phone_number ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'phone_number', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="Phone"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.street_address ?? entry.street_address ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'street_address', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="Address"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.city ?? entry.city ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'city', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="City"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.state ?? entry.state ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'state', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="State"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code}
-                              onChange={(e) => {
-                                const zip = e.target.value;
-                                handleFieldChange(entry.id, 'zip_code', zip);
-                                if (zip.length === 5) {
-                                  handleCityStateFromZip(zip, entry.id);
-                                }
-                              }}
-                              className="border-transparent hover:border-border focus:border-primary max-w-[100px]"
-                              placeholder="ZIP"
-                            />
-                            {loadingZips[entry.id] && (
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
+                          <div className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-1 text-muted-foreground" />
+                            {entry.city && entry.state ? `${entry.city}, ${entry.state}` : '-'}
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={unsavedChanges[entry.id]?.notes ?? entry.notes ?? ''}
-                            onChange={(e) => handleFieldChange(entry.id, 'notes', e.target.value)}
-                            className="border-transparent hover:border-border focus:border-primary"
-                            placeholder="Notes"
-                          />
-                        </TableCell>
+                        <TableCell>{entry.zip_code}</TableCell>
+                        <TableCell>{new Date(entry.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                setSelectedEntry(entry);
-                                setShowDetailsDialog(true);
-                              }}
+                              onClick={() => handleEditEntry(entry)}
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4 mr-1" />
+                              Edit
                             </Button>
                             <Button 
                               variant="outline" 
@@ -1860,6 +1974,26 @@ export default function AdminPortal() {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Entry Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Waitlist Entry</DialogTitle>
+            <DialogDescription>
+              Update the information for this waitlist entry
+            </DialogDescription>
+          </DialogHeader>
+          {editingEntry && (
+            <EditEntryForm 
+              entry={editingEntry} 
+              onSave={(data) => editEntryMutation.mutate({ id: editingEntry.id, updates: data })}
+              onCancel={() => setShowEditDialog(false)}
+              isLoading={editEntryMutation.isPending}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
