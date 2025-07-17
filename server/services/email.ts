@@ -23,22 +23,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Email addresses for different purposes - use Gmail account for from field
-const getFromAddress = (alias: string) => {
-  const gmailUser = process.env.GMAIL_USER;
-  if (!gmailUser) return alias;
-  
-  // Use Gmail account with alias name for better deliverability
-  const [username] = gmailUser.split('@');
-  return `GreenGhost ${alias.split('@')[0]} <${gmailUser}>`;
-};
-
+// Email addresses for different purposes
+// Note: Gmail SMTP requires using the authenticated account as sender,
+// but we can set the display name to show the intended service
 const EMAIL_ADDRESSES = {
-  verification: getFromAddress('verify@greenghost.io'),
-  welcome: getFromAddress('welcome@greenghost.io'),
-  marketing: getFromAddress('noreply@greenghost.io'),
-  contact: getFromAddress('contact@greenghost.io'),
-  admin: getFromAddress('support@greenghost.io')
+  verification: `GreenGhost Verify <${process.env.GMAIL_USER}>`,
+  welcome: `GreenGhost Welcome <${process.env.GMAIL_USER}>`,
+  marketing: `GreenGhost <${process.env.GMAIL_USER}>`,
+  contact: `GreenGhost Contact <${process.env.GMAIL_USER}>`,
+  admin: `GreenGhost Support <${process.env.GMAIL_USER}>`
 };
 
 // Test the email connection
