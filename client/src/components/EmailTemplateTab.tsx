@@ -112,6 +112,9 @@ export function EmailTemplateTab() {
   const [selectedCampaignTemplate, setSelectedCampaignTemplate] = useState<SelectEmailTemplate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [selectedRecipientType, setSelectedRecipientType] = useState('waitlist');
+  const [selectedCustomRecipients, setSelectedCustomRecipients] = useState<string[]>([]);
+  const [showCustomRecipients, setShowCustomRecipients] = useState(false);
   const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
@@ -163,6 +166,17 @@ export function EmailTemplateTab() {
         credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to fetch email history");
+      return response.json();
+    },
+  });
+
+  const { data: waitlistData = [] } = useQuery({
+    queryKey: ["/api/waitlist"],
+    queryFn: async () => {
+      const response = await fetch("/api/waitlist", {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error("Failed to fetch waitlist");
       return response.json();
     },
   });
@@ -467,7 +481,16 @@ export function EmailTemplateTab() {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-medium block mb-2">Target Audience</label>
-                    <Select defaultValue="waitlist">
+                    <Select 
+                      defaultValue="waitlist" 
+                      onValueChange={(value) => {
+                        setSelectedRecipientType(value);
+                        setShowCustomRecipients(value === 'custom');
+                        if (value !== 'custom') {
+                          setSelectedCustomRecipients([]);
+                        }
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select target audience" />
                       </SelectTrigger>
@@ -480,14 +503,78 @@ export function EmailTemplateTab() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  {showCustomRecipients && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Select Recipients</label>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedCustomRecipients(waitlistData.map((m: any) => m.email))}
+                          >
+                            Select All
+                          </Button>
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedCustomRecipients([])}
+                          >
+                            Clear All
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
+                        {waitlistData.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No waitlist members found</p>
+                        ) : (
+                          waitlistData.map((member: any) => (
+                            <div key={member.email} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={member.email}
+                                checked={selectedCustomRecipients.includes(member.email)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCustomRecipients([...selectedCustomRecipients, member.email]);
+                                  } else {
+                                    setSelectedCustomRecipients(selectedCustomRecipients.filter(email => email !== member.email));
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <label htmlFor={member.email} className="text-sm flex-1 cursor-pointer">
+                                <span className="font-medium">{member.email}</span>
+                                {member.zip_code && <span className="text-muted-foreground ml-2">({member.zip_code})</span>}
+                                {member.is_verified && <span className="text-green-600 ml-2">✓</span>}
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {selectedCustomRecipients.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {selectedCustomRecipients.length} recipient(s) selected
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium block mb-2">Service Areas (Optional)</label>
                     <Input 
                       placeholder="Enter ZIP codes (e.g., 78701, 78704) or leave blank for all areas"
                       className="w-full"
+                      disabled={showCustomRecipients}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Leave empty to send to all areas, or specify ZIP codes to target specific service regions
+                      {showCustomRecipients ? 
+                        "ZIP filtering is disabled when using custom selection" :
+                        "Leave empty to send to all areas, or specify ZIP codes to target specific service regions"
+                      }
                     </p>
                   </div>
                 </div>
@@ -498,21 +585,43 @@ export function EmailTemplateTab() {
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
-                    const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all service areas):");
-                    if (zipCodes !== null) {
-                      const zipCodeArray = zipCodes.split(",")
-                        .map(zip => zip.trim())
-                        .filter(zip => zip.length === 5);
+                    if (selectedRecipientType === 'custom') {
+                      if (selectedCustomRecipients.length === 0) {
+                        toast({
+                          title: "No Recipients Selected",
+                          description: "Please select at least one recipient for your custom campaign.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      // Send to custom recipients
                       sendEmailsMutation.mutate({
                         templateId: selectedCampaignTemplate.id,
-                        zipCodes: zipCodeArray,
+                        customRecipients: selectedCustomRecipients,
                       });
+                    } else {
+                      // Original ZIP code logic for other recipient types
+                      const zipCodes = prompt("Enter comma-separated ZIP codes (leave empty for all service areas):");
+                      if (zipCodes !== null) {
+                        const zipCodeArray = zipCodes.split(",")
+                          .map(zip => zip.trim())
+                          .filter(zip => zip.length === 5);
+                        sendEmailsMutation.mutate({
+                          templateId: selectedCampaignTemplate.id,
+                          zipCodes: zipCodeArray,
+                          recipientType: selectedRecipientType
+                        });
+                      }
                     }
                   }}
                   className="flex items-center gap-2"
+                  disabled={selectedRecipientType === 'custom' && selectedCustomRecipients.length === 0}
                 >
                   <Send className="w-4 h-4" />
-                  Send to Audience
+                  {selectedRecipientType === 'custom' 
+                    ? `Send to ${selectedCustomRecipients.length} Selected`
+                    : 'Send to Audience'
+                  }
                 </Button>
                 <Button variant="outline">
                   <Eye className="w-4 h-4 mr-2" />
