@@ -20,26 +20,36 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false
-  }
+  },
+  // Enhanced options for professional appearance
+  pool: true,
+  maxConnections: 5,
+  rateDelta: 1000,
+  rateLimit: 5
 });
 
-// Email addresses for different purposes
-// Note: Gmail SMTP requires using the authenticated account as sender,
-// but we can set the display name and reply-to to show the intended service
+// Professional email configuration
+// This configuration prioritizes showing GreenGhost branding over Gmail account
 const EMAIL_ADDRESSES = {
-  verification: `verify@greenghost.io`,
-  welcome: `welcome@greenghost.io`, 
-  marketing: `noreply@greenghost.io`,
-  contact: `contact@greenghost.io`,
-  admin: `support@greenghost.io`
+  verification: `GreenGhost Verification Team <verify@greenghost.io>`,
+  welcome: `GreenGhost Welcome Team <welcome@greenghost.io>`, 
+  marketing: `GreenGhost Marketing <noreply@greenghost.io>`,
+  contact: `GreenGhost Contact Team <contact@greenghost.io>`,
+  admin: `GreenGhost Support Team <support@greenghost.io>`
 };
 
-// Gmail configuration with proper From field handling
+// Enhanced Gmail configuration that prioritizes professional appearance
 const getEmailConfig = (serviceType: 'verification' | 'welcome' | 'marketing' | 'contact' | 'admin') => {
-  const gmailUser = process.env.GMAIL_USER;
   return {
-    from: `${EMAIL_ADDRESSES[serviceType]} <${gmailUser}>`,
-    replyTo: EMAIL_ADDRESSES[serviceType]
+    from: EMAIL_ADDRESSES[serviceType],
+    replyTo: serviceType === 'verification' ? 'noreply@greenghost.io' : `${serviceType}@greenghost.io`,
+    // Professional headers to enhance brand visibility
+    headers: {
+      'X-Sender': EMAIL_ADDRESSES[serviceType],
+      'X-Mailer': 'GreenGhost Email System',
+      'Return-Path': `noreply@greenghost.io`,
+      'Organization': 'GreenGhost - Automated Lawn Care'
+    }
   };
 };
 
@@ -158,6 +168,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
       to: email,
       subject: "Your GreenGhost Verification Code",
       html: emailHtml,
+      headers: emailConfig.headers
     });
 
     log(`Verification email sent successfully to ${email}`);
@@ -186,6 +197,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
       to: email,
       subject: "Welcome to GreenGhost's Waitlist!",
       html: emailHtml,
+      headers: emailConfig.headers
     });
 
     log(`Welcome email sent successfully to ${email}`);
