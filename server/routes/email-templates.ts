@@ -32,13 +32,49 @@ router.get('/api/email-templates/custom', requireAuth, async (_req, res) => {
   }
 });
 
-// Get all email templates
+// Load system template from file
+async function loadSystemTemplate(templateName: string) {
+  try {
+    const fileName = templateName === 'Welcome Email' ? 'welcome-email.html' : 'verification-email.html';
+    const filePath = path.join(__dirname, '../templates', fileName);
+    const html_content = await fs.readFile(filePath, 'utf-8');
+    
+    const subject = templateName === 'Welcome Email' 
+      ? 'Welcome to Green Ghost\'s Waitlist!' 
+      : 'Verify Your Email for Green Ghost';
+    
+    return {
+      id: templateName === 'Welcome Email' ? -1 : -2, // Use negative IDs for system templates
+      name: templateName,
+      subject,
+      html_content,
+      created_at: new Date('2025-01-01'), // Fixed date for system templates
+      updated_at: new Date('2025-01-01'),
+      is_system: true
+    };
+  } catch (error) {
+    log(`Error loading system template ${templateName}:`, error instanceof Error ? error.message : 'Unknown error');
+    return null;
+  }
+}
+
+// Get all email templates including system templates
 router.get('/api/email-templates', requireAuth, async (_req, res) => {
   try {
-    const templates = await db.query.emailTemplates.findMany({
+    const dbTemplates = await db.query.emailTemplates.findMany({
       orderBy: (emailTemplates, { desc }) => [desc(emailTemplates.created_at)]
     });
-    return res.json(templates);
+    
+    // Load system templates from files
+    const welcomeTemplate = await loadSystemTemplate('Welcome Email');
+    const verificationTemplate = await loadSystemTemplate('Verification Email');
+    
+    const systemTemplates = [welcomeTemplate, verificationTemplate].filter(Boolean);
+    
+    // Combine system templates with database templates
+    const allTemplates = [...systemTemplates, ...dbTemplates];
+    
+    return res.json(allTemplates);
   } catch (error) {
     log('Error fetching email templates:', error instanceof Error ? error.message : 'Unknown error');
     return res.status(500).json({ error: 'Failed to fetch templates' });
@@ -70,6 +106,28 @@ router.post('/api/email-templates', requireAuth, async (req, res) => {
   }
 });
 
+// Update system template file
+async function updateSystemTemplate(templateName: string, subject: string, html_content: string) {
+  try {
+    const fileName = templateName === 'Welcome Email' ? 'welcome-email.html' : 'verification-email.html';
+    const filePath = path.join(__dirname, '../templates', fileName);
+    await fs.writeFile(filePath, html_content, 'utf-8');
+    
+    return {
+      id: templateName === 'Welcome Email' ? -1 : -2,
+      name: templateName,
+      subject,
+      html_content,
+      created_at: new Date('2025-01-01'),
+      updated_at: new Date(),
+      is_system: true
+    };
+  } catch (error) {
+    log(`Error updating system template ${templateName}:`, error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+}
+
 // Update email template
 router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
   try {
@@ -79,6 +137,15 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
     }
 
     const validatedData = insertEmailTemplateSchema.parse(req.body);
+    
+    // Handle system templates (negative IDs)
+    if (id < 0) {
+      const templateName = id === -1 ? 'Welcome Email' : 'Verification Email';
+      const updatedTemplate = await updateSystemTemplate(templateName, validatedData.subject, validatedData.html_content);
+      return res.json(updatedTemplate);
+    }
+
+    // Handle regular database templates
     validatedData.updated_at = new Date();
 
     // Check if template exists
@@ -118,12 +185,51 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Get individual email template
+router.get('/api/email-templates/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    // Handle system templates
+    if (id < 0) {
+      const templateName = id === -1 ? 'Welcome Email' : 'Verification Email';
+      const systemTemplate = await loadSystemTemplate(templateName);
+      if (!systemTemplate) {
+        return res.status(404).json({ error: 'System template not found' });
+      }
+      return res.json(systemTemplate);
+    }
+
+    // Handle regular database templates
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.id, id)
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    return res.json(template);
+  } catch (error) {
+    log('Error fetching email template:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to fetch template' });
+  }
+});
+
 // Delete email template
 router.delete('/api/email-templates/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid template ID' });
+    }
+
+    // Prevent deletion of system templates
+    if (id < 0) {
+      return res.status(400).json({ error: 'System templates cannot be deleted' });
     }
 
     // Check if template exists

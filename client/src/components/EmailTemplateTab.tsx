@@ -338,17 +338,53 @@ export function EmailTemplateTab() {
     },
   });
 
-  const handleEdit = (template: SelectEmailTemplate) => {
-    setSelectedTemplate(template);
-    templateForm.reset({
-      name: template.name,
-      subject: template.subject,
-      html_content: template.html_content,
-    });
-    setShowTemplateDialog(true);
+  const handleEdit = async (template: SelectEmailTemplate) => {
+    try {
+      // For system templates (negative IDs), fetch the full template details
+      if (template.id < 0) {
+        const response = await fetch(`/api/email-templates/${template.id}`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch template details');
+        }
+        const fullTemplate = await response.json();
+        setSelectedTemplate(fullTemplate);
+        templateForm.reset({
+          name: fullTemplate.name,
+          subject: fullTemplate.subject,
+          html_content: fullTemplate.html_content,
+        });
+      } else {
+        // Regular templates can be used directly
+        setSelectedTemplate(template);
+        templateForm.reset({
+          name: template.name,
+          subject: template.subject,
+          html_content: template.html_content,
+        });
+      }
+      setShowTemplateDialog(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load template for editing",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDelete = async (template: SelectEmailTemplate) => {
+    // Prevent deletion of system templates
+    if (template.id < 0) {
+      toast({
+        title: "Cannot Delete",
+        description: "System templates (Welcome and Verification emails) cannot be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (confirm("Are you sure you want to delete this template?")) {
       await deleteTemplateMutation.mutateAsync(template.id);
     }
@@ -1022,6 +1058,7 @@ export function EmailTemplateTab() {
                             <div className="space-y-2">
                               <CardTitle className="flex items-center gap-2">
                                 {template.name}
+                                {template.id < 0 && <Badge variant="secondary" className="text-xs">System</Badge>}
                                 {!template.is_active && <Badge variant="destructive">Inactive</Badge>}
                               </CardTitle>
                               <CardDescription>
@@ -1042,14 +1079,26 @@ export function EmailTemplateTab() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleDelete(template)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {template.id < 0 ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  disabled
+                                  className="text-muted-foreground"
+                                  title="System templates cannot be deleted"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDelete(template)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardHeader>
