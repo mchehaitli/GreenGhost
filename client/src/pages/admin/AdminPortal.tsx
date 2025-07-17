@@ -1469,7 +1469,6 @@ export default function AdminPortal() {
                         />
                       </TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Name</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
@@ -1510,12 +1509,6 @@ export default function AdminPortal() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{entry.email}</TableCell>
-                        <TableCell>
-                          {entry.first_name || entry.last_name ? 
-                            `${entry.first_name || ''} ${entry.last_name || ''}`.trim() : 
-                            '-'
-                          }
-                        </TableCell>
                         <TableCell>
                           <div className="flex items-center">
                             <MapPin className="w-4 h-4 mr-1 text-muted-foreground" />
