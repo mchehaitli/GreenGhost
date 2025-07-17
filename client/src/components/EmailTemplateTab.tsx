@@ -97,8 +97,6 @@ const EMAIL_ALIASES = {
 
 const RECIPIENT_TYPES = {
   'waitlist': 'All Waitlist Members',
-  'verified': 'Verified Email Addresses',
-  'unverified': 'Unverified Email Addresses',
   'recent': 'Recently Joined (Last 30 Days)',
   'prospects': 'Potential Customers',
   'custom': 'Custom Selection'
@@ -116,6 +114,8 @@ export function EmailTemplateTab() {
   const [selectedRecipientType, setSelectedRecipientType] = useState('waitlist');
   const [selectedCustomRecipients, setSelectedCustomRecipients] = useState<string[]>([]);
   const [showCustomRecipients, setShowCustomRecipients] = useState(false);
+  const [prospectEmails, setProspectEmails] = useState<string[]>([]);
+  const [newProspectEmail, setNewProspectEmail] = useState('');
   const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
@@ -508,10 +508,74 @@ export function EmailTemplateTab() {
                     </Select>
                   </div>
                   
+                  {selectedRecipientType === 'prospects' && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Potential Customer Email Addresses</label>
+                        <p className="text-xs text-muted-foreground">Add emails for people not yet on your waitlist</p>
+                      </div>
+                      
+                      <div className="flex gap-2 mb-4">
+                        <Input
+                          type="email"
+                          placeholder="Enter email address..."
+                          value={newProspectEmail}
+                          onChange={(e) => setNewProspectEmail(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (newProspectEmail && newProspectEmail.includes('@') && !prospectEmails.includes(newProspectEmail)) {
+                                setProspectEmails([...prospectEmails, newProspectEmail]);
+                                setNewProspectEmail('');
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (newProspectEmail && newProspectEmail.includes('@') && !prospectEmails.includes(newProspectEmail)) {
+                              setProspectEmails([...prospectEmails, newProspectEmail]);
+                              setNewProspectEmail('');
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+
+                      <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
+                        {prospectEmails.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No prospect emails added yet</p>
+                        ) : (
+                          prospectEmails.map((email, index) => (
+                            <div key={index} className="flex items-center justify-between space-x-2">
+                              <span className="text-sm font-medium">{email}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setProspectEmails(prospectEmails.filter((_, i) => i !== index))}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {prospectEmails.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {prospectEmails.length} prospect email(s) added
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {showCustomRecipients && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Select Recipients</label>
+                        <label className="text-sm font-medium">Select Recipients from Waitlist</label>
                         <div className="flex gap-2">
                           <Button 
                             type="button"
@@ -589,7 +653,21 @@ export function EmailTemplateTab() {
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
-                    if (selectedRecipientType === 'custom') {
+                    if (selectedRecipientType === 'prospects') {
+                      if (prospectEmails.length === 0) {
+                        toast({
+                          title: "No Prospect Emails",
+                          description: "Please add at least one prospect email address.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      // Send to prospect emails
+                      sendEmailsMutation.mutate({
+                        templateId: selectedCampaignTemplate.id,
+                        customRecipients: prospectEmails,
+                      });
+                    } else if (selectedRecipientType === 'custom') {
                       if (selectedCustomRecipients.length === 0) {
                         toast({
                           title: "No Recipients Selected",
@@ -598,7 +676,7 @@ export function EmailTemplateTab() {
                         });
                         return;
                       }
-                      // Send to custom recipients
+                      // Send to custom recipients from waitlist
                       sendEmailsMutation.mutate({
                         templateId: selectedCampaignTemplate.id,
                         customRecipients: selectedCustomRecipients,
@@ -619,12 +697,17 @@ export function EmailTemplateTab() {
                     }
                   }}
                   className="flex items-center gap-2"
-                  disabled={selectedRecipientType === 'custom' && selectedCustomRecipients.length === 0}
+                  disabled={
+                    (selectedRecipientType === 'custom' && selectedCustomRecipients.length === 0) ||
+                    (selectedRecipientType === 'prospects' && prospectEmails.length === 0)
+                  }
                 >
                   <Send className="w-4 h-4" />
-                  {selectedRecipientType === 'custom' 
-                    ? `Send to ${selectedCustomRecipients.length} Selected`
-                    : 'Send to Audience'
+                  {selectedRecipientType === 'prospects' 
+                    ? `Send to ${prospectEmails.length} Prospects`
+                    : selectedRecipientType === 'custom' 
+                      ? `Send to ${selectedCustomRecipients.length} Selected`
+                      : 'Send to Audience'
                   }
                 </Button>
                 <Button variant="outline">
