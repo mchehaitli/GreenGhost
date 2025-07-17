@@ -1759,33 +1759,50 @@ export function EmailTemplateTab() {
                 </CardContent>
               </Card>
 
+              {/* Recipients Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recipients</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-32">
+                    <div className="space-y-2">
+                      {historyDetails.recipient_info.recipient_emails && historyDetails.recipient_info.recipient_emails.length > 0 ? (
+                        historyDetails.recipient_info.recipient_emails.map((email: string, index: number) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{email}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          {historyDetails.recipient_info.targeting_type === 'zip_code' 
+                            ? `Sent to ${historyDetails.recipient_info.total_count} recipients in ZIP codes: ${historyDetails.recipient_info.zip_codes.join(', ')}`
+                            : `Sent to all ${historyDetails.recipient_info.total_count} waitlist members`}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
               {/* Email Content Preview */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Email Content</CardTitle>
+                  <CardTitle className="text-lg">Email Content Preview</CardTitle>
+                  <CardDescription>Full scrollable preview of the sent email</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="border rounded-lg overflow-hidden bg-white">
-                    <iframe 
-                      srcDoc={historyDetails.template?.html_content || '<div style="padding: 20px; text-align: center; color: #6b7280;">No content available</div>'}
-                      className="w-full border-0"
-                      style={{ height: '500px' }}
-                      title="Email Content Preview"
-                      onLoad={(e) => {
-                        const iframe = e.target as HTMLIFrameElement;
-                        try {
-                          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                          if (iframeDoc) {
-                            const bodyHeight = iframeDoc.body?.scrollHeight || 500;
-                            const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 300), 700);
-                            iframe.style.height = `${adjustedHeight}px`;
-                          }
-                        } catch (error) {
-                          // Cross-origin restrictions, keep default height
-                        }
-                      }}
-                    />
-                  </div>
+                  <ScrollArea className="h-96 w-full rounded border">
+                    <div className="p-4">
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: historyDetails.template?.html_content || '<div style="padding: 20px; text-align: center; color: #6b7280;">No content available</div>' 
+                        }}
+                        className="min-h-full"
+                      />
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>

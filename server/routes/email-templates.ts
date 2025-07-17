@@ -473,11 +473,32 @@ router.get('/api/email-history/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Email history entry not found' });
     }
 
-    // For now, we don't store individual recipient details, so we'll show the targeting criteria
+    // Get recipient emails based on the campaign criteria
+    let recipientEmails: string[] = [];
+    try {
+      if (historyEntry.zip_codes && historyEntry.zip_codes.length > 0) {
+        // Get recipients by ZIP codes
+        const waitlistEntries = await db.query.waitlist.findMany({
+          where: (waitlist, { inArray }) => inArray(waitlist.zip_code, historyEntry.zip_codes),
+          columns: { email: true }
+        });
+        recipientEmails = waitlistEntries.map(entry => entry.email);
+      } else {
+        // Get all waitlist recipients
+        const waitlistEntries = await db.query.waitlist.findMany({
+          columns: { email: true }
+        });
+        recipientEmails = waitlistEntries.map(entry => entry.email);
+      }
+    } catch (error) {
+      log('Error fetching recipient emails:', error instanceof Error ? error.message : 'Unknown error');
+    }
+
     const recipientInfo = {
       total_count: historyEntry.total_recipients,
       zip_codes: historyEntry.zip_codes || [],
-      targeting_type: historyEntry.zip_codes && historyEntry.zip_codes.length > 0 ? 'zip_code' : 'all_waitlist'
+      targeting_type: historyEntry.zip_codes && historyEntry.zip_codes.length > 0 ? 'zip_code' : 'all_waitlist',
+      recipient_emails: recipientEmails
     };
 
     return res.json({
