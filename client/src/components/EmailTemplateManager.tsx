@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { EmailCampaignManager } from './EmailCampaignManager';
+import { AdvancedEmailEditor } from './AdvancedEmailEditor';
 
 const EMAIL_ALIASES = {
   'noreply@greenghost.io': 'Marketing & Newsletters',
@@ -435,10 +436,11 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
                   <FormItem>
                     <FormLabel>Email Content</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter your email HTML content here..." 
-                        className="min-h-[200px] font-mono text-sm"
-                        {...field} 
+                      <AdvancedEmailEditor 
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Create your email content with rich formatting..."
+                        height="500px"
                       />
                     </FormControl>
                     <FormMessage />

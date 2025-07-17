@@ -48,7 +48,13 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 - Verification email with 90-second expiration
 - Welcome email upon successful verification
 - Bulk email capabilities for marketing campaigns
-- Template customization with visual editor
+- Advanced visual email editor with rich formatting capabilities
+- Font family and size controls with real-time preview
+- Color palette for text and background colors
+- Professional image insertion with URL, upload, and stock image options
+- Pre-built email component templates (headers, footers, buttons, cards)
+- Template variable system for dynamic content
+- HTML/Visual/Preview editing modes
 
 ### Service Presentation
 - Responsive landing page with hero section
@@ -116,6 +122,7 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 ## Changelog
 
 Recent Changes:
+- July 17, 2025: Added advanced email template editing capabilities - Created comprehensive visual editor with font controls, color pickers, image insertion, template library, and enhanced formatting tools
 - July 17, 2025: Removed all greenghosttech.com email references - Updated system to use @greenghost.io addresses in footer, email templates, and service URLs
 - July 07, 2025: Refined logo spacing - Added subtle spacing between "Green" and "Ghost" words in header and footer for better visual balance
 - July 06, 2025: Rebranded company from "GreenGhost Tech" to "GreenGhost" (removed space) across all pages, emails, and documentation
