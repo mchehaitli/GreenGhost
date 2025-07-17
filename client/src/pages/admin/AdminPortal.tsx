@@ -703,8 +703,12 @@ export default function AdminPortal() {
         method: "DELETE",
         credentials: 'include',
       });
-      if (!response.ok) throw new Error("Failed to delete entry");
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete entry: ${response.status} ${errorText}`);
+      }
+      // The backend returns 200 with no body, so just return success
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
@@ -716,9 +720,10 @@ export default function AdminPortal() {
       });
     },
     onError: (error) => {
+      console.error('Delete error:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete entry. Please try again.",
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to delete entry. Please try again.",
         variant: "destructive",
       });
     },
