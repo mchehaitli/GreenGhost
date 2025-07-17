@@ -45,6 +45,21 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Add email connection test route
+  app.post('/api/email/test-connection', async (req, res) => {
+    try {
+      const testResult = await emailService.testConnection();
+      res.json({ 
+        success: testResult.success, 
+        message: testResult.message,
+        details: testResult.details 
+      });
+    } catch (error) {
+      console.error('Error testing email connection:', error);
+      res.status(500).json({ error: 'Failed to test email connection' });
+    }
+  });
+
   // Add test email route
   app.post('/api/email/test/:type', async (req, res) => {
     try {
