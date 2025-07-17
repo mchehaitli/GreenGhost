@@ -1664,13 +1664,154 @@ export default function AdminPortal() {
 
         <TabsContent value="email-campaigns" className="space-y-4">
           <Card className="p-4 md:p-6">
-            <EmailTemplateManager 
-              templates={emailTemplates || []}
-              onTemplateSelect={(template) => {
-                setSelectedTemplate(template);
-                setShowEmailDialog(true);
-              }}
-            />
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">Email Templates</h2>
+                <p className="text-muted-foreground">
+                  Create and manage email templates for your campaigns
+                </p>
+              </div>
+              <Button onClick={() => setShowEmailDialog(true)}>
+                <Send className="w-4 h-4 mr-2" />
+                Send Campaign
+              </Button>
+            </div>
+
+            <Tabs defaultValue="system" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="system">System Templates</TabsTrigger>
+                <TabsTrigger value="custom">Custom Templates</TabsTrigger>
+                <TabsTrigger value="editor">Template Editor</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="system" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {emailTemplates?.filter(template => template.template_type === 'system').map((template) => (
+                    <Card key={template.id} className="border-blue-200 bg-blue-50/50">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-medium">{template.name}</CardTitle>
+                          <Badge variant="outline" className="text-xs">System</Badge>
+                        </div>
+                        <CardContent className="text-xs text-muted-foreground p-0">{template.subject}</CardContent>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {template.from_email}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setSelectedTemplate(template);
+                              setShowEmailDialog(true);
+                            }}>
+                              <Send className="w-3 h-3 mr-1" />
+                              Use Template
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              // Preview functionality
+                              const previewWindow = window.open('', '_blank');
+                              if (previewWindow) {
+                                previewWindow.document.write(template.html_content);
+                                previewWindow.document.close();
+                              }
+                            }}>
+                              <Eye className="w-3 h-3 mr-1" />
+                              Preview
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="custom" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Custom Templates</h3>
+                  <Button onClick={() => {
+                    // Switch to editor tab for creating new template
+                    const tabsList = document.querySelector('[role="tablist"]');
+                    const editorTab = tabsList?.querySelector('[value="editor"]') as HTMLElement;
+                    editorTab?.click();
+                  }}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Template
+                  </Button>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {emailTemplates?.filter(template => template.template_type === 'custom').map((template) => (
+                    <Card key={template.id} className="border-green-200 bg-green-50/50">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-medium">{template.name}</CardTitle>
+                          <Badge variant="outline" className="text-xs bg-green-100">Custom</Badge>
+                        </div>
+                        <CardContent className="text-xs text-muted-foreground p-0">{template.subject}</CardContent>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {template.from_email}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setSelectedTemplate(template);
+                              setShowEmailDialog(true);
+                            }}>
+                              <Send className="w-3 h-3 mr-1" />
+                              Use Template
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              // Preview functionality
+                              const previewWindow = window.open('', '_blank');
+                              if (previewWindow) {
+                                previewWindow.document.write(template.html_content);
+                                previewWindow.document.close();
+                              }
+                            }}>
+                              <Eye className="w-3 h-3 mr-1" />
+                              Preview
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              // Edit functionality - could open the editor with this template
+                              console.log('Edit template:', template.id);
+                            }}>
+                              <Edit className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {emailTemplates?.filter(template => template.template_type === 'custom').length === 0 && (
+                  <div className="text-center py-8">
+                    <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No custom templates</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create your first custom email template to get started
+                    </p>
+                    <Button onClick={() => {
+                      const tabsList = document.querySelector('[role="tablist"]');
+                      const editorTab = tabsList?.querySelector('[value="editor"]') as HTMLElement;
+                      editorTab?.click();
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Template
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="editor" className="space-y-4">
+                <EmailBuilder />
+              </TabsContent>
+            </Tabs>
           </Card>
         </TabsContent>
 
