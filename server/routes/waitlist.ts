@@ -157,22 +157,28 @@ router.post('/api/waitlist', async (req, res) => {
         log(`Created new waitlist entry for ${normalizedEmail}`);
       }
 
-      // Send verification email
-      const emailSent = await emailService.sendVerificationEmail(normalizedEmail, zip_code);
-      if (!emailSent) {
-        throw new Error('Failed to send verification email');
+      // Always try to send verification email but don't fail if it doesn't work
+      try {
+        const emailSent = await emailService.sendVerificationEmail(normalizedEmail, zip_code);
+        if (!emailSent) {
+          log(`Failed to send verification email to ${normalizedEmail}, but continuing with signup`);
+        } else {
+          log(`Verification email sent to ${normalizedEmail}`);
+        }
+      } catch (emailError) {
+        log('Email service error:', emailError instanceof Error ? emailError.message : 'Unknown email error');
+        log(`Continuing with signup for ${normalizedEmail} without email`);
       }
-      log(`Verification email sent to ${normalizedEmail}`);
 
       return res.json({
         status: 'pending_verification',
-        message: 'Please check your email for the verification code'
+        message: 'Please check your email for the verification code (or check server logs in development)'
       });
     } catch (error) {
-      log('Database or email error:', error instanceof Error ? error.message : 'Unknown error');
+      log('Database error:', error instanceof Error ? error.message : 'Unknown error');
       return res.status(500).json({
         error: 'Server error',
-        details: 'Failed to process signup or send verification email'
+        details: 'Failed to process signup'
       });
     }
   } catch (error) {
