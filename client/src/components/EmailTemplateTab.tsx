@@ -1699,8 +1699,8 @@ export function EmailTemplateTab() {
 
       {/* Email History Details Dialog */}
       <Dialog open={showHistoryDetails} onOpenChange={setShowHistoryDetails}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />
               Email Campaign Details
@@ -1715,104 +1715,105 @@ export function EmailTemplateTab() {
               <LoadingSpinner size="lg" />
             </div>
           ) : historyDetails ? (
-            <div className="space-y-6">
-              {/* Campaign Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Campaign Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Template Name</Label>
-                      <p className="font-medium">{historyDetails.template?.name || 'Unknown Template'}</p>
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-6 pb-4">
+                {/* Campaign Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Campaign Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Template Name</Label>
+                        <p className="font-medium">{historyDetails.template?.name || 'Unknown Template'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Subject Line</Label>
+                        <p className="font-medium">{historyDetails.template?.subject || 'No Subject'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Sent Date</Label>
+                        <p className="font-medium">{new Date(historyDetails.sent_at).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Recipients</Label>
+                        <p className="font-medium">{historyDetails.recipient_info.total_count} recipients</p>
+                      </div>
                     </div>
+                    
+                    {historyDetails.recipient_info.zip_codes.length > 0 && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Target ZIP Codes</Label>
+                        <p className="font-medium">{historyDetails.recipient_info.zip_codes.join(', ')}</p>
+                      </div>
+                    )}
+                    
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Subject Line</Label>
-                      <p className="font-medium">{historyDetails.template?.subject || 'No Subject'}</p>
+                      <Label className="text-sm font-medium text-muted-foreground">Targeting</Label>
+                      <p className="font-medium">
+                        {historyDetails.recipient_info.targeting_type === 'zip_code' 
+                          ? 'Specific ZIP Codes' 
+                          : 'All Waitlist Members'}
+                      </p>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Sent Date</Label>
-                      <p className="font-medium">{new Date(historyDetails.sent_at).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Recipients</Label>
-                      <p className="font-medium">{historyDetails.recipient_info.total_count} recipients</p>
-                    </div>
-                  </div>
-                  
-                  {historyDetails.recipient_info.zip_codes.length > 0 && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Target ZIP Codes</Label>
-                      <p className="font-medium">{historyDetails.recipient_info.zip_codes.join(', ')}</p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Targeting</Label>
-                    <p className="font-medium">
-                      {historyDetails.recipient_info.targeting_type === 'zip_code' 
-                        ? 'Specific ZIP Codes' 
-                        : 'All Waitlist Members'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Recipients Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recipients</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-32">
-                    <div className="space-y-2">
-                      {historyDetails.recipient_info.recipient_emails && historyDetails.recipient_info.recipient_emails.length > 0 ? (
-                        historyDetails.recipient_info.recipient_emails.map((email: string, index: number) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm">{email}</span>
+                {/* Recipients Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Recipients</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2">
+                        {historyDetails.recipient_info.recipient_emails && historyDetails.recipient_info.recipient_emails.length > 0 ? (
+                          historyDetails.recipient_info.recipient_emails.map((email: string, index: number) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{email}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            {historyDetails.recipient_info.targeting_type === 'zip_code' 
+                              ? `Sent to ${historyDetails.recipient_info.total_count} recipients in ZIP codes: ${historyDetails.recipient_info.zip_codes.join(', ')}`
+                              : `Sent to all ${historyDetails.recipient_info.total_count} waitlist members`}
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          {historyDetails.recipient_info.targeting_type === 'zip_code' 
-                            ? `Sent to ${historyDetails.recipient_info.total_count} recipients in ZIP codes: ${historyDetails.recipient_info.zip_codes.join(', ')}`
-                            : `Sent to all ${historyDetails.recipient_info.total_count} waitlist members`}
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
 
-              {/* Email Content Preview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Email Content Preview</CardTitle>
-                  <CardDescription>Full scrollable preview of the sent email</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-96 w-full rounded border">
-                    <div className="p-4">
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: historyDetails.template?.html_content || '<div style="padding: 20px; text-align: center; color: #6b7280;">No content available</div>' 
-                        }}
-                        className="min-h-full"
+                {/* Email Content Preview */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Email Content Preview</CardTitle>
+                    <CardDescription>Full scrollable preview of the sent email</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="border rounded-lg overflow-hidden bg-white">
+                      <iframe 
+                        srcDoc={historyDetails.template?.html_content || '<div style="padding: 20px; text-align: center; color: #6b7280;">No content available</div>'}
+                        className="w-full border-0"
+                        style={{ height: '600px', minHeight: '400px' }}
+                        title="Email Content Preview"
+                        sandbox="allow-same-origin"
                       />
                     </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </ScrollArea>
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No details available for this email campaign.</p>
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 mt-4">
             <Button variant="outline" onClick={() => setShowHistoryDetails(false)}>
               Close
             </Button>
