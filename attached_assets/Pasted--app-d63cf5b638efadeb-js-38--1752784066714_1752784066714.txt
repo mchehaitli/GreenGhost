@@ -1,0 +1,97 @@
+_app-d63cf5b638efadeb.js:38 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-d63cf5b638efadeb.js:38 [LaunchDarkly] LaunchDarkly client initialized
+googleads.g.doubleclick.net/pagead/viewthroughconversion/11411994397/?random=1752778442094&cv=11&fst=1752778442094&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be57g0v9171242957za200&gcd=13l3l3l3l1l1&dma=0&tag_exp=101509157~103116026~103200004~103233427~103351869~103351871~104684208~104684211~104732253~104732255~104908321~104908323~104921715~104921717~104964065~104964067~104967141~104967143&u_w=1536&u_h=864&url=https%3A%2F%2Freplit.com%2F%40mchehaitli1%2FGreen-Ghost-Tech&ref=https%3A%2F%2Freplit.com%2Flogin%3Fsource%3Dhome%26goto%3D%252F%257E%26redirecting%3D1&hn=www.googleadservices.com&frm=0&tiba=Loading...%20-%20Replit&npa=0&pscdl=noapi&auid=1946074247.1746767865&fledge=1&data=event%3Dgtag.config&rfmt=3&fmt=4:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+Green-Ghost-Tech:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'battery'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-599f2a57b06a297c.js:1
+framework-599f2a57b06a297c.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-599f2a57b06a297c.js:1
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+Console.js:61 Fetching user auth data...
+Console.js:61 Auth state: Object
+Console.js:61 Auth response status: 200
+Console.js:61 User authenticated: Object
+Console.js:61 Auth state: Object
+Console.js:61 User authenticated, rendering protected component
+Console.js:61 HTML Editor Submit button clicked, selectedTemplate: Object
+Console.js:61 HTML Editor Submit button clicked, selectedTemplate: Object

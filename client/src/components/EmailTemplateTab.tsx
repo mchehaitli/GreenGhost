@@ -1609,7 +1609,10 @@ export function EmailTemplateTab() {
 
             <TabsContent value="html" className="space-y-4 flex-1 flex flex-col min-h-0">
               <Form {...templateForm}>
-                <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4 flex-1 flex flex-col">
+                <form onSubmit={(e) => {
+                  console.log('HTML Form onSubmit triggered');
+                  templateForm.handleSubmit(handleSubmit)(e);
+                }} className="space-y-4 flex-1 flex flex-col">
                   {/* Show simplified form for system templates */}
                   {selectedTemplate && selectedTemplate.id < 0 ? (
                     <div className="space-y-4">
@@ -1764,7 +1767,11 @@ export function EmailTemplateTab() {
                       </Button>
                       <Button 
                         type="submit"
-                        onClick={() => console.log('HTML Editor Submit button clicked, selectedTemplate:', selectedTemplate)}
+                        onClick={(e) => {
+                          console.log('HTML Editor Submit button clicked, selectedTemplate:', selectedTemplate);
+                          console.log('Form errors:', templateForm.formState.errors);
+                          console.log('Form values:', templateForm.getValues());
+                        }}
                       >
                         {selectedTemplate ? "Update Template" : "Create Template"}
                       </Button>
