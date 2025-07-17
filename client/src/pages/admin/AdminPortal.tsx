@@ -70,7 +70,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { DatePicker } from "@/components/ui/date-picker";
-import { addDays, subDays, isWithinInterval } from 'date-fns';
+import { addDays, subDays, isWithinInterval, format } from 'date-fns';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 type WaitlistEntry = {
