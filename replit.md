@@ -121,7 +121,8 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 
 ## Changelog
 
-Recent Changes:
+Recent Changes:  
+- July 17, 2025: Enhanced welcome email button for better email client compatibility - Updated button structure to use solid background-color instead of gradients, added target="_blank" and rel="noopener noreferrer" attributes, improved MSO conditional button code, and enhanced styling with mso-padding-alt for Microsoft Outlook compatibility
 - July 17, 2025: Fixed email template links to prevent 404 errors - Updated welcome email dashboard URL from non-existent app.greenghost.io/dashboard to working greenghost.io domain, both verification and welcome emails now link to correct live website
 - July 17, 2025: Added tab separation for system vs campaign templates - Created dedicated "System Templates" and "Campaign Templates" tabs for better organization, system templates (Welcome/Verification) now shown separately from user-created campaign templates, improved navigation and template management workflow
 - July 17, 2025: Fixed system template update functionality and eliminated duplicates - Resolved form validation blocking system template updates by creating bypass logic for required fields, removed duplicate database entries for Welcome and Verification emails to prevent showing multiple copies, system templates now update successfully via HTML editor interface  
