@@ -186,7 +186,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
 
     const welcomeTemplate = await readTemplate('welcome-email.html');
     const content = welcomeTemplate
-      .replace('{{dashboardUrl}}', 'https://app.greenghost.io/dashboard');
+      .replace('{{dashboardUrl}}', 'https://greenghost.io');
 
     const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost');
 
