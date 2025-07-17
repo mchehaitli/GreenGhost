@@ -47,6 +47,17 @@ const emailTemplateSchema = z.object({
   is_active: z.boolean().default(true)
 });
 
+// Schema for system templates (only requires name, subject, html_content)
+const systemTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  subject: z.string().min(1, "Subject is required"),
+  html_content: z.string().min(1, "Email content is required"),
+  from_email: z.string().optional(),
+  recipient_type: z.string().optional(),
+  recipient_filter: z.string().optional(),
+  is_active: z.boolean().default(true)
+});
+
 const visualEditorSchema = z.object({
   headerText: z.string().min(1, "Header text is required"),
   bodyText: z.string().min(1, "Body text is required"),
@@ -399,7 +410,20 @@ export function EmailTemplateTab() {
     
     if (selectedTemplate) {
       console.log('Updating template with ID:', selectedTemplate.id);
-      await updateTemplateMutation.mutateAsync({ ...data, id: selectedTemplate.id });
+      
+      // For system templates, only send the fields that should be updated
+      if (selectedTemplate.id < 0) {
+        const systemData = {
+          id: selectedTemplate.id,
+          name: data.name,
+          subject: data.subject,
+          html_content: data.html_content
+        };
+        console.log('Updating system template with data:', systemData);
+        await updateTemplateMutation.mutateAsync(systemData);
+      } else {
+        await updateTemplateMutation.mutateAsync({ ...data, id: selectedTemplate.id });
+      }
     } else {
       console.log('Creating new template');
       await createTemplateMutation.mutateAsync(data);
@@ -1610,8 +1634,18 @@ export function EmailTemplateTab() {
             <TabsContent value="html" className="space-y-4 flex-1 flex flex-col min-h-0">
               <Form {...templateForm}>
                 <form onSubmit={(e) => {
+                  e.preventDefault();
                   console.log('HTML Form onSubmit triggered');
-                  templateForm.handleSubmit(handleSubmit)(e);
+                  
+                  // For system templates, bypass form validation and call handleSubmit directly
+                  if (selectedTemplate && selectedTemplate.id < 0) {
+                    const formData = templateForm.getValues();
+                    console.log('System template: bypassing validation, form data:', formData);
+                    handleSubmit(formData);
+                  } else {
+                    // For regular templates, use normal form validation
+                    templateForm.handleSubmit(handleSubmit)(e);
+                  }
                 }} className="space-y-4 flex-1 flex flex-col">
                   {/* Show simplified form for system templates */}
                   {selectedTemplate && selectedTemplate.id < 0 ? (
