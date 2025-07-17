@@ -1,44 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Send, Eye, Trash2, Copy, Calendar, Users, Mail, BarChart } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import { EmailCampaignManager } from './EmailCampaignManager';
-import { AdvancedEmailEditor } from './AdvancedEmailEditor';
+import { useToast } from '@/hooks/use-toast';
+import { Edit, Eye, Send, Trash2, Plus, Mail, Users } from 'lucide-react';
 
 const EMAIL_ALIASES = {
   'noreply@greenghost.io': 'Marketing & Newsletters',
   'welcome@greenghost.io': 'Welcome Messages',
   'verify@greenghost.io': 'Verification Emails',
-  'support@greenghost.io': 'Support & Admin',
-  'contact@greenghost.io': 'General Contact'
+  'support@greenghost.io': 'Customer Support',
+  'billing@greenghost.io': 'Billing & Payments',
+  'admin@greenghost.io': 'Admin Notifications'
 };
 
 const RECIPIENT_TYPES = {
-  'all': 'All Waitlist Members',
-  'waitlist': 'Waitlist Members Only',
-  'custom': 'Custom Selection'
+  'all': 'All Users',
+  'verified': 'Verified Users Only',
+  'unverified': 'Unverified Users Only',
+  'custom': 'Custom Filter'
 };
 
 const templateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
-  subject: z.string().min(1, 'Subject is required'),
+  subject: z.string().min(1, 'Email subject is required'),
   html_content: z.string().min(1, 'Email content is required'),
-  from_email: z.string().email('Valid email required'),
-  recipient_type: z.enum(['all', 'waitlist', 'custom']),
+  from_email: z.string().email('Valid email address required'),
+  recipient_type: z.string().min(1, 'Recipient type is required'),
   recipient_filter: z.string().optional(),
   is_active: z.boolean().default(true)
 });
@@ -70,8 +70,6 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
   const [isEditing, setIsEditing] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('templates');
-  const [previewContent, setPreviewContent] = useState('');
-  const [campaignTemplate, setCampaignTemplate] = useState<EmailTemplate | null>(null);
 
   const form = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
@@ -85,9 +83,6 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
       is_active: true
     }
   });
-
-  // Use templates passed as props
-  const allTemplates = templates;
 
   // Create template mutation
   const createTemplate = useMutation({
@@ -143,22 +138,6 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
     }
   });
 
-  // Send test email mutation
-  const sendTestEmail = useMutation({
-    mutationFn: async ({ templateId, testEmail }: { templateId: number; testEmail: string }) => {
-      const response = await fetch('/api/email-templates/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId, testEmail })
-      });
-      if (!response.ok) throw new Error('Failed to send test email');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: 'Test email sent successfully' });
-    }
-  });
-
   const handleEdit = (template: EmailTemplate) => {
     setSelectedTemplate(template);
     form.reset({
@@ -166,7 +145,7 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
       subject: template.subject,
       html_content: template.html_content,
       from_email: template.from_email,
-      recipient_type: template.recipient_type as 'all' | 'waitlist' | 'custom',
+      recipient_type: template.recipient_type,
       recipient_filter: template.recipient_filter || '',
       is_active: template.is_active
     });
@@ -182,37 +161,49 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
   };
 
   const handlePreview = (content: string) => {
-    setPreviewContent(content);
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Email Preview</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif;">
+          ${content.replace(/{(\w+)}/g, '<span style="background: #fef3c7; padding: 2px 4px; border-radius: 3px;">{$1}</span>')}
+        </body>
+        </html>
+      `);
+      previewWindow.document.close();
+    }
   };
 
-  const customTemplates = allTemplates?.filter((t: EmailTemplate) => t.template_type === 'custom') || [];
-  const systemTemplates = allTemplates?.filter((t: EmailTemplate) => t.template_type === 'system') || [];
-
-  // If campaign template is selected, show campaign manager
-  if (campaignTemplate) {
-    return (
-      <EmailCampaignManager 
-        selectedTemplate={campaignTemplate}
-        onBack={() => setCampaignTemplate(null)}
-      />
-    );
-  }
+  // Separate system templates from custom templates
+  const systemTemplates = templates.filter(t => 
+    t.name === 'Welcome Email' || t.name === 'Verification Email' || t.template_type === 'system'
+  );
+  const customTemplates = templates.filter(t => 
+    t.name !== 'Welcome Email' && t.name !== 'Verification Email' && t.template_type !== 'system'
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Email Templates</h2>
-          <p className="text-muted-foreground">Create and manage email templates for your campaigns</p>
-        </div>
-        <Button onClick={() => setIsEditing(true)}>
+        <h2 className="text-2xl font-bold">Email Template Management</h2>
+        <Button onClick={() => {
+          setSelectedTemplate(null);
+          form.reset();
+          setIsEditing(true);
+        }}>
           <Plus className="w-4 h-4 mr-2" />
-          New Template
+          Create Template
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -292,10 +283,6 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
                           <Eye className="w-3 h-3 mr-1" />
                           Preview
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => setCampaignTemplate(template)}>
-                          <Send className="w-3 h-3 mr-1" />
-                          Send
-                        </Button>
                         <Button 
                           size="sm" 
                           variant="outline" 
@@ -315,7 +302,7 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
 
         <TabsContent value="campaigns">
           <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <Send className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Email Campaigns</h3>
             <p className="text-muted-foreground">Campaign management coming soon</p>
           </div>
@@ -323,7 +310,7 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
 
         <TabsContent value="analytics">
           <div className="text-center py-8">
-            <BarChart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Email Analytics</h3>
             <p className="text-muted-foreground">Analytics dashboard coming soon</p>
           </div>
@@ -431,16 +418,19 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
                 name="html_content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Content</FormLabel>
+                    <FormLabel>Email Content (HTML)</FormLabel>
                     <FormControl>
-                      <AdvancedEmailEditor 
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        placeholder="Create your email content with rich formatting..."
-                        height="500px"
+                      <Textarea
+                        {...field}
+                        placeholder="Enter your HTML email content here..."
+                        rows={20}
+                        className="font-mono text-sm"
                       />
                     </FormControl>
                     <FormMessage />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Available variables: {'{firstName}'}, {'{lastName}'}, {'{email}'}, {'{verificationCode}'}, {'{city}'}, {'{state}'}
+                    </p>
                   </FormItem>
                 )}
               />
@@ -490,22 +480,6 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
               </div>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Preview Dialog */}
-      <Dialog open={!!previewContent} onOpenChange={() => setPreviewContent('')}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Email Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 border rounded-lg overflow-hidden">
-            <iframe 
-              srcDoc={previewContent}
-              className="w-full h-full"
-              title="Email Preview"
-            />
-          </div>
         </DialogContent>
       </Dialog>
     </div>
