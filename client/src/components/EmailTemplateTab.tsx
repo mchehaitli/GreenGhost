@@ -478,9 +478,7 @@ export function EmailTemplateTab() {
 
               <div className="space-y-4">
                 <h4 className="font-medium">Campaign Recipients</h4>
-                <div className="text-xs text-muted-foreground mb-2">
-                  Debug: selectedRecipientType={selectedRecipientType}, showCustomRecipients={showCustomRecipients.toString()}, waitlistCount={waitlistData.length}
-                </div>
+                <p className="text-sm text-muted-foreground">Choose who will receive this email campaign</p>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-medium block mb-2">Target Audience</label>
@@ -1095,11 +1093,14 @@ export function EmailTemplateTab() {
                         name="recipient_type"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Recipients</FormLabel>
+                            <FormLabel>Template Category</FormLabel>
+                            <FormDescription>
+                              What type of recipients is this template designed for?
+                            </FormDescription>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select recipient type" />
+                                  <SelectValue placeholder="Select template category" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
