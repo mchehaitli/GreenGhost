@@ -324,6 +324,19 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
       }
     }
 
+    // Record the campaign in email history
+    try {
+      await db.insert(emailSegments).values({
+        template_id: id,
+        zip_codes: zipCodes || [],
+        sent_at: new Date(),
+        total_recipients: recipients.length,
+      });
+      log(`Email campaign history recorded for template ${id}`);
+    } catch (historyError) {
+      log('Failed to record email history:', historyError instanceof Error ? historyError.message : 'Unknown error');
+    }
+
     return res.json({
       message: 'Email campaign completed',
       successCount,
@@ -420,12 +433,15 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
 router.get('/api/email-history', requireAuth, async (_req, res) => {
   try {
     const history = await db.query.emailSegments.findMany({
+      with: {
+        template: true,
+      },
       orderBy: (emailSegments, { desc }) => [desc(emailSegments.sent_at)],
     });
 
     const formattedHistory = history.map(entry => ({
       id: entry.id,
-      template_name: 'Email Campaign',
+      template_name: entry.template?.name || 'Email Campaign',
       sent_at: entry.sent_at,
       total_recipients: entry.total_recipients,
       status: 'completed',
