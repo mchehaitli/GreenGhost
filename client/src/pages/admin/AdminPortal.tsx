@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EmailBuilder } from "@/components/EmailBuilder";
-import { EmailTemplateManager } from "@/components/EmailTemplateManager";
+import { EmailTemplateTab } from "@/components/EmailTemplateTab";
 import PricingManagement from "./PricingManagement";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
@@ -1664,13 +1664,7 @@ export default function AdminPortal() {
 
         <TabsContent value="email-campaigns" className="space-y-4">
           <Card className="p-4 md:p-6">
-            <EmailTemplateManager 
-              templates={emailTemplates || []}
-              onTemplateSelect={(template) => {
-                setSelectedTemplate(template);
-                setShowEmailDialog(true);
-              }}
-            />
+            <EmailTemplateTab />
           </Card>
         </TabsContent>
 
