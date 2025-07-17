@@ -18,6 +18,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Email addresses for different purposes
+const EMAIL_ADDRESSES = {
+  verification: 'verify@greenghost.io',
+  welcome: 'welcome@greenghost.io',
+  marketing: 'noreply@greenghost.io',
+  contact: 'contact@greenghost.io',
+  admin: 'admin@greenghost.io'
+};
+
 // Test the email connection
 async function testEmailConnection(): Promise<boolean> {
   try {
@@ -116,7 +125,7 @@ export async function sendVerificationEmail(email: string, zipCode: string): Pro
     const emailHtml = await renderEmailTemplate(content, 'Verify Your Email');
 
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: EMAIL_ADDRESSES.verification,
       to: email,
       subject: "Your GreenGhost Verification Code",
       html: emailHtml,
@@ -141,7 +150,7 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     const emailHtml = await renderEmailTemplate(content, 'Welcome to GreenGhost');
 
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: EMAIL_ADDRESSES.welcome,
       to: email,
       subject: "Welcome to GreenGhost's Waitlist!",
       html: emailHtml,
@@ -151,6 +160,27 @@ export async function sendWelcomeEmail(email: string, zipCode: string): Promise<
     return true;
   } catch (error) {
     log('Failed to send welcome email:', error instanceof Error ? error.message : 'Unknown error');
+    return false;
+  }
+}
+
+export async function sendMarketingEmail(
+  to: string, 
+  subject: string, 
+  htmlContent: string
+): Promise<boolean> {
+  try {
+    await transporter.sendMail({
+      from: EMAIL_ADDRESSES.marketing,
+      to,
+      subject,
+      html: htmlContent,
+    });
+    
+    log(`Marketing email sent successfully to ${to}`);
+    return true;
+  } catch (error) {
+    log('Failed to send marketing email:', error instanceof Error ? error.message : 'Unknown error');
     return false;
   }
 }
@@ -176,6 +206,7 @@ export async function testConnection(): Promise<{success: boolean, message: stri
 export default {
   sendVerificationEmail,
   sendWelcomeEmail,
+  sendMarketingEmail,
   verifyCode,
   testConnection,
 };
