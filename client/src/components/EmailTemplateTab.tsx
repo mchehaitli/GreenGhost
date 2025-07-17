@@ -1277,7 +1277,7 @@ export function EmailTemplateTab() {
       </Tabs>
 
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-7xl h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedTemplate ? "Edit Template" : "Create Template"}
@@ -1718,7 +1718,7 @@ export function EmailTemplateTab() {
                     </>
                   )}
 
-                  <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
+                  <div className="flex-1 grid grid-cols-2 gap-4 min-h-0" style={{ height: 'calc(100vh - 280px)' }}>
                     <div className="space-y-2 flex flex-col">
                       <FormField
                         control={templateForm.control}
@@ -1730,6 +1730,7 @@ export function EmailTemplateTab() {
                               <Textarea
                                 {...field}
                                 className="font-mono flex-1 resize-none min-h-0"
+                                style={{ height: 'calc(100vh - 340px)' }}
                                 placeholder="Enter your HTML email content here..."
                               />
                             </FormControl>
@@ -1740,7 +1741,7 @@ export function EmailTemplateTab() {
                     </div>
                     <div className="space-y-2 flex flex-col">
                       <label className="text-sm font-medium">Live Preview</label>
-                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm flex-1">
+                      <div className="border rounded-lg overflow-hidden bg-white shadow-sm flex-1" style={{ height: 'calc(100vh - 340px)' }}>
                         <iframe 
                           srcDoc={templateForm.watch('html_content') || '<div style="padding: 20px; text-align: center; color: #6b7280; font-family: Arial, sans-serif;">Start typing HTML to see preview...</div>'}
                           className="w-full h-full border-0"
