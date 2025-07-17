@@ -645,6 +645,11 @@ export default function AdminPortal() {
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<WaitlistEntry | null>(null);
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<number, Partial<WaitlistEntry>>>({});
+  const [loadingZips, setLoadingZips] = useState<{ [key: number]: boolean }>({});
+  const [isAutoPopulating, setIsAutoPopulating] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -747,6 +752,109 @@ export default function AdminPortal() {
       toast({
         title: "Success",
         description: "Email sent successfully",
+      });
+    },
+  });
+
+  // Handle field changes for inline editing
+  const handleFieldChange = (id: number, field: string, value: string) => {
+    setUnsavedChanges(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value
+      }
+    }));
+  };
+
+  // Handle ZIP code lookup for city/state
+  const handleCityStateFromZip = async (zip: string, entryId: number) => {
+    if (zip.length !== 5) return;
+    
+    setLoadingZips(prev => ({ ...prev, [entryId]: true }));
+    
+    try {
+      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+      if (response.ok) {
+        const data = await response.json();
+        const city = data.places[0]['place name'];
+        const state = data.places[0]['state abbreviation'];
+        
+        setUnsavedChanges(prev => ({
+          ...prev,
+          [entryId]: {
+            ...prev[entryId],
+            city,
+            state
+          }
+        }));
+      }
+    } catch (error) {
+      console.log('ZIP lookup failed:', error);
+    } finally {
+      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
+    }
+  };
+
+  // Handle auto-populate all locations
+  const handleAutoPopulateAll = async () => {
+    if (!waitlistEntries) return;
+    
+    setIsAutoPopulating(true);
+    const updates: Record<number, Partial<WaitlistEntry>> = {};
+    
+    for (const entry of waitlistEntries) {
+      if (entry.zip_code && (!entry.city || !entry.state)) {
+        try {
+          const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+          if (response.ok) {
+            const data = await response.json();
+            updates[entry.id] = {
+              city: data.places[0]['place name'],
+              state: data.places[0]['state abbreviation']
+            };
+          }
+        } catch (error) {
+          console.log(`ZIP lookup failed for ${entry.zip_code}:`, error);
+        }
+      }
+    }
+    
+    setUnsavedChanges(prev => ({
+      ...prev,
+      ...updates
+    }));
+    setIsAutoPopulating(false);
+  };
+
+  // Save changes mutation
+  const saveChangesMutation = useMutation({
+    mutationFn: async (changes: Record<number, Partial<WaitlistEntry>>) => {
+      const updates = Object.entries(changes).map(async ([id, updateData]) => {
+        const response = await fetch(`/api/waitlist/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error(`Failed to update entry ${id}`);
+        return response.json();
+      });
+      return Promise.all(updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+      setUnsavedChanges({});
+      toast({
+        title: "Success",
+        description: "All changes saved successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -1031,6 +1139,42 @@ export default function AdminPortal() {
                   <Download className="w-4 h-4 mr-2" />
                   Export CSV
                 </Button>
+                <Button
+                  onClick={handleAutoPopulateAll}
+                  disabled={isAutoPopulating}
+                  variant="outline"
+                >
+                  {isAutoPopulating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Auto Populate City/State
+                    </>
+                  )}
+                </Button>
+                {Object.keys(unsavedChanges).length > 0 && (
+                  <Button
+                    onClick={() => saveChangesMutation.mutate(unsavedChanges)}
+                    disabled={saveChangesMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {saveChangesMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes ({Object.keys(unsavedChanges).length})
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1042,8 +1186,12 @@ export default function AdminPortal() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead>First Name</TableHead>
+                      <TableHead>Last Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>City</TableHead>
+                      <TableHead>State</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleSort('zip_code')}
@@ -1070,36 +1218,109 @@ export default function AdminPortal() {
                           )}
                         </div>
                       </TableHead>
+                      <TableHead>Notes</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.email}</TableCell>
-                        <TableCell>
-                          {entry.first_name || entry.last_name ? 
-                            `${entry.first_name || ''} ${entry.last_name || ''}`.trim() : 
-                            '-'
-                          }
+                      <TableRow key={entry.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">
+                          <Input
+                            value={unsavedChanges[entry.id]?.email ?? entry.email}
+                            onChange={(e) => handleFieldChange(entry.id, 'email', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                          />
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-1 text-muted-foreground" />
-                            {entry.city && entry.state ? `${entry.city}, ${entry.state}` : '-'}
+                          <Input
+                            value={unsavedChanges[entry.id]?.first_name ?? entry.first_name ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'first_name', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="First name"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.last_name ?? entry.last_name ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'last_name', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="Last name"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.phone_number ?? entry.phone_number ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'phone_number', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="Phone"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.street_address ?? entry.street_address ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'street_address', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="Address"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.city ?? entry.city ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'city', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="City"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.state ?? entry.state ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'state', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="State"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={unsavedChanges[entry.id]?.zip_code ?? entry.zip_code}
+                              onChange={(e) => {
+                                const zip = e.target.value;
+                                handleFieldChange(entry.id, 'zip_code', zip);
+                                if (zip.length === 5) {
+                                  handleCityStateFromZip(zip, entry.id);
+                                }
+                              }}
+                              className="border-transparent hover:border-border focus:border-primary max-w-[100px]"
+                              placeholder="ZIP"
+                            />
+                            {loadingZips[entry.id] && (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell>{entry.zip_code}</TableCell>
-                        <TableCell>{new Date(entry.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(entry.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={unsavedChanges[entry.id]?.notes ?? entry.notes ?? ''}
+                            onChange={(e) => handleFieldChange(entry.id, 'notes', e.target.value)}
+                            className="border-transparent hover:border-border focus:border-primary"
+                            placeholder="Notes"
+                          />
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleViewDetails(entry)}
+                              onClick={() => {
+                                setSelectedEntry(entry);
+                                setShowDetailsDialog(true);
+                              }}
                             >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Details
+                              <Eye className="w-4 h-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -1572,6 +1793,71 @@ export default function AdminPortal() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
               Delete Entry
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Entry Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Entry Details</DialogTitle>
+            <DialogDescription>
+              Detailed information for this waitlist entry
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Email</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.email}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">ZIP Code</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.zip_code}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">First Name</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.first_name || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Last Name</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.last_name || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Phone</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.phone_number || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Address</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.street_address || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">City</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.city || 'Not provided'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">State</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.state || 'Not provided'}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium">Notes</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEntry.notes || 'No notes'}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium">Signed Up</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(selectedEntry.created_at), "MMMM do, yyyy 'at' h:mm a")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
