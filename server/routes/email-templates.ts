@@ -263,9 +263,39 @@ router.post('/api/email-templates/:id/send', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    // Get recipients
-    const recipientsResponse = await fetch(`${req.protocol}://${req.get('host')}/api/email-templates/${id}/recipients`);
-    const { recipients } = await recipientsResponse.json();
+    const { customRecipients, zipCodes, recipientType } = req.body;
+    let recipients: Array<{email: string, name?: string}> = [];
+
+    // Handle different recipient types
+    if (customRecipients && Array.isArray(customRecipients)) {
+      // Custom recipients (either from waitlist or prospect emails)
+      recipients = customRecipients.map(email => ({ email, name: email.split('@')[0] }));
+    } else {
+      // Fetch recipients based on type and ZIP codes
+      let waitlistMembers = await db.query.waitlist.findMany({
+        where: zipCodes && zipCodes.length > 0 
+          ? inArray(waitlist.zip_code, zipCodes)
+          : undefined
+      });
+
+      // Filter based on recipient type
+      if (recipientType === 'recent') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        waitlistMembers = waitlistMembers.filter(member => 
+          new Date(member.created_at) >= thirtyDaysAgo
+        );
+      }
+
+      recipients = waitlistMembers.map(member => ({ 
+        email: member.email, 
+        name: member.email.split('@')[0] 
+      }));
+    }
+
+    if (recipients.length === 0) {
+      return res.status(400).json({ error: 'No recipients found for this campaign' });
+    }
 
     let successCount = 0;
     let errorCount = 0;
