@@ -478,17 +478,22 @@ export function EmailTemplateTab() {
 
               <div className="space-y-4">
                 <h4 className="font-medium">Campaign Recipients</h4>
+                <div className="text-xs text-muted-foreground mb-2">
+                  Debug: selectedRecipientType={selectedRecipientType}, showCustomRecipients={showCustomRecipients.toString()}, waitlistCount={waitlistData.length}
+                </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-medium block mb-2">Target Audience</label>
                     <Select 
-                      defaultValue="waitlist" 
+                      value={selectedRecipientType}
                       onValueChange={(value) => {
+                        console.log('Recipient type changed to:', value);
                         setSelectedRecipientType(value);
                         setShowCustomRecipients(value === 'custom');
                         if (value !== 'custom') {
                           setSelectedCustomRecipients([]);
                         }
+                        console.log('Show custom recipients:', value === 'custom');
                       }}
                     >
                       <SelectTrigger>
