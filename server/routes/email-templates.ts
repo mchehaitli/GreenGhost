@@ -136,14 +136,20 @@ router.patch('/api/email-templates/:id', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid template ID' });
     }
 
-    const validatedData = insertEmailTemplateSchema.parse(req.body);
-    
-    // Handle system templates (negative IDs)
+    // Handle system templates (negative IDs) with simplified validation
     if (id < 0) {
+      const { name, subject, html_content } = req.body;
+      
+      if (!subject || !html_content) {
+        return res.status(400).json({ error: 'Subject and HTML content are required' });
+      }
+      
       const templateName = id === -1 ? 'Welcome Email' : 'Verification Email';
-      const updatedTemplate = await updateSystemTemplate(templateName, validatedData.subject, validatedData.html_content);
+      const updatedTemplate = await updateSystemTemplate(templateName, subject, html_content);
       return res.json(updatedTemplate);
     }
+
+    const validatedData = insertEmailTemplateSchema.parse(req.body);
 
     // Handle regular database templates
     validatedData.updated_at = new Date();
