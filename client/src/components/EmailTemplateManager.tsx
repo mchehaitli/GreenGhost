@@ -86,11 +86,8 @@ export function EmailTemplateManager({ templates, onTemplateSelect }: EmailTempl
     }
   });
 
-  // Fetch templates
-  const { data: allTemplates, isLoading } = useQuery({
-    queryKey: ['/api/email-templates'],
-    staleTime: 5 * 60 * 1000
-  });
+  // Use templates passed as props
+  const allTemplates = templates;
 
   // Create template mutation
   const createTemplate = useMutation({
