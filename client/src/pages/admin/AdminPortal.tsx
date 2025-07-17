@@ -643,6 +643,8 @@ export default function AdminPortal() {
     cities: [],
     zipCodes: []
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<WaitlistEntry | null>(null);
 
   const { data: waitlistEntries, isLoading: waitlistLoading, error: waitlistError } = useQuery<WaitlistEntry[]>({
     queryKey: ["/api/waitlist"],
@@ -691,6 +693,33 @@ export default function AdminPortal() {
       toast({
         title: "Success",
         description: "Notes updated successfully",
+      });
+    },
+  });
+
+  const deleteWaitlistEntryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/waitlist/${id}`, {
+        method: "DELETE",
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error("Failed to delete entry");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
+      toast({
+        title: "Success",
+        description: "Waitlist entry deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete entry. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -1058,14 +1087,27 @@ export default function AdminPortal() {
                         <TableCell>{entry.zip_code}</TableCell>
                         <TableCell>{new Date(entry.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleViewDetails(entry)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Details
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewDetails(entry)}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Details
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setEntryToDelete(entry);
+                                setDeleteDialogOpen(true);
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1482,6 +1524,49 @@ export default function AdminPortal() {
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
               Send Campaign
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Waitlist Entry</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this waitlist entry? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {entryToDelete && (
+            <div className="space-y-2">
+              <p><strong>Email:</strong> {entryToDelete.email}</p>
+              <p><strong>ZIP Code:</strong> {entryToDelete.zip_code}</p>
+              {entryToDelete.first_name || entryToDelete.last_name ? (
+                <p><strong>Name:</strong> {`${entryToDelete.first_name || ''} ${entryToDelete.last_name || ''}`.trim()}</p>
+              ) : null}
+              <p><strong>Joined:</strong> {new Date(entryToDelete.created_at).toLocaleDateString()}</p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (entryToDelete) {
+                  deleteWaitlistEntryMutation.mutate(entryToDelete.id);
+                }
+              }}
+              disabled={deleteWaitlistEntryMutation.isPending}
+            >
+              {deleteWaitlistEntryMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Delete Entry
             </Button>
           </DialogFooter>
         </DialogContent>
