@@ -1274,7 +1274,7 @@ export function EmailTemplateTab() {
       </Tabs>
 
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedTemplate ? "Edit Template" : "Create Template"}
@@ -1291,10 +1291,9 @@ export function EmailTemplateTab() {
               <TabsTrigger value="html">HTML Editor</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="visual" className="space-y-4">
-              <ScrollArea className="h-96">
-                <Form {...visualForm}>
-                  <form onSubmit={visualForm.handleSubmit(handleVisualSubmit)} className="space-y-4">
+            <TabsContent value="visual" className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <Form {...visualForm}>
+                <form onSubmit={visualForm.handleSubmit(handleVisualSubmit)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={templateForm.control}
@@ -1595,10 +1594,9 @@ export function EmailTemplateTab() {
                     </DialogFooter>
                   </form>
                 </Form>
-              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="html" className="space-y-4">
+            <TabsContent value="html" className="space-y-4 max-h-[70vh] overflow-y-auto">
               <Form {...templateForm}>
                 <form onSubmit={templateForm.handleSubmit(handleSubmit)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
