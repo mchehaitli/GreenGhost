@@ -1699,24 +1699,26 @@ export function EmailTemplateTab() {
 
       {/* Email History Details Dialog */}
       <Dialog open={showHistoryDetails} onOpenChange={setShowHistoryDetails}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              <History className="w-5 h-5" />
-              Email Campaign Details
-            </DialogTitle>
-            <DialogDescription>
-              View the complete email that was sent and recipient information
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0">
+          <div className="flex-shrink-0 p-6 pb-4 border-b">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="w-5 h-5" />
+                Email Campaign Details
+              </DialogTitle>
+              <DialogDescription>
+                View the complete email that was sent and recipient information
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           {historyDetailsLoading ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center flex-1">
               <LoadingSpinner size="lg" />
             </div>
           ) : historyDetails ? (
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-6 pb-4">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
                 {/* Campaign Summary */}
                 <Card>
                   <CardHeader>
@@ -1806,18 +1808,20 @@ export function EmailTemplateTab() {
                   </CardContent>
                 </Card>
               </div>
-            </ScrollArea>
+            </div>
           ) : (
-            <div className="text-center py-8">
+            <div className="flex items-center justify-center flex-1">
               <p className="text-muted-foreground">No details available for this email campaign.</p>
             </div>
           )}
 
-          <DialogFooter className="flex-shrink-0 mt-4">
-            <Button variant="outline" onClick={() => setShowHistoryDetails(false)}>
-              Close
-            </Button>
-          </DialogFooter>
+          <div className="flex-shrink-0 p-6 pt-4 border-t">
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowHistoryDetails(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
