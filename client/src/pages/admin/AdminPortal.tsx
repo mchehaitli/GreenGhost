@@ -972,63 +972,63 @@ export default function AdminPortal() {
     }));
   };
 
-  // Handle ZIP code lookup for city/state
-  const handleCityStateFromZip = async (zip: string, entryId: number) => {
-    if (zip.length !== 5) return;
-    
-    setLoadingZips(prev => ({ ...prev, [entryId]: true }));
-    
-    try {
-      const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
-      if (response.ok) {
-        const data = await response.json();
-        const city = data.places[0]['place name'];
-        const state = data.places[0]['state abbreviation'];
-        
-        setUnsavedChanges(prev => ({
-          ...prev,
-          [entryId]: {
-            ...prev[entryId],
-            city,
-            state
-          }
-        }));
-      }
-    } catch (error) {
-      console.log('ZIP lookup failed:', error);
-    } finally {
-      setLoadingZips(prev => ({ ...prev, [entryId]: false }));
-    }
-  };
+
 
   // Handle auto-populate all locations
   const handleAutoPopulateAll = async () => {
     if (!waitlistEntries) return;
     
     setIsAutoPopulating(true);
-    const updates: Record<number, Partial<WaitlistEntry>> = {};
+    let updatedCount = 0;
     
-    for (const entry of waitlistEntries) {
-      if (entry.zip_code && (!entry.city || !entry.state)) {
-        try {
-          const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
-          if (response.ok) {
-            const data = await response.json();
-            updates[entry.id] = {
-              city: data.places[0]['place name'],
-              state: data.places[0]['state abbreviation']
-            };
+    const entriesToUpdate = waitlistEntries.filter(entry => 
+      entry.zip_code && entry.zip_code.length === 5 && (!entry.city || !entry.state)
+    );
+    
+    if (entriesToUpdate.length === 0) {
+      toast({
+        title: "No Updates Needed",
+        description: "All entries already have city and state information",
+      });
+      setIsAutoPopulating(false);
+      return;
+    }
+    
+    for (const entry of entriesToUpdate) {
+      try {
+        const response = await fetch(`https://api.zippopotam.us/us/${entry.zip_code}`);
+        if (response.ok) {
+          const data = await response.json();
+          const place = data.places[0];
+          
+          // Update entry directly via API
+          const updateResponse = await fetch(`/api/waitlist/${entry.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city: place['place name'],
+              state: place['state abbreviation']
+            }),
+            credentials: 'include',
+          });
+          
+          if (updateResponse.ok) {
+            updatedCount++;
           }
-        } catch (error) {
-          console.log(`ZIP lookup failed for ${entry.zip_code}:`, error);
         }
+      } catch (error) {
+        console.log(`ZIP lookup failed for ${entry.zip_code}:`, error);
       }
     }
     
-    setUnsavedChanges(prev => ({
-      ...prev,
-      ...updates
-    }));
+    // Refresh the data to show updated entries
+    queryClient.invalidateQueries({ queryKey: ["/api/waitlist"] });
+    
+    toast({
+      title: "Locations Updated",
+      description: `Updated ${updatedCount} entries with city and state information`,
+    });
+    
     setIsAutoPopulating(false);
   };
 
