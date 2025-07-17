@@ -122,8 +122,10 @@ GreenGhost is a full-stack web application for an automated lawn care service co
 ## Changelog
 
 Recent Changes:
+- July 17, 2025: Completely redesigned email templates with modern theme - Updated typography to Inter font family, added gradient backgrounds and buttons, improved color consistency with "Green Ghost" branding, enhanced verification code display with monospace font, upgraded to modern rounded corners and elevated shadows
 - July 17, 2025: Enhanced Gmail SMTP for professional email branding - Configured sender addresses to show "GreenGhost Verification Team <verify@greenghost.io>" instead of personal Gmail addresses, added professional headers and reply-to addresses
 - July 17, 2025: Added advanced email template editing capabilities - Created comprehensive visual editor with font controls, color pickers, image insertion, template library, and enhanced formatting tools
+- July 17, 2025: Fixed critical branding issue: corrected company name from "Green" to "Green Ghost" throughout all templates  
 - July 17, 2025: Removed all greenghosttech.com email references - Updated system to use @greenghost.io addresses in footer, email templates, and service URLs
 - July 07, 2025: Refined logo spacing - Added subtle spacing between "Green" and "Ghost" words in header and footer for better visual balance
 - July 06, 2025: Rebranded company from "GreenGhost Tech" to "GreenGhost" (removed space) across all pages, emails, and documentation

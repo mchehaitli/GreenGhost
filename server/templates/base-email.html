@@ -31,31 +31,31 @@
             width: 100% !important;
             -webkit-text-size-adjust: none;
             -ms-text-size-adjust: 100%;
-            background-color: #f8f9fa !important;
-            color: #333333 !important;
+            background: linear-gradient(135deg, #f8fffe 0%, #f0fdf4 50%, #ecfdf5 100%) !important;
+            color: #374151 !important;
         }
         
         * {
             -ms-text-size-adjust: 100%;
             -webkit-text-size-adjust: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif !important;
         }
         
         /* Container */
         .email-wrapper {
             width: 100% !important;
             margin: 0 !important;
-            padding: 20px !important;
-            background-color: #f8f9fa !important;
+            padding: 24px !important;
+            background: linear-gradient(135deg, #f8fffe 0%, #f0fdf4 50%, #ecfdf5 100%) !important;
         }
         
         .email-content {
             max-width: 600px !important;
             margin: 0 auto !important;
             background-color: #ffffff !important;
-            border-radius: 8px !important;
-            padding: 30px !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            border-radius: 16px !important;
+            padding: 40px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08), 0 4px 12px rgba(16, 185, 129, 0.05) !important;
             border: 1px solid #e5e7eb !important;
         }
         
@@ -76,16 +76,26 @@
         /* Button */
         .button {
             display: inline-block !important;
-            padding: 12px 24px !important;
-            background-color: #10B981 !important;
+            padding: 14px 28px !important;
+            background: linear-gradient(135deg, #10B981, #059669) !important;
             color: #ffffff !important;
             text-decoration: none !important;
-            border-radius: 6px !important;
+            border-radius: 8px !important;
             font-weight: 600 !important;
             text-align: center !important;
-            margin: 20px 0 !important;
+            margin: 24px 0 !important;
             border: 0 !important;
-            mso-padding-alt: 12px 24px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+            transition: all 0.2s ease !important;
+            font-size: 16px !important;
+            letter-spacing: 0.025em !important;
+            mso-padding-alt: 14px 28px;
+        }
+        
+        .button:hover {
+            background: linear-gradient(135deg, #059669, #047857) !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+            transform: translateY(-1px) !important;
         }
         
         /* Logo container */
@@ -103,10 +113,19 @@
         
         .brand-name {
             display: inline-block !important;
-            font-size: 24px !important;
-            font-weight: 600 !important;
-            color: #059669 !important;
+            font-size: 26px !important;
+            font-weight: 700 !important;
             vertical-align: middle !important;
+            letter-spacing: -0.02em !important;
+        }
+        
+        .brand-green {
+            color: #059669 !important;
+        }
+        
+        .brand-ghost {
+            color: #374151 !important;
+            margin-left: 4px !important;
         }
         
         /* Footer */
@@ -165,12 +184,19 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="logo-container">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 10px;">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="#10B981"/>
-                                            <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="#059669"/>
+                                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                                            <circle cx="12" cy="12" r="10" fill="url(#grad1)"/>
+                                            <circle cx="12" cy="12" r="6" fill="#047857" opacity="0.8"/>
+                                            <circle cx="12" cy="12" r="3" fill="#ffffff" opacity="0.9"/>
+                                            <defs>
+                                                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                                                    <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                                                </linearGradient>
+                                            </defs>
                                         </svg>
-                                        <span class="brand-name" style="font-size: 24px; font-weight: 600; display: inline-block; vertical-align: middle;">
-                                            <span style="color: #059669 !important;">Green</span><span style="color: #ffffff !important;">Ghost</span>
+                                        <span class="brand-name" style="font-size: 26px; font-weight: 700; display: inline-block; vertical-align: middle; letter-spacing: -0.02em;">
+                                            <span class="brand-green" style="color: #059669 !important;">Green</span> <span class="brand-ghost" style="color: #374151 !important;">Ghost</span>
                                         </span>
                                     </td>
                                 </tr>
@@ -189,7 +215,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
                                 <tr>
                                     <td align="center">
-                                        <p style="color: #6b7280 !important; font-size: 14px; margin-bottom: 10px;">© 2025 <span style="color: #059669;">Green</span><span style="color: #ffffff;">Ghost</span>. All rights reserved.</p>
+                                        <p style="color: #6b7280 !important; font-size: 14px; margin-bottom: 10px;">© 2025 <span style="color: #059669; font-weight: 600;">Green Ghost</span>. All rights reserved.</p>
                                         <p style="color: #6b7280 !important; font-size: 14px; margin-bottom: 10px;">123 Green Street, Austin, TX 78701</p>
                                     </td>
                                 </tr>
