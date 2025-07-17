@@ -24,7 +24,7 @@ const EMAIL_ADDRESSES = {
   welcome: 'welcome@greenghost.io',
   marketing: 'noreply@greenghost.io',
   contact: 'contact@greenghost.io',
-  admin: 'admin@greenghost.io'
+  admin: 'support@greenghost.io'
 };
 
 // Test the email connection

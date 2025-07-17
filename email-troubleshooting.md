@@ -9,7 +9,7 @@ The system now uses dedicated email addresses for different purposes:
 - **welcome@greenghost.io** - Welcome emails after signup
 - **noreply@greenghost.io** - Marketing emails and newsletters
 - **contact@greenghost.io** - General contact (displayed on website)
-- **admin@greenghost.io** - Administrative communications
+- **support@greenghost.io** - Administrative communications
 
 ## Current Issue
 The Gmail SMTP authentication is failing with error: "Please log in with your web browser and then try again"
