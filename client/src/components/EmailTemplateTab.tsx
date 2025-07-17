@@ -123,6 +123,8 @@ export function EmailTemplateTab() {
     selectedRecipientType: string;
     selectedCustomRecipients: string[];
   }}>({});
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<EmailHistoryEntry | null>(null);
+  const [showHistoryDetails, setShowHistoryDetails] = useState(false);
   const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery<SelectEmailTemplate[]>({
@@ -176,6 +178,19 @@ export function EmailTemplateTab() {
       if (!response.ok) throw new Error("Failed to fetch email history");
       return response.json();
     },
+  });
+
+  const { data: historyDetails, isLoading: historyDetailsLoading } = useQuery({
+    queryKey: ["/api/email-history", selectedHistoryEntry?.id],
+    queryFn: async () => {
+      if (!selectedHistoryEntry) return null;
+      const response = await fetch(`/api/email-history/${selectedHistoryEntry.id}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error("Failed to fetch history details");
+      return response.json();
+    },
+    enabled: !!selectedHistoryEntry
   });
 
   const { data: waitlistData = [] } = useQuery({
@@ -287,11 +302,37 @@ export function EmailTemplateTab() {
         title: "Success",
         description: `Sent email to ${data.total_sent} recipients`,
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-history"] });
     },
     onError: (error) => {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send emails",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteHistoryEntry = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/email-history/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete history entry');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Email history entry deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-history"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete history entry",
         variant: "destructive",
       });
     },
@@ -1088,15 +1129,37 @@ export function EmailTemplateTab() {
                           Sent on {new Date(entry.sent_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm">
-                          <span className="text-green-600">{entry.successful_sends} sent</span>
-                          {entry.failed_sends > 0 && (
-                            <span className="text-red-600 ml-2">{entry.failed_sends} failed</span>
-                          )}
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-sm">
+                            <span className="text-green-600">{entry.total_recipients} sent</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(entry.sent_at).toLocaleTimeString()}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Total: {entry.total_recipients}
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedHistoryEntry(entry);
+                              setShowHistoryDetails(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete this email history entry for "${entry.template_name}"?`)) {
+                                deleteHistoryEntry.mutate(entry.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1631,6 +1694,112 @@ export function EmailTemplateTab() {
               </Form>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email History Details Dialog */}
+      <Dialog open={showHistoryDetails} onOpenChange={setShowHistoryDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Email Campaign Details
+            </DialogTitle>
+            <DialogDescription>
+              View the complete email that was sent and recipient information
+            </DialogDescription>
+          </DialogHeader>
+
+          {historyDetailsLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : historyDetails ? (
+            <div className="space-y-6">
+              {/* Campaign Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Campaign Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Template Name</Label>
+                      <p className="font-medium">{historyDetails.template?.name || 'Unknown Template'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Subject Line</Label>
+                      <p className="font-medium">{historyDetails.template?.subject || 'No Subject'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Sent Date</Label>
+                      <p className="font-medium">{new Date(historyDetails.sent_at).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Recipients</Label>
+                      <p className="font-medium">{historyDetails.recipient_info.total_count} recipients</p>
+                    </div>
+                  </div>
+                  
+                  {historyDetails.recipient_info.zip_codes.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Target ZIP Codes</Label>
+                      <p className="font-medium">{historyDetails.recipient_info.zip_codes.join(', ')}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Targeting</Label>
+                    <p className="font-medium">
+                      {historyDetails.recipient_info.targeting_type === 'zip_code' 
+                        ? 'Specific ZIP Codes' 
+                        : 'All Waitlist Members'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Email Content Preview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Email Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg overflow-hidden bg-white">
+                    <iframe 
+                      srcDoc={historyDetails.template?.html_content || '<div style="padding: 20px; text-align: center; color: #6b7280;">No content available</div>'}
+                      className="w-full border-0"
+                      style={{ height: '500px' }}
+                      title="Email Content Preview"
+                      onLoad={(e) => {
+                        const iframe = e.target as HTMLIFrameElement;
+                        try {
+                          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                          if (iframeDoc) {
+                            const bodyHeight = iframeDoc.body?.scrollHeight || 500;
+                            const adjustedHeight = Math.min(Math.max(bodyHeight + 40, 300), 700);
+                            iframe.style.height = `${adjustedHeight}px`;
+                          }
+                        } catch (error) {
+                          // Cross-origin restrictions, keep default height
+                        }
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No details available for this email campaign.</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoryDetails(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -454,4 +454,65 @@ router.get('/api/email-history', requireAuth, async (_req, res) => {
   }
 });
 
+// Get detailed information about a specific email campaign
+router.get('/api/email-history/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid history ID' });
+    }
+
+    const historyEntry = await db.query.emailSegments.findFirst({
+      where: eq(emailSegments.id, id),
+      with: {
+        template: true,
+      },
+    });
+
+    if (!historyEntry) {
+      return res.status(404).json({ error: 'Email history entry not found' });
+    }
+
+    // For now, we don't store individual recipient details, so we'll show the targeting criteria
+    const recipientInfo = {
+      total_count: historyEntry.total_recipients,
+      zip_codes: historyEntry.zip_codes || [],
+      targeting_type: historyEntry.zip_codes && historyEntry.zip_codes.length > 0 ? 'zip_code' : 'all_waitlist'
+    };
+
+    return res.json({
+      id: historyEntry.id,
+      template: historyEntry.template,
+      sent_at: historyEntry.sent_at,
+      recipient_info: recipientInfo,
+      status: 'completed'
+    });
+  } catch (error) {
+    log('Error fetching email history details:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to fetch email history details' });
+  }
+});
+
+// Delete email history entry
+router.delete('/api/email-history/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid history ID' });
+    }
+
+    const result = await db.delete(emailSegments).where(eq(emailSegments.id, id));
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Email history entry not found' });
+    }
+
+    log(`Email history entry ${id} deleted successfully`);
+    return res.json({ message: 'Email history entry deleted successfully' });
+  } catch (error) {
+    log('Error deleting email history entry:', error instanceof Error ? error.message : 'Unknown error');
+    return res.status(500).json({ error: 'Failed to delete email history entry' });
+  }
+});
+
 export default router;
